@@ -1,0 +1,269 @@
+/*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
+ *
+ *  Data Differential YATL (i.e. libtest)  library
+ *
+ *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are
+ *  met:
+ *
+ *      * Redistributions of source code must retain the above copyright
+ *  notice, this list of conditions and the following disclaimer.
+ *
+ *      * Redistributions in binary form must reproduce the above
+ *  copyright notice, this list of conditions and the following disclaimer
+ *  in the documentation and/or other materials provided with the
+ *  distribution.
+ *
+ *      * The names of its contributors may not be used to endorse or
+ *  promote products derived from this software without specific prior
+ *  written permission.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+ *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+ *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+ *  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+ *  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+ *  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+ *  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+ *  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+ *  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ */
+
+#pragma once
+
+#ifndef __INTEL_COMPILER
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
+/**
+  A structure describing the test case.
+*/
+struct test_st {
+  const char *name;
+  bool requires_flush;
+  test_callback_fn *test_fn;
+};
+
+#define test_assert_errno(A) \
+do \
+{ \
+  if ((A)) { \
+    fprintf(stderr, "\n%s:%d: Assertion failed for %s: ", __FILE__, __LINE__, __func__);\
+    perror(#A); \
+    fprintf(stderr, "\n"); \
+    libtest::create_core(); \
+    assert((A)); \
+  } \
+} while (0)
+
+#define test_assert(A, B) \
+do \
+{ \
+  if ((A)) { \
+    fprintf(stderr, "\n%s:%d: Assertion failed %s, with message %s, in %s", __FILE__, __LINE__, (B), #A, __func__ );\
+    fprintf(stderr, "\n"); \
+    libtest::create_core(); \
+    assert((A)); \
+  } \
+} while (0)
+
+#define test_truth(A) \
+do \
+{ \
+  if (! (A)) { \
+    fprintf(stderr, "\n%s:%d: Assertion \"%s\" failed, in %s\n", __FILE__, __LINE__, #A, __func__);\
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_true(A) \
+do \
+{ \
+  if (! (A)) { \
+    fprintf(stderr, "\n%s:%d: Assertion \"%s\" failed, in %s\n", __FILE__, __LINE__, #A, __func__);\
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_true_got(__expected, __hint) \
+do \
+{ \
+  if (not libtest::_compare_truth_hint(__FILE__, __LINE__, __func__, ((__expected)), #__expected, ((__hint)))) \
+  { \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+#define test_true_hint test_true_got
+
+#define test_skip(__expected, __actual) \
+do \
+{ \
+  if (libtest::_compare(__FILE__, __LINE__, __func__, ((__expected)), ((__actual)), false) == false) \
+  { \
+    return TEST_SKIPPED; \
+  } \
+} while (0)
+
+#define test_skip_hint(__expected, __actual, __hint) \
+do \
+{ \
+  if (libtest::_compare_hint(__FILE__, __LINE__, __func__, (__expected), (__actual), (__hint)) == false) \
+  { \
+    return TEST_SKIPPED; \
+  } \
+} while (0)
+
+#define test_skip_valgrind() \
+do \
+{ \
+  if (libtest::_in_valgrind(__FILE__, __LINE__, __func__)) \
+  { \
+    return TEST_SKIPPED; \
+  } \
+} while (0)
+
+#define test_fail(A) \
+do \
+{ \
+  if (1) { \
+    fprintf(stderr, "\n%s:%d: Failed with %s, in %s\n", __FILE__, __LINE__, #A, __func__);\
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+
+#define test_false(A) \
+do \
+{ \
+  if ((A)) { \
+    fprintf(stderr, "\n%s:%d: Assertion failed %s, in %s\n", __FILE__, __LINE__, #A, __func__);\
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_false_with(A,B) \
+do \
+{ \
+  if ((A)) { \
+    fprintf(stderr, "\n%s:%d: Assertion failed %s with %s\n", __FILE__, __LINE__, #A, (B));\
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_ne_compare(__expected, __actual) \
+do \
+{ \
+  if (libtest::_ne_compare_hint(__FILE__, __LINE__, __func__, ((__expected)), ((__actual)), true) == false) \
+  { \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_compare(__expected, __actual) \
+do \
+{ \
+  if (libtest::_compare(__FILE__, __LINE__, __func__, ((__expected)), ((__actual)), true) == false) \
+  { \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_zero(__actual) \
+do \
+{ \
+  if (not libtest::_compare_zero(__FILE__, __LINE__, __func__, ((__actual)))) \
+  { \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_null test_zero
+
+#define test_compare_got(__expected, __actual, __hint) \
+do \
+{ \
+  if (not libtest::_compare_hint(__FILE__, __LINE__, __func__, (__expected), (__actual), (__hint))) \
+  { \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_compare_hint test_compare_got
+
+#define test_compare_warn(__expected, __actual) \
+do \
+{ \
+  void(libtest::_compare(__FILE__, __LINE__, __func__, (__expected), (__actual)), true); \
+} while (0)
+
+#define test_compare_warn_hint(__expected, __actual, __hint) \
+do \
+{ \
+  libtest::_compare_hint(__FILE__, __LINE__, __func__, (__expected), (__actual), (__hint)); \
+} while (0)
+
+#define test_warn(__truth) \
+do \
+{ \
+  void(libtest::_truth(__FILE__, __LINE__, __func__, (__truth))); \
+} while (0)
+
+#define test_warn_hint(__truth, __hint) \
+do \
+{ \
+  void(libtest::_compare_truth_hint(__FILE__, __LINE__, __func__, (__truth), #__truth, (__hint))); \
+} while (0)
+
+
+#define test_strcmp(__expected, __actual) \
+do \
+{ \
+  void(libtest::_compare_strcmp(__FILE__, __LINE__, __func__, (__expected), (__actual))); \
+} while (0)
+
+#define test_memcmp(A,B,C) \
+do \
+{ \
+  if ((A) == NULL or (B) == NULL or memcmp((A), (B), (C))) \
+  { \
+    fprintf(stderr, "\n%s:%d: %.*s -> %.*s\n", __FILE__, __LINE__, (int)(C), (char *)(A), (int)(C), (char *)(B)); \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_memcmp_hint(A,B,C,__hint) \
+do \
+{ \
+  if ((A) == NULL or (B) == NULL or memcmp((A), (B), (C))) \
+  { \
+    fprintf(stderr, "\n%s:%d: (hint:%s) %.*s -> %.*s\n", __FILE__, __LINE__, __hint, (int)(C), (char *)(A), (int)(C), (char *)(B)); \
+    libtest::create_core(); \
+    return TEST_FAILURE; \
+  } \
+} while (0)
+
+#define test_return_if(__test_return_t) \
+do \
+{ \
+  if ((__test_return_t) != TEST_SUCCESS) \
+  { \
+    return __test_return_t; \
+  } \
+} while (0)
+
