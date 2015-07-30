@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /*
@@ -41,7 +51,7 @@
 #include <libmemcached/common.h>
 
 static inline void _server_init(memcached_server_st *self, memcached_st *root,
-                                const memcached_string_t& hostname,
+                                const memcached_string_t& hostname, const memcached_string_t& ipaddress,
                                 in_port_t port,
                                 uint32_t weight, memcached_connection_t type)
 {
@@ -84,14 +94,26 @@ static inline void _server_init(memcached_server_st *self, memcached_st *root,
   }
   self->limit_maxbytes= 0;
   memcpy(self->hostname, hostname.c_str, hostname.size);
-  self->hostname[hostname.size]= 0;
+  self->hostname[hostname.size] = 0;
+
+  memcpy(self->ipaddress, ipaddress.c_str, ipaddress.size);
+  self->ipaddress[ipaddress.size] = 0;
 }
+
+static inline void _server_init(memcached_server_st *self, memcached_st *root,
+                                const memcached_string_t& hostname,
+                                in_port_t port,
+                                uint32_t weight, memcached_connection_t type){
+  memcached_string_t _ipaddress = { memcached_string_make_from_cstr("") };
+  _server_init(self, root, hostname, _ipaddress, port, weight, type);
+}
+
 
 static memcached_server_st *_server_create(memcached_server_st *self, const memcached_st *memc)
 {
   if (self == NULL)
   {
-   self= libmemcached_xmalloc(memc, struct memcached_server_st);
+    self= libmemcached_xmalloc(memc, struct memcached_server_st);
 
     if (self == NULL)
     {
@@ -105,16 +127,29 @@ static memcached_server_st *_server_create(memcached_server_st *self, const memc
     self->options.is_allocated= false;
   }
 
+
   self->options.is_initialized= true;
 
   return self;
 }
 
+memcached_server_st *__configserver_connect(memcached_st *memc,
+                                            memcached_server_write_instance_st configserver,
+                                            const memcached_string_t& hostname,
+                                            const in_port_t port)
+{
+  _server_init(configserver, const_cast<memcached_st *>(memc), hostname, port, 1, MEMCACHED_CONNECTION_TCP);
+  memcached_connect_try(configserver);
+
+  return configserver;
+}
+
 memcached_server_st *__server_create_with(memcached_st *memc,
                                           memcached_server_write_instance_st self,
                                           const memcached_string_t& hostname,
+                                          const memcached_string_t& ipaddress,
                                           const in_port_t port,
-                                          uint32_t weight, 
+                                          uint32_t weight,
                                           const memcached_connection_t type)
 {
   if (memcached_is_valid_servername(hostname) == false)
@@ -130,7 +165,7 @@ memcached_server_st *__server_create_with(memcached_st *memc,
     return NULL;
   }
 
-  _server_init(self, const_cast<memcached_st *>(memc), hostname, port, weight, type);
+  _server_init(self, const_cast<memcached_st *>(memc), hostname, ipaddress, port, weight, type);
 
   if (memc and memcached_is_udp(memc))
   { 
@@ -146,8 +181,26 @@ memcached_server_st *__server_create_with(memcached_st *memc,
   return self;
 }
 
+memcached_server_st *__server_create_with(memcached_st *memc,
+                                          memcached_server_write_instance_st self,
+                                          const memcached_string_t& hostname,
+                                          const in_port_t port,
+                                          uint32_t weight,
+                                          const memcached_connection_t type)
+{
+  memcached_string_t _ipaddress = { memcached_string_make_from_cstr("") };
+
+  return __server_create_with(memc, self, hostname, _ipaddress, port, weight, type);
+}
+
+
 void __server_free(memcached_server_st *self)
 {
+  if (not self)
+  {
+    return;
+  }
+
   memcached_quit_server(self, false);
 
   if (self->address_info)
@@ -171,11 +224,6 @@ void __server_free(memcached_server_st *self)
 
 void memcached_server_free(memcached_server_st *self)
 {
-  if (self == NULL)
-  {
-    return;
-  }
-
   if (memcached_server_list_count(self))
   {
     memcached_server_list_free(self);
@@ -346,6 +394,43 @@ const char *memcached_server_name(const memcached_server_instance_st self)
     return NULL;
 
   return self->hostname;
+}
+
+const char *memcached_server_ipaddress(const memcached_server_instance_st self)
+{
+  WATCHPOINT_ASSERT(self);
+  if (not self)
+    return NULL;
+
+  return self->ipaddress;
+}
+
+const bool has_memcached_server_ipaddress(const memcached_server_instance_st self)
+{
+  WATCHPOINT_ASSERT(self);
+  if (not self)
+    return false;
+
+  if(self->ipaddress != NULL)
+  {
+    uint32_t i = 0;
+    while(self->ipaddress[i] != '\0')
+    {
+      if(!isspace(self->ipaddress[i])) return true;
+      i++;
+    }
+  }
+
+  return false;
+}
+
+void memcached_update_ipaddress(memcached_server_st *self, const memcached_string_t ipaddress){
+  if(self == NULL){
+    return;
+  }
+
+  memcpy(self->ipaddress, ipaddress.c_str, ipaddress.size);
+  self->ipaddress[ipaddress.size] = 0;
 }
 
 in_port_t memcached_server_port(const memcached_server_instance_st self)

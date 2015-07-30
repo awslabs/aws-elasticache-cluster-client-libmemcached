@@ -79,6 +79,7 @@ using namespace libtest;
 #include "tests/hash_results.h"
 
 #include "tests/libmemcached-1.0/callback_counter.h"
+#include "tests/libmemcached-1.0/dynamic_mode_test.h"
 #include "tests/libmemcached-1.0/fetch_all_results.h"
 #include "tests/libmemcached-1.0/mem_functions.h"
 #include "tests/libmemcached-1.0/setup_and_teardowns.h"
@@ -448,6 +449,11 @@ test_return_t userdata_test(memcached_st *memc)
 
 test_return_t connection_test(memcached_st *memc)
 {
+  if(memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_CLIENT_MODE) == DYNAMIC_MODE)
+  {
+    return TEST_SKIPPED;
+  }
+
   test_compare(MEMCACHED_SUCCESS,
                memcached_server_add_with_weight(memc, "localhost", 0, 0));
 
@@ -460,7 +466,7 @@ test_return_t libmemcached_string_behavior_test(memcached_st *)
   {
     test_true(libmemcached_string_behavior(memcached_behavior_t(x)));
   }
-  test_compare(37, int(MEMCACHED_BEHAVIOR_MAX));
+  test_compare(39, int(MEMCACHED_BEHAVIOR_MAX));
 
   return TEST_SUCCESS;
 }
@@ -490,7 +496,7 @@ test_return_t memcached_return_t_TEST(memcached_st *memc)
                         4159057246U, 3425930182U, 2593724503U,  1868899624U,
                         1769812374U, 2302537950U, 1110330676U, 3365377466U, 
                         1336171666U, 3021258493U, 2334992265U, 3861994737U, 
-                        3582734124U, 3365377466U };
+                        3582734124U, 137180596U, 3365377466U };
 
   // You have updated the memcache_error messages but not updated docs/tests.
   for (int rc= int(MEMCACHED_SUCCESS); rc < int(MEMCACHED_MAXIMUM_RETURN); ++rc)
@@ -506,7 +512,7 @@ test_return_t memcached_return_t_TEST(memcached_st *memc)
     }
     test_compare(values[rc], hash_val);
   }
-  test_compare(49, int(MEMCACHED_MAXIMUM_RETURN));
+  test_compare(50, int(MEMCACHED_MAXIMUM_RETURN));
 
   return TEST_SUCCESS;
 }
@@ -1808,9 +1814,16 @@ test_return_t add_host_test(memcached_st *memc)
     test_compare(MEMCACHED_SUCCESS, rc);
     test_compare(x, memcached_server_list_count(servers));
   }
-
-  test_compare(MEMCACHED_SUCCESS, memcached_server_push(memc, servers));
-  test_compare(MEMCACHED_SUCCESS, memcached_server_push(memc, servers));
+  
+  if(memcached_behavior_get(memc, MEMCACHED_BEHAVIOR_CLIENT_MODE) == DYNAMIC_MODE)
+  {
+    test_compare(MEMCACHED_CLIENT_ERROR, memcached_server_push(memc, servers));
+  }
+  else
+  {
+    test_compare(MEMCACHED_SUCCESS, memcached_server_push(memc, servers));
+    test_compare(MEMCACHED_SUCCESS, memcached_server_push(memc, servers));
+  }
 
   memcached_server_list_free(servers);
 

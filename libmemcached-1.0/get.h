@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #pragma once
@@ -43,6 +53,13 @@ extern "C" {
 #endif
 
 /* Public defines */
+LIBMEMCACHED_API
+char *memcached_config_get(memcached_server_st *server,
+                                  memcached_st *ptr,
+                                  size_t *value_length,
+                                  uint32_t *flags,
+                                  memcached_return_t *error);
+
 LIBMEMCACHED_API
 char *memcached_get(memcached_st *ptr,
                     const char *key, size_t key_length,

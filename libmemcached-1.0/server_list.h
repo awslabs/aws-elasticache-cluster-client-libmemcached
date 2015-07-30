@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #pragma once
@@ -47,6 +57,9 @@ LIBMEMCACHED_API
   void memcached_server_list_free(memcached_server_list_st ptr);
 
 LIBMEMCACHED_API
+  void reresolve_servers_in_client(memcached_server_list_st *server_list, uint32_t server_count);
+
+LIBMEMCACHED_API
   memcached_return_t memcached_server_push(memcached_st *ptr, const memcached_server_list_st list);
 
 LIBMEMCACHED_API
@@ -54,12 +67,27 @@ LIBMEMCACHED_API
                                                         const char *hostname,
                                                         in_port_t port,
                                                         memcached_return_t *error);
+
+LIBMEMCACHED_API
+memcached_return_t notify_server_list_update(memcached_st *ptr, memcached_server_list_st new_server_list);
+
+LIBMEMCACHED_API
+  memcached_server_st *parse_memcached_configuration(char *config);
+
 LIBMEMCACHED_API
   memcached_server_list_st memcached_server_list_append_with_weight(memcached_server_list_st ptr,
                                                                     const char *hostname,
                                                                     in_port_t port,
                                                                     uint32_t weight,
                                                                     memcached_return_t *error);
+
+LIBMEMCACHED_API
+  memcached_server_list_st memcached_server_list_append_with_ipaddress(memcached_server_list_st ptr,
+                                                                    const char *hostname,
+                                                                    const char *ipaddress,
+                                                                    in_port_t port,
+                                                                    memcached_return_t *error);
+
 LIBMEMCACHED_API
   uint32_t memcached_server_list_count(const memcached_server_list_st ptr);
 

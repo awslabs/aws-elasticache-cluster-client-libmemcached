@@ -141,6 +141,11 @@ void send_quit(memcached_st *ptr)
 
     memcached_quit_server(instance, false);
   }
+
+  if (ptr->configserver != NULL)
+  {
+    memcached_quit_server(ptr->configserver, false);
+  }
 }
 
 void memcached_quit(memcached_st *ptr)

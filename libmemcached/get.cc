@@ -33,9 +33,24 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <libmemcached/common.h>
+
+static const char *CLUSTER_CONFIG_NAME = "cluster";
+static const size_t CLUSTER_CONFIG_NAME_SIZE = 7;
+static const char *CLUSTER_CONFIG_KEY_NAME = "AmazonElastiCache:cluster";
+static const size_t CLUSTER_CONFIG_KEY_NAME_SIZE = 25;
 
 /*
   What happens if no servers exist?
@@ -57,6 +72,12 @@ static memcached_return_t memcached_mget_by_key_real(memcached_st *ptr,
                                                      const size_t *key_length,
                                                      size_t number_of_keys,
                                                      bool mget_mode);
+
+static memcached_return_t _binary_config_with_config_cmd(memcached_server_st *server,
+                                                                memcached_st *ptr);
+
+memcached_return_t _binary_config_with_get_cmd(memcached_server_st *server, 
+                                                             memcached_st *ptr);
 
 char *memcached_get_by_key(memcached_st *ptr,
                            const char *group_key,
@@ -236,6 +257,18 @@ static memcached_return_t memcached_mget_by_key_real(memcached_st *ptr,
     is_group_key_set= true;
   }
 
+  // only attempt periodic polling in dynamic mode and if in mget mode
+  // for non-mget mode, polling will happen in the
+  // memcached_generate_hash_with_redistribution function.
+  if(mget_mode and memcached_is_dynamic_client_mode(ptr))
+  {
+    // periodic polling touchpoint
+    if (is_time_to_poll(ptr)) 
+    {
+      update_server_list(ptr);
+    }
+  }
+
   /*
     Here is where we pay for the non-block API. We need to remove any data sitting
     in the queue before we start our get.
@@ -291,7 +324,17 @@ static memcached_return_t memcached_mget_by_key_real(memcached_st *ptr,
     }
     else
     {
-      server_key= memcached_generate_hash_with_redistribution(ptr, keys[x], key_length[x]);
+      if (mget_mode)
+      {
+        // in mget mode we don't want to poll since mget is expecting
+        // to be the only operation modifying the wire/buffers at that point
+        // so need to make sure we have already polled before calling this.
+        server_key= memcached_generate_hash_with_redistribution_skip_polling(ptr, keys[x], key_length[x]);
+      }
+      else
+      {
+        server_key= memcached_generate_hash_with_redistribution(ptr, keys[x], key_length[x]);
+      }
     }
 
     instance= memcached_server_instance_fetch(ptr, server_key);
@@ -387,6 +430,257 @@ static memcached_return_t memcached_mget_by_key_real(memcached_st *ptr,
   return MEMCACHED_FAILURE; // Complete failure occurred
 }
 
+
+memcached_return_t _send_config_request(memcached_server_st *server, memcached_st *ptr, libmemcached_io_vector_st vector[])
+{
+  bool failures_occured_in_sending= false;
+
+  memcached_return_t rc = MEMCACHED_SUCCESS;
+
+  LIBMEMCACHED_MEMCACHED_CONFIG_GET_START();
+
+  memcached_server_write_instance_st instance= server;
+
+  if (memcached_server_response_count(instance))
+  {
+    char buffer[MEMCACHED_DEFAULT_COMMAND_SIZE];
+    if (ptr->flags.no_block)
+    {
+      memcached_io_write(instance);
+    }
+
+    while(memcached_server_response_count(instance))
+    {
+      (void)memcached_response(instance, buffer, MEMCACHED_DEFAULT_COMMAND_SIZE, &ptr->result);
+    }
+  }
+
+  /*
+    If a server fails we warn about errors and start all over with sending config
+    to the server.
+  */
+  size_t hosts_connected= 0;
+
+  if (memcached_server_response_count(instance) == 0)
+  {
+    rc= memcached_connect(instance);
+    if (memcached_failed(rc))
+    {
+      memcached_set_error(*instance, rc, MEMCACHED_AT);
+      return rc;
+    }
+    hosts_connected++;
+
+    if ((memcached_io_writev(instance, vector, 3, false)) == -1)
+    {
+      failures_occured_in_sending= true;
+      return rc;
+    }
+    WATCHPOINT_ASSERT(instance->cursor_active == 0);
+    memcached_server_response_increment(instance);
+    WATCHPOINT_ASSERT(instance->cursor_active == 1);
+  }
+  else
+  {
+    if ((memcached_io_writev(instance, (vector + 1), 3, false)) == -1)
+    {
+      memcached_server_response_reset(instance);
+      failures_occured_in_sending= true;
+    }
+  }
+
+  if (hosts_connected == 0)
+  {
+    LIBMEMCACHED_MEMCACHED_CONFIG_GET_END();
+    if (memcached_failed(rc))
+    {
+      return rc;
+    }
+    return memcached_set_error(*ptr, MEMCACHED_NO_CONFIG_SERVER, MEMCACHED_AT);
+  }
+
+  bool success_happened = false;
+  if ((memcached_io_write(instance, "\r\n", 2, true)) == -1)
+  {
+    failures_occured_in_sending= true;
+  }
+  else
+  {
+    success_happened= true;
+  }
+
+  LIBMEMCACHED_MEMCACHED_CONFIG_GET_END();
+
+  if (failures_occured_in_sending)
+    return MEMCACHED_FAILURE;
+
+  return MEMCACHED_SUCCESS;
+}
+
+/**
+ * Utility function to flush the buffer of a particular server. This allows 
+ * for prior commands (specifically mget) to not be cleaned up correctly 
+ * by the callers and still have the next set of commands succeed.
+ */ 
+void _flush_server_buffer(memcached_server_st *server, memcached_st *ptr)
+{
+  // This code is lifted from elsewhere in the get codepath
+  if (memcached_server_response_count(server))
+  {
+    char buffer[MEMCACHED_DEFAULT_COMMAND_SIZE];
+
+    if (ptr->flags.no_block)
+    {
+      memcached_io_write(server);
+    }
+
+    while(memcached_server_response_count(server))
+    {
+      (void)memcached_response(server, buffer, MEMCACHED_DEFAULT_COMMAND_SIZE, &ptr->result);
+    }
+  }
+}
+
+char *_retrieve_config_with_config_cmd(memcached_server_st *server, memcached_st *ptr,
+                                       size_t *value_length, uint32_t *flags, memcached_return_t *error)
+{
+  // Flush the buffer for the server we are about to use for retrieving config
+  _flush_server_buffer(server, ptr);
+
+  if (memcached_is_binary(ptr))
+  {
+    *error = _binary_config_with_config_cmd(server, ptr);
+  }
+  else
+  {
+    // Using textual protocol
+    const char *config_get_command= "config get ";
+    uint8_t command_length= 11;
+
+    libmemcached_io_vector_st vector[]=
+     {
+       { config_get_command, command_length },
+       { CLUSTER_CONFIG_NAME, CLUSTER_CONFIG_NAME_SIZE },
+       { memcached_literal_param(" ") }
+     };
+
+    *error = _send_config_request(server, ptr, vector);
+  }
+
+  char *value = memcached_fetch(ptr, NULL, NULL, value_length, flags, error);
+  size_t dummy_length;
+  uint32_t dummy_flags;
+  memcached_return_t dummy_error;
+
+  char *dummy_value= memcached_fetch(ptr, NULL, NULL,
+                                     &dummy_length, &dummy_flags,
+                                     &dummy_error);
+  assert_msg(dummy_value == 0, "memcached_fetch() returned additional values beyond the single config get it expected");
+  assert_msg(dummy_length == 0, "memcached_fetch() returned additional values beyond the single config get it expected");
+
+  return value;
+}
+
+char *_retrieve_config_with_get_cmd(memcached_server_st *server, memcached_st *ptr,
+                                                                                      size_t *value_length, uint32_t *flags, memcached_return_t *error)
+{
+  // Flush the buffer for the server we are about to use for retrieving config
+  _flush_server_buffer(server, ptr);
+
+  if (memcached_is_binary(ptr))
+  {
+    *error = _binary_config_with_get_cmd(server, ptr);
+  }
+  else
+  {
+    const char *get_command= "get ";
+    uint8_t get_command_length= 4;
+
+    libmemcached_io_vector_st vector[]=
+      {
+        { get_command, get_command_length },
+        { memcached_array_string(ptr->_namespace), memcached_array_size(ptr->_namespace) },
+        { CLUSTER_CONFIG_KEY_NAME, CLUSTER_CONFIG_KEY_NAME_SIZE},
+        { memcached_literal_param(" ") }
+      };
+
+    *error = _send_config_request(server, ptr, vector);
+  }
+  char *value = memcached_fetch(ptr, NULL, NULL, value_length, flags, error);
+  size_t dummy_length;
+  uint32_t dummy_flags;
+  memcached_return_t dummy_error;
+
+  char *dummy_value= memcached_fetch(ptr, NULL, NULL,
+                                     &dummy_length, &dummy_flags,
+                                     &dummy_error);
+  assert_msg(dummy_value == 0, "memcached_fetch() returned additional values beyond the single config get it expected");
+  assert_msg(dummy_length == 0, "memcached_fetch() returned additional values beyond the single config get it expected");
+
+  return value;
+}
+
+/**
+ *
+ * Retrieves the config from the server. In the process it determines whether
+ * the config protocol is supported by the memcached server and sets
+ * the flag to indicate whether config protocol is supported.
+ */
+char *memcached_config_get(memcached_server_st *server,
+                           memcached_st *ptr,
+                           size_t *value_length,
+                           uint32_t *flags,
+                           memcached_return_t *error)
+{
+
+  if(server == NULL)
+  {
+    *error = MEMCACHED_NO_SERVERS;
+    return NULL;
+  }
+
+  char *value;
+  // when first starting won't know if we can use config protocol or not, so
+  // try config protocol and set the flag.
+  //
+  // last_successful is only set to non-zero timestamp when a config is successfully
+  // retrieved, parsed, and applied.
+  //
+  // If the server is down or the config is empty, last_successful remains 0.
+  //
+  // We only honor the use_config_protocol flag once we have successfully
+  // applied a configuration that has been retrieved from the server.
+  if (ptr->polling.last_successful == 0)
+  {
+    value = _retrieve_config_with_config_cmd(server, ptr, value_length, flags, error);
+
+    if(*error == MEMCACHED_SUCCESS)
+    {
+      ptr->flags.use_config_protocol = true;
+      return value;
+    }
+
+    if(*error == MEMCACHED_ERROR || *error == MEMCACHED_NOTFOUND)
+    {
+      value = _retrieve_config_with_get_cmd(server, ptr, value_length, flags, error);
+      ptr->flags.use_config_protocol = false;
+    }
+
+    return value;
+  }
+  else
+  {
+    if (ptr->flags.use_config_protocol == false)
+    {
+      return _retrieve_config_with_get_cmd(server, ptr, value_length, flags, error);
+    }
+    else
+    {
+      return _retrieve_config_with_config_cmd(server, ptr, value_length, flags, error);
+    }
+  }
+}
+
 memcached_return_t memcached_mget_by_key(memcached_st *ptr,
                                          const char *group_key,
                                          size_t group_key_length,
@@ -452,6 +746,65 @@ memcached_return_t memcached_mget_execute_by_key(memcached_st *ptr,
   return rc;
 }
 
+static memcached_return_t _binary_config_with_config_cmd(memcached_server_st *server, 
+                                                         memcached_st *ptr)
+{
+  memcached_return_t rc = MEMCACHED_NOTFOUND;
+
+  memcached_server_write_instance_st instance = server;
+
+  if (memcached_server_response_count(instance) == 0)
+  {
+    rc = memcached_connect(instance);
+    if (memcached_failed(rc))
+    {
+      return rc;
+    }
+  }
+
+  protocol_binary_request_getk request = { }; //= {.bytes= {0}};
+  request.message.header.request.magic = PROTOCOL_BINARY_REQ;
+  request.message.header.request.opcode = PROTOCOL_BINARY_CMD_CONFIG_GET;
+
+  request.message.header.request.keylen = htons((uint16_t)CLUSTER_CONFIG_NAME_SIZE);
+  request.message.header.request.datatype = PROTOCOL_BINARY_RAW_BYTES;
+  request.message.header.request.bodylen = htonl((uint32_t)CLUSTER_CONFIG_NAME_SIZE);
+
+  libmemcached_io_vector_st vector[]=
+  {
+    { request.bytes, sizeof(request.bytes) },
+    { CLUSTER_CONFIG_NAME, CLUSTER_CONFIG_NAME_SIZE }
+  };
+
+  if (memcached_io_writev(instance, vector, 2, true) == -1)
+  {
+    memcached_server_response_reset(instance);
+    rc = MEMCACHED_SOME_ERRORS;
+    return rc;
+  }
+
+  memcached_server_response_reset(instance);
+  memcached_server_response_increment(instance);
+
+  // memcached_flush_buffers code
+  if (instance->write_buffer_offset != 0) 
+  {
+    if (instance->fd == INVALID_SOCKET and
+        (rc = memcached_connect(instance)) != MEMCACHED_SUCCESS)
+    {
+      WATCHPOINT_ERROR(rc);
+      return rc;
+    }
+
+    if (memcached_io_write(instance) == false)
+    {
+      rc = MEMCACHED_SOME_ERRORS;
+    }
+  }
+
+  return rc;
+}
+
 static memcached_return_t simple_binary_mget(memcached_st *ptr,
                                              uint32_t master_server_key,
                                              bool is_group_key_set,
@@ -477,7 +830,17 @@ static memcached_return_t simple_binary_mget(memcached_st *ptr,
     }
     else
     {
-      server_key= memcached_generate_hash_with_redistribution(ptr, keys[x], key_length[x]);
+      if (mget_mode)
+      {
+        // in mget mode we don't want to poll since mget is expecting
+        // to be the only operation modifying the wire/buffers at that point
+        // so need to make sure we have already polled before calling this.
+        server_key= memcached_generate_hash_with_redistribution_skip_polling(ptr, keys[x], key_length[x]);
+      }
+      else
+      {
+        server_key= memcached_generate_hash_with_redistribution(ptr, keys[x], key_length[x]);
+      }
     }
 
     memcached_server_write_instance_st instance= memcached_server_instance_fetch(ptr, server_key);
@@ -576,6 +939,78 @@ static memcached_return_t simple_binary_mget(memcached_st *ptr,
     }
   }
 
+
+  return rc;
+}
+
+memcached_return_t _binary_config_with_get_cmd(memcached_server_st *server, 
+                                               memcached_st *ptr) 
+{
+  const char *key = CLUSTER_CONFIG_KEY_NAME;
+  const size_t key_length = CLUSTER_CONFIG_KEY_NAME_SIZE;
+  memcached_return_t rc = MEMCACHED_NOTFOUND;
+
+  memcached_server_write_instance_st instance = server;
+
+  if (memcached_server_response_count(instance) == 0)
+  {
+    rc= memcached_connect(instance);
+    if (memcached_failed(rc))
+    {
+      return rc;
+    }
+  }
+
+  protocol_binary_request_getk request= { }; //= {.bytes= {0}};
+  request.message.header.request.magic= PROTOCOL_BINARY_REQ;
+  request.message.header.request.opcode= PROTOCOL_BINARY_CMD_GETK;
+
+  memcached_return_t vk;
+  vk= memcached_validate_key_length(key_length,
+                                    ptr->flags.binary_protocol);
+  if (vk != MEMCACHED_SUCCESS)
+  {
+    return vk;
+  }
+
+  request.message.header.request.keylen= htons((uint16_t)(key_length + memcached_array_size(ptr->_namespace)));
+  request.message.header.request.datatype= PROTOCOL_BINARY_RAW_BYTES;
+  request.message.header.request.bodylen= htonl((uint32_t)(key_length + memcached_array_size(ptr->_namespace)));
+
+  libmemcached_io_vector_st vector[]=
+  {
+    { request.bytes, sizeof(request.bytes) },
+    { memcached_array_string(ptr->_namespace), memcached_array_size(ptr->_namespace) },
+    { key, key_length },
+    { memcached_literal_param(" ") }
+  };
+
+  if (memcached_io_writev(instance, vector, 3, true) == -1)
+  {
+    memcached_server_response_reset(instance);
+    rc = MEMCACHED_SOME_ERRORS;
+    return rc;
+  }
+
+  /* We just want one pending response per server */
+  memcached_server_response_reset(instance);
+  memcached_server_response_increment(instance);
+
+  // memcached_flush_buffers code
+  if (instance->write_buffer_offset != 0) 
+  {
+    if (instance->fd == INVALID_SOCKET and
+        (rc = memcached_connect(instance)) != MEMCACHED_SUCCESS)
+    {
+      WATCHPOINT_ERROR(rc);
+      return rc;
+    }
+
+    if (memcached_io_write(instance) == false)
+    {
+      rc = MEMCACHED_SOME_ERRORS;
+    }
+  }
 
   return rc;
 }

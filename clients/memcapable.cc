@@ -7,6 +7,16 @@
  *
  * Summary:
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /* -*- Mode: C; tab-width: 2; c-basic-offset: 2; indent-tabs-mode: nil -*- */
@@ -411,6 +421,42 @@ static void storage_command(command *cmd,
 }
 
 /**
+ * Create a config storage command (set)
+ *
+ * @param cmd destination buffer
+ * @param cc the storage command to create
+ * @param key the key to store
+ * @param keylen the length of the key
+ * @param dta the data to store with the key
+ * @param dtalen the length of the data to store with the key
+ * @param flags the flags to store along with the key
+ */
+static void config_storage_command(command *cmd,
+                            uint8_t cc,
+                            const void* key,
+                            size_t keylen,
+                            const void* dta,
+                            size_t dtalen,
+                            uint32_t flags)
+{
+  protocol_binary_request_set *request= &cmd->set;
+
+  memset(request, 0, sizeof (*request));
+  request->message.header.request.magic= PROTOCOL_BINARY_REQ;
+  request->message.header.request.opcode= cc;
+  request->message.header.request.keylen= (uint16_t)keylen;
+  request->message.header.request.extlen= 4;
+  request->message.header.request.bodylen= (uint32_t)(keylen + 4 + dtalen);
+  request->message.header.request.opaque= 0xdeadbeef;
+  request->message.body.flags= flags;
+
+  off_t key_offset= sizeof (protocol_binary_request_no_extras) + 4;
+  memcpy(cmd->bytes + key_offset, key, keylen);
+  if (dta != NULL)
+    memcpy(cmd->bytes + key_offset + keylen, dta, dtalen);
+}
+
+/**
  * Create a basic command to send to the server
  * @param cmd destination buffer
  * @param cc the command to create
@@ -526,6 +572,8 @@ static enum test_return do_validate_response_header(response *rsp,
     case PROTOCOL_BINARY_CMD_QUITQ:
     case PROTOCOL_BINARY_CMD_REPLACEQ:
     case PROTOCOL_BINARY_CMD_SETQ:
+    case PROTOCOL_BINARY_CMD_CONFIG_SETQ:
+    case PROTOCOL_BINARY_CMD_CONFIG_DELETEQ:
       verify("Quiet command shouldn't return on success" == NULL);
     default:
       break;
@@ -537,15 +585,17 @@ static enum test_return do_validate_response_header(response *rsp,
     case PROTOCOL_BINARY_CMD_SET:
     case PROTOCOL_BINARY_CMD_APPEND:
     case PROTOCOL_BINARY_CMD_PREPEND:
+      verify(rsp->plain.message.header.response.cas != 0);
+    case PROTOCOL_BINARY_CMD_CONFIG_SET:
       verify(rsp->plain.message.header.response.keylen == 0);
       verify(rsp->plain.message.header.response.extlen == 0);
       verify(rsp->plain.message.header.response.bodylen == 0);
-      verify(rsp->plain.message.header.response.cas != 0);
       break;
     case PROTOCOL_BINARY_CMD_FLUSH:
     case PROTOCOL_BINARY_CMD_NOOP:
     case PROTOCOL_BINARY_CMD_QUIT:
     case PROTOCOL_BINARY_CMD_DELETE:
+    case PROTOCOL_BINARY_CMD_CONFIG_DELETE:
       verify(rsp->plain.message.header.response.keylen == 0);
       verify(rsp->plain.message.header.response.extlen == 0);
       verify(rsp->plain.message.header.response.bodylen == 0);
@@ -575,16 +625,34 @@ static enum test_return do_validate_response_header(response *rsp,
 
     case PROTOCOL_BINARY_CMD_GET:
     case PROTOCOL_BINARY_CMD_GETQ:
+      verify(rsp->plain.message.header.response.cas != 0);
+    case PROTOCOL_BINARY_CMD_CONFIG_GET:
+    case PROTOCOL_BINARY_CMD_CONFIG_GETQ:
       verify(rsp->plain.message.header.response.keylen == 0);
       verify(rsp->plain.message.header.response.extlen == 4);
-      verify(rsp->plain.message.header.response.cas != 0);
       break;
 
     case PROTOCOL_BINARY_CMD_GETK:
     case PROTOCOL_BINARY_CMD_GETKQ:
+      verify(rsp->plain.message.header.response.cas != 0);
+    case PROTOCOL_BINARY_CMD_CONFIG_GETK:
+    case PROTOCOL_BINARY_CMD_CONFIG_GETKQ:
       verify(rsp->plain.message.header.response.keylen != 0);
       verify(rsp->plain.message.header.response.extlen == 4);
-      verify(rsp->plain.message.header.response.cas != 0);
+      break;
+
+    case PROTOCOL_BINARY_CMD_CONFIG_LIST:
+      /* flags, key, and value exists in all packets except in the terminating */
+      if (rsp->plain.message.header.response.keylen == 0)
+      {
+        verify(rsp->plain.message.header.response.extlen == 0);
+        verify(rsp->plain.message.header.response.bodylen == 0);
+      }
+      else
+      {
+        verify(rsp->plain.message.header.response.extlen == 4);
+      }
+      verify(rsp->plain.message.header.response.cas == 0);
       break;
 
     default:
@@ -596,7 +664,7 @@ static enum test_return do_validate_response_header(response *rsp,
   {
     verify(rsp->plain.message.header.response.cas == 0);
     verify(rsp->plain.message.header.response.extlen == 0);
-    if (cc != PROTOCOL_BINARY_CMD_GETK)
+    if (cc != PROTOCOL_BINARY_CMD_GETK && cc != PROTOCOL_BINARY_CMD_CONFIG_GETK)
     {
       verify(rsp->plain.message.header.response.keylen == 0);
     }
@@ -1193,6 +1261,163 @@ static enum test_return test_binary_stat(void)
   {
     execute(recv_packet(&rsp));
     verify(validate_response_header(&rsp, PROTOCOL_BINARY_CMD_STAT,
+                                    PROTOCOL_BINARY_RESPONSE_SUCCESS));
+  } while (rsp.plain.message.header.response.keylen != 0);
+
+  return TEST_PASS;
+}
+
+static enum test_return binary_config_set_item(const char *key, const char *value)
+{
+  command cmd;
+  response rsp;
+  config_storage_command(&cmd, PROTOCOL_BINARY_CMD_CONFIG_SET, key, strlen(key),
+                  value, strlen(value), 0);
+  execute(send_packet(&cmd));
+  execute(recv_packet(&rsp));
+  verify(validate_response_header(&rsp, PROTOCOL_BINARY_CMD_CONFIG_SET,
+                                  PROTOCOL_BINARY_RESPONSE_SUCCESS));
+  return TEST_PASS;
+}
+
+static enum test_return test_binary_config_set_impl(const char* key, uint8_t cc)
+{
+  command cmd;
+  response rsp;
+
+  uint64_t value= 0xdeadbeefdeadcafeULL;
+  config_storage_command(&cmd, cc, key, strlen(key), &value, sizeof (value), 0);
+
+  /* set should always work (if the same key is used) */
+  for (int ii= 0; ii < 10; ii++)
+  {
+    if (ii == 0)
+      execute(send_packet(&cmd));
+    else
+      execute(resend_packet(&cmd));
+
+    if (cc == PROTOCOL_BINARY_CMD_CONFIG_SET)
+    {
+      execute(recv_packet(&rsp));
+      verify(validate_response_header(&rsp, cc, PROTOCOL_BINARY_RESPONSE_SUCCESS));
+    }
+    else
+      execute(test_binary_noop());
+  }
+
+  return TEST_PASS;
+}
+
+static enum test_return test_binary_config_set(void)
+{
+  return test_binary_config_set_impl("test_binary_config_set", PROTOCOL_BINARY_CMD_CONFIG_SET);
+}
+
+static enum test_return test_binary_config_setq(void)
+{
+  return test_binary_config_set_impl("test_binary_config_setq", PROTOCOL_BINARY_CMD_CONFIG_SETQ);
+}
+
+static enum test_return test_binary_config_delete_impl(const char *key, uint8_t cc)
+{
+  command cmd;
+  response rsp;
+  raw_command(&cmd, cc, key, strlen(key), NULL, 0);
+
+  /* The delete shouldn't work the first time, because the item isn't there */
+  execute(send_packet(&cmd));
+  execute(send_binary_noop());
+  execute(recv_packet(&rsp));
+  verify(validate_response_header(&rsp, cc, PROTOCOL_BINARY_RESPONSE_KEY_ENOENT));
+
+  execute(receive_binary_noop());
+  execute(binary_config_set_item(key, key));
+
+  /* The item should be present now, resend*/
+  execute(resend_packet(&cmd));
+  if (cc == PROTOCOL_BINARY_CMD_CONFIG_DELETE)
+  {
+    execute(recv_packet(&rsp));
+    verify(validate_response_header(&rsp, cc, PROTOCOL_BINARY_RESPONSE_SUCCESS));
+  }
+
+  execute(test_binary_noop());
+
+  return TEST_PASS;
+}
+
+static enum test_return test_binary_config_delete(void)
+{
+  return test_binary_config_delete_impl("test_binary_config_delete", PROTOCOL_BINARY_CMD_CONFIG_DELETE);
+}
+
+static enum test_return test_binary_config_deleteq(void)
+{
+  return test_binary_config_delete_impl("test_binary_config_deleteq", PROTOCOL_BINARY_CMD_CONFIG_DELETEQ);
+}
+
+static enum test_return test_binary_config_get_impl(const char *key, uint8_t cc)
+{
+  command cmd;
+  response rsp;
+
+  raw_command(&cmd, cc, key, strlen(key), NULL, 0);
+  execute(send_packet(&cmd));
+  execute(send_binary_noop());
+
+  if (cc == PROTOCOL_BINARY_CMD_CONFIG_GET || cc == PROTOCOL_BINARY_CMD_CONFIG_GETK)
+  {
+    execute(recv_packet(&rsp));
+    verify(validate_response_header(&rsp, cc, PROTOCOL_BINARY_RESPONSE_KEY_ENOENT));
+  }
+
+  execute(receive_binary_noop());
+
+  execute(binary_config_set_item(key, key));
+  execute(resend_packet(&cmd));
+  execute(send_binary_noop());
+
+  execute(recv_packet(&rsp));
+  verify(validate_response_header(&rsp, cc, PROTOCOL_BINARY_RESPONSE_SUCCESS));
+  execute(receive_binary_noop());
+
+  return TEST_PASS;
+}
+
+static enum test_return test_binary_config_get(void)
+{
+  return test_binary_config_get_impl("test_binary_config_get", PROTOCOL_BINARY_CMD_CONFIG_GET);
+}
+
+static enum test_return test_binary_config_getk(void)
+{
+  return test_binary_config_get_impl("test_binary_config_getk", PROTOCOL_BINARY_CMD_CONFIG_GETK);
+}
+
+static enum test_return test_binary_config_getq(void)
+{
+  return test_binary_config_get_impl("test_binary_config_getq", PROTOCOL_BINARY_CMD_CONFIG_GETQ);
+}
+
+static enum test_return test_binary_config_getkq(void)
+{
+  return test_binary_config_get_impl("test_binary_config_getkq", PROTOCOL_BINARY_CMD_CONFIG_GETKQ);
+}
+
+static enum test_return test_binary_config_list(void)
+{
+  command cmd;
+  response rsp;
+
+  binary_config_set_item("test_binary_config_list", "value");
+
+  raw_command(&cmd, PROTOCOL_BINARY_CMD_CONFIG_LIST, NULL, 0, NULL, 0);
+  execute(send_packet(&cmd));
+
+  do
+  {
+    execute(recv_packet(&rsp));
+    verify(validate_response_header(&rsp, PROTOCOL_BINARY_CMD_CONFIG_LIST,
                                     PROTOCOL_BINARY_RESPONSE_SUCCESS));
   } while (rsp.plain.message.header.response.keylen != 0);
 
@@ -1971,6 +2196,159 @@ static enum test_return test_ascii_stat(void)
   return TEST_PASS_RECONNECT;
 }
 
+static enum test_return ascii_config_get_value(const char *key, const char *value)
+{
+  char buffer[1024];
+  size_t datasize= strlen(value);
+
+  verify(datasize < sizeof(buffer));
+  execute(receive_line(buffer, sizeof(buffer)));
+  verify(strncmp(buffer, "CONFIG ", 7) == 0);
+  char *ptr;
+  char *end;
+  if (strlen(key) > 0) {
+    verify(strncmp(buffer + 7, key, strlen(key)) == 0);
+    ptr= buffer + 7 + strlen(key) + 1;
+  } else {
+    ptr = buffer + 7;
+    while (ptr and *ptr != '\n' and not isspace(*ptr))
+    {
+        ++ptr;
+    }
+  }
+
+  unsigned long val= strtoul(ptr, &end, 10); /* flags */
+  verify(ptr != end);
+  verify(val == 0);
+  verify(end != NULL);
+  val= strtoul(end, &end, 10); /* size */
+  verify(ptr != end);
+  verify(val == datasize);
+  verify(end != NULL);
+  while (end and *end != '\n' and isspace(*end))
+  {
+    ++end;
+  }
+  verify(end and *end == '\n');
+
+  execute(retry_read(buffer, datasize));
+  verify(memcmp(buffer, value, datasize) == 0);
+
+  execute(retry_read(buffer, 2));
+  verify(memcmp(buffer, "\r\n", 2) == 0);
+
+  return TEST_PASS;
+}
+
+static enum test_return ascii_config_get_item(const char *key, const char *value, bool exist)
+{
+  char buffer[1024];
+  size_t datasize= 0;
+  if (value != NULL)
+  {
+    datasize= strlen(value);
+  }
+
+  verify(datasize < sizeof(buffer));
+  snprintf(buffer, sizeof(buffer), "config get %s\r\n", key);
+  execute(send_string(buffer));
+
+  if (exist)
+  {
+    execute(ascii_config_get_value(key, value));
+  }
+
+  execute(retry_read(buffer, 5));
+  verify(memcmp(buffer, "END\r\n", 5) == 0);
+
+  return TEST_PASS;
+}
+
+static enum test_return ascii_config_set_item(const char *key, const char *value)
+{
+  char buffer[300];
+  size_t len= strlen(value);
+  snprintf(buffer, sizeof(buffer), "config set %s 0 %u\r\n", key, (unsigned int)len);
+  execute(send_string(buffer));
+  execute(retry_write(value, len));
+  execute(send_string("\r\n"));
+  execute(receive_response("STORED\r\n"));
+  return TEST_PASS;
+}
+
+static enum test_return test_ascii_config_get(void)
+{
+  execute(ascii_config_set_item("test_ascii_config_get", "value"));
+
+  execute(ascii_config_get_item("", "value", true));
+  execute(ascii_config_get_item("test_ascii_config_get", "value", true));
+  execute(ascii_config_get_item("test_ascii_config_get_notfound", "value", false));
+
+  return TEST_PASS;
+}
+
+static enum test_return test_ascii_config_set_impl(const char* key, bool noreply)
+{
+  char buffer[1024];
+  snprintf(buffer, sizeof(buffer), "config set %s 0 5%s\r\nvalue\r\n", key, noreply ? " noreply" : "");
+  execute(send_string(buffer));
+
+  if (!noreply)
+  {
+    execute(receive_response("STORED\r\n"));
+  }
+
+  return test_ascii_version();
+}
+
+static enum test_return test_ascii_config_set(void)
+{
+  return test_ascii_config_set_impl("test_ascii_config_set", false);
+}
+
+static enum test_return test_ascii_config_set_noreply(void)
+{
+  return test_ascii_config_set_impl("test_ascii_config_set_noreply", true);
+}
+
+static enum test_return test_ascii_config_delete_impl(const char* key, bool noreply)
+{
+  execute(ascii_config_set_item(key, "value"));
+
+  execute(send_string("config delete\r\n"));
+  execute(receive_error_response());
+  execute(send_string("config delete a b c d e\r\n"));
+  execute(receive_error_response());
+
+  char buffer[1024];
+  snprintf(buffer, sizeof(buffer), "config delete %s%s\r\n", key, noreply ? " noreply" : "");
+  execute(send_string(buffer));
+
+  if (noreply)
+    execute(test_ascii_version());
+  else
+    execute(receive_response("DELETED\r\n"));
+
+  execute(ascii_config_get_item(key, "value", false));
+  execute(send_string(buffer));
+  if (noreply)
+    execute(test_ascii_version());
+  else
+    execute(receive_response("NOT_FOUND\r\n"));
+
+  return TEST_PASS;
+}
+
+static enum test_return test_ascii_config_delete(void)
+{
+  return test_ascii_config_delete_impl("test_ascii_config_delete", false);
+}
+
+static enum test_return test_ascii_config_delete_noreply(void)
+{
+  return test_ascii_config_delete_impl("test_ascii_config_delete_noreply", true);
+}
+
 typedef enum test_return(*TEST_FUNC)(void);
 
 struct testcase
@@ -2007,6 +2385,11 @@ struct testcase testcases[]= {
   { "ascii prepend", test_ascii_prepend },
   { "ascii prepend noreply", test_ascii_prepend_noreply },
   { "ascii stat", test_ascii_stat },
+  { "ascii config get", test_ascii_config_get },
+  { "ascii config set", test_ascii_config_set },
+  { "ascii config set noreply", test_ascii_config_set_noreply },
+  { "ascii config delete", test_ascii_config_delete },
+  { "ascii config delete noreply", test_ascii_config_delete_noreply },
   { "binary noop", test_binary_noop },
   { "binary quit", test_binary_quit },
   { "binary quitq", test_binary_quitq },
@@ -2034,6 +2417,15 @@ struct testcase testcases[]= {
   { "binary prepend", test_binary_prepend },
   { "binary prependq", test_binary_prependq },
   { "binary stat", test_binary_stat },
+  { "binary config set", test_binary_config_set },
+  { "binary config setq", test_binary_config_setq },
+  { "binary config delete", test_binary_config_delete },
+  { "binary config deleteq", test_binary_config_deleteq },
+  { "binary config get", test_binary_config_get },
+  { "binary config getq", test_binary_config_getq },
+  { "binary config getk", test_binary_config_getk },
+  { "binary config getkq", test_binary_config_getkq },
+  { "binary config list", test_binary_config_list },
   { NULL, NULL}
 };
 

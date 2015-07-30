@@ -69,6 +69,7 @@
 #include <libtest/framework.h>
 #include <libtest/get.h>
 #include <libtest/cmdline.h>
+#include <libtest/dynamic_mode.h>
 #include <libtest/string.hpp>
 #include <libtest/binaries.h>
 #include <libtest/http.hpp>

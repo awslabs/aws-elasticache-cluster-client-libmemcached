@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 
@@ -41,6 +51,10 @@
 #include <sys/time.h>
 
 #include <libmemcached/virtual_bucket.h>
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 
 uint32_t memcached_generate_hash_value(const char *key, size_t key_length, memcached_hash_t hash_algorithm)
 {
@@ -144,13 +158,273 @@ void memcached_autoeject(memcached_st *ptr)
   _regen_for_auto_eject(ptr);
 }
 
-uint32_t memcached_generate_hash_with_redistribution(memcached_st *ptr, const char *key, size_t key_length)
+/**
+ * Compares the last time a polling operation was attempted (in an atomic way)
+ * and if the time since last poll is > polling.threshold_secs then returns true
+ */
+static inline bool _is_time_to_poll(memcached_st *ptr)
 {
+  // if not memcached_st this is an error condition, so return false
+  if (ptr == NULL) return false;
+
+  time_t last_attempted = ptr->polling.last_attempted;
+
+  time_t now = time(NULL);
+  if (difftime(now, last_attempted) > ptr->polling.threshold_secs)
+  {
+    return true;
+  }
+  else 
+  {
+    // TODO: Add recovery action here (look at last_successful, potentially ignore prior result
+  }
+
+  return false;
+}
+
+/**
+ * See internal function for documentation
+ */
+bool is_time_to_poll(memcached_st *ptr)
+{
+  return _is_time_to_poll(ptr);
+}
+
+/**
+ * Parse the config version number from the configuration
+ */
+static inline uint64_t _get_config_version_number(const char *config)
+{
+  if (config == NULL)
+  {
+    errno = EINVAL;
+    return 0;
+  }
+
+  char config_version_delimiter[] = "\n";
+  int idx_config_version = strcspn(config, config_version_delimiter);
+  char* config_ver_str = strndup(config, idx_config_version+1);
+  uint64_t config_version = strtoull(config_ver_str, (char **)NULL, 10);
+  
+  free(config_ver_str);
+
+  return config_version;
+}
+
+/**
+ * Utility function make sure updating the current version number and config string
+ * are both done atomically (with the assistance of the polling mutex)
+ */
+static inline void _update_current_version(memcached_st *ptr, uint64_t config_version_number, const char* config)
+{
+    if (ptr->polling.current_config != NULL)
+    {
+      free(ptr->polling.current_config);
+    }
+    ptr->polling.current_config = strdup(config);
+    ptr->polling.current_config_version = config_version_number;
+}
+
+/**
+ * A poor man's iterator through the array of server structures, returns index
+ * of the next server from the current position.
+ */
+static inline int _get_server_position(const memcached_st *ptr, int cur_position)
+{
+  int position = ++cur_position;
+  if (position >= (int) memcached_server_count(ptr))
+  {
+    // this is the wrap-around case, start from zero again
+    position = 0;
+  }
+
+  return position;
+}
+
+/**
+ * Actually responsible for retrieving configuration from memcached
+ * 
+ * 1. Round-Robin to find the next server to contact.
+ * 2. Try 2x to get the config fro mthat server.
+ * 3. As a last attempt, try to get config from the config endpoint
+ * 
+ * Return NULL if unable to get configuration
+ */
+static inline char *_config_get(memcached_st *ptr)
+{
+  char *result = NULL;
+  int MAX_RETRY_COUNT = 3;
+  int cur_position = ptr->polling.last_server_key;
+  int retry_count;
+  for (retry_count = 1; retry_count <= MAX_RETRY_COUNT; retry_count++)
+  {
+    // 1. Round-robin, which server should be contacted next
+    int server_idx = _get_server_position(ptr, cur_position);
+    memcached_server_instance_st server = memcached_server_instance_by_position(ptr, server_idx);
+
+    memcached_server_st *config_server = (memcached_server_st *) server;
+
+    if (retry_count == MAX_RETRY_COUNT)
+    {
+      // if on final try and use the config server
+      config_server = memcached_config_server_fetch(ptr);
+      // In case that all nodes in the cluster are replaced, we need to re-resolve
+      // the configuration endpoint by DNS lookup. Since the config server doesn't
+      // contain IP address, this call will do the DNS lookup using hostname
+      reresolve_servers_in_client(&config_server, 1);
+    }
+
+    size_t value_length;
+    uint32_t flags;
+    memcached_return rr;
+    char *config = memcached_config_get(config_server, ptr, &value_length, &flags, &rr);
+
+    if (rr == MEMCACHED_SUCCESS)
+    {
+      result = config;
+      // update index
+      ptr->polling.last_server_key = server_idx;
+      break;
+    }
+    else
+    {
+      cur_position = server_idx;
+
+      if (config != NULL) free(config);
+    }
+  }
+
+  return result;
+}
+
+static inline bool _apply_new_server_list(memcached_st *ptr, char *config)
+{
+  // parse configuration
+  memcached_server_st *new_server_list = parse_memcached_configuration(config);    
+
+  // apply changes to configuration
+  memcached_return rr;
+  rr = notify_server_list_update(ptr, new_server_list);
+  memcached_server_list_free(new_server_list);
+  if (rr == MEMCACHED_SUCCESS)
+  {
+    return true;
+  }
+    
+  return false;
+}
+
+/**
+ * Responsible for actually retrieving the conifguration and then notifying the server_list
+ * with the updated information.
+ */
+static inline void _update_server_list(memcached_st *ptr)
+{
+  // atomically update the last_attempted field
+  ptr->polling.last_attempted = time(NULL);
+  
+  // Call config_get, detect_change, apply_change
+  char *config = _config_get(ptr);
+  if (config == NULL)
+  {
+    return;
+  }
+
+  // set this field to false in error cases
+  bool isUpdateSuccessful = true;
+
+  // detect change
+  // if strings don't match then check config version values, do nothing otherwise
+  if (ptr->polling.current_config == NULL)
+  {
+    uint64_t config_version_number = _get_config_version_number(config);
+
+    isUpdateSuccessful = _apply_new_server_list(ptr, config);
+    if (isUpdateSuccessful)
+    {
+      _update_current_version(ptr, config_version_number, config);
+    }
+  }
+  else if (strcmp(ptr->polling.current_config, config) != 0)
+  {
+    uint64_t config_version_number = _get_config_version_number(config);
+    if (config_version_number > ptr->polling.current_config_version)
+    {
+      isUpdateSuccessful = _apply_new_server_list(ptr, config);
+      if (isUpdateSuccessful)
+      {
+        _update_current_version(ptr, config_version_number, config);
+      }
+    }
+  }
+
+  if (isUpdateSuccessful) 
+  {
+    ptr->polling.last_successful = time(NULL);
+  }
+
+  free(config);
+
+}
+
+/**
+ * See comment for _update_server_list for more information
+ */
+void update_server_list(memcached_st *ptr)
+{
+  _update_server_list(ptr);
+}
+
+memcached_return_t complete_dynamic_initialization(memcached_st *ptr, const char *config)
+{
+  if (config == NULL || ptr == NULL)
+  {
+    return MEMCACHED_INVALID_ARGUMENTS;
+  }
+
+  // update the recorded config
+  uint64_t config_version_number = _get_config_version_number(config);
+  if (config_version_number == 0 || errno == EINVAL)
+  {
+    // error in parsing the config version number from server, return
+    // parse failure
+    return MEMCACHED_PARSE_ERROR;
+  }
+  _update_current_version(ptr, config_version_number, config);
+
+  // consider this initialization complete
+  ptr->polling.last_successful = time(NULL);
+
+  return MEMCACHED_SUCCESS;
+}
+
+inline uint32_t _memcached_generate_hash_with_redistribution(memcached_st *ptr, const char *key, size_t key_length, bool should_skip_polling)
+{
+  // only attempt periodic polling in dynamic mode
+  if(!should_skip_polling and memcached_is_dynamic_client_mode(ptr))
+  {
+    // periodic polling touchpoint
+    if (_is_time_to_poll(ptr)) 
+    {
+      _update_server_list(ptr);
+    }
+  }
+
   uint32_t hash= _generate_hash_wrapper(ptr, key, key_length);
 
   _regen_for_auto_eject(ptr);
 
   return dispatch_host(ptr, hash);
+}
+
+uint32_t memcached_generate_hash_with_redistribution(memcached_st *ptr, const char *key, size_t key_length)
+{
+  return _memcached_generate_hash_with_redistribution(ptr, key, key_length, false);
+}
+
+uint32_t memcached_generate_hash_with_redistribution_skip_polling(memcached_st *ptr, const char *key, size_t key_length)
+{
+  return _memcached_generate_hash_with_redistribution(ptr, key, key_length, true);
 }
 
 uint32_t memcached_generate_hash(const memcached_st *ptr, const char *key, size_t key_length)

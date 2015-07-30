@@ -33,11 +33,32 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
+#include <pthread.h>
 
 #pragma once
 
+enum memcached_client_mode { STATIC_MODE,  DYNAMIC_MODE, UNDEFINED };
+
+#ifndef __cplusplus
+typedef enum memcached_client_mode memcached_client_mode;
+#endif
+
+#include <pthread.h>
+
 struct memcached_st {
+
+
   /**
     @note these are static and should not change without a call to behavior.
   */
@@ -63,6 +84,8 @@ struct memcached_st {
     bool verify_key:1;
     bool tcp_keepalive:1;
     bool is_aes:1;
+    bool use_config_protocol:1;
+    enum memcached_client_mode client_mode;
   } flags;
 
   memcached_server_distribution_t distribution;
@@ -71,8 +94,10 @@ struct memcached_st {
     unsigned int version;
   } server_info;
   uint32_t number_of_hosts;
+
   memcached_server_st *servers;
   memcached_server_st *last_disconnected_server;
+
   int32_t snd_timeout;
   int32_t rcv_timeout;
   uint32_t server_failure_limit;
@@ -120,5 +145,19 @@ struct memcached_st {
   struct {
     bool is_allocated:1;
   } options;
+
+  memcached_server_st *configserver;
+
+  /**
+   * This struct is to track the last time cluster configuration was polled.
+   */
+  struct {
+    time_t last_attempted;
+    time_t last_successful;
+    int last_server_key;
+    uint64_t current_config_version;
+    char *current_config;
+    uint32_t threshold_secs;
+  } polling;
 
 };

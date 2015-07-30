@@ -10,6 +10,7 @@ nobase_include_HEADERS+= \
 			 libmemcached-1.0/struct/result.h \
 			 libmemcached-1.0/struct/sasl.h \
 			 libmemcached-1.0/struct/server.h \
+			 libmemcached-1.0/struct/configuration_server.h \
 			 libmemcached-1.0/struct/stat.h \
 			 libmemcached-1.0/struct/string.h
 

@@ -34,6 +34,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 
@@ -681,6 +691,14 @@ memcached_server_write_instance_st memcached_io_get_readable_server(memcached_st
 #define MAX_SERVERS_TO_POLL 100
   struct pollfd fds[MAX_SERVERS_TO_POLL];
   nfds_t host_index= 0;
+  memcached_server_write_instance_st config_instance = memcached_config_server_fetch(memc);
+  if(config_instance != NULL) {
+    if(config_instance->read_buffer_length > 0  /* I have data in the buffer */
+        || memcached_server_response_count(config_instance) > 0)
+    {
+          return config_instance;
+    }
+  }
 
   for (uint32_t x= 0; x < memcached_server_count(memc) and host_index < MAX_SERVERS_TO_POLL; ++x)
   {

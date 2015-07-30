@@ -24,6 +24,16 @@
  * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 /*
  * Summary: Constants used by to implement the binary protocol.
@@ -164,6 +174,18 @@ extern "C"
         PROTOCOL_BINARY_CMD_TAP_CHECKPOINT_START = 0x46,
         PROTOCOL_BINARY_CMD_TAP_CHECKPOINT_END = 0x47,
         /* End TAP */
+
+        /* Configuration storage commands */
+        PROTOCOL_BINARY_CMD_CONFIG_GET = 0x60,
+        PROTOCOL_BINARY_CMD_CONFIG_GETQ = 0x61,
+        PROTOCOL_BINARY_CMD_CONFIG_GETK = 0x62,
+        PROTOCOL_BINARY_CMD_CONFIG_GETKQ = 0x63,
+        PROTOCOL_BINARY_CMD_CONFIG_SET = 0x64,
+        PROTOCOL_BINARY_CMD_CONFIG_SETQ = 0x65,
+        PROTOCOL_BINARY_CMD_CONFIG_DELETE = 0x66,
+        PROTOCOL_BINARY_CMD_CONFIG_DELETEQ = 0x67,
+        PROTOCOL_BINARY_CMD_CONFIG_LIST = 0x68,
+        /* End Configuration storage commands */
 
         PROTOCOL_BINARY_CMD_LAST_RESERVED = 0xef,
 
@@ -721,6 +743,43 @@ extern "C"
     /**
      * @}
      */
+
+    /**
+     * Definition of a request for a configuration operation.
+     */
+    typedef protocol_binary_request_get protocol_binary_request_config_get;
+    typedef protocol_binary_request_get protocol_binary_request_config_getq;
+    typedef protocol_binary_request_get protocol_binary_request_config_getk;
+    typedef protocol_binary_request_get protocol_binary_request_config_getkq;
+
+    typedef union {
+        struct {
+            protocol_binary_request_header header;
+            struct {
+                uint32_t flags;
+            } body;
+        } message;
+        uint8_t bytes[sizeof(protocol_binary_request_header) + 4];
+    } protocol_binary_request_config_set;
+    typedef protocol_binary_request_config_set protocol_binary_request_config_setq;
+
+    typedef protocol_binary_request_no_extras protocol_binary_request_config_delete;
+    typedef protocol_binary_request_no_extras protocol_binary_request_config_deleteq;
+
+    typedef protocol_binary_request_get protocol_binary_request_config_list;
+
+    /**
+     * Definition of a response for a configuration operation.
+     */
+    typedef protocol_binary_response_get protocol_binary_response_config_get;
+    typedef protocol_binary_response_get protocol_binary_response_config_getq;
+    typedef protocol_binary_response_get protocol_binary_response_config_getk;
+    typedef protocol_binary_response_get protocol_binary_response_config_getkq;
+    typedef protocol_binary_response_set protocol_binary_response_config_set;
+    typedef protocol_binary_response_set protocol_binary_response_config_setq;
+    typedef protocol_binary_response_no_extras protocol_binary_response_config_delete;
+    typedef protocol_binary_response_no_extras protocol_binary_response_config_deleteq;
+    typedef protocol_binary_response_get protocol_binary_response_config_list;
 
 #ifdef __cplusplus
 }

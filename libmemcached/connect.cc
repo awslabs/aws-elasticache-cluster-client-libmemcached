@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 
@@ -170,8 +180,19 @@ static memcached_return_t set_hostinfo(memcached_server_st *server)
   }
 
   server->address_info= NULL;
+
+  char *endpoint;
+  if(has_memcached_server_ipaddress(server))
+  {
+    endpoint = server->ipaddress;
+  }
+  else
+  {
+    endpoint  = server->hostname;
+  }
+
   int errcode;
-  switch(errcode= getaddrinfo(server->hostname, str_port, &hints, &server->address_info))
+  switch(errcode= getaddrinfo(endpoint, str_port, &hints, &server->address_info))
   {
   case 0:
     break;
@@ -711,5 +732,11 @@ memcached_return_t memcached_connect_try(memcached_server_write_instance_st serv
 
 memcached_return_t memcached_connect(memcached_server_write_instance_st server)
 {
+  return _memcached_connect(server, true);
+}
+
+memcached_return_t memcached_connect_new_ipaddress(memcached_server_write_instance_st server)
+{
+  set_hostinfo(server);
   return _memcached_connect(server, true);
 }

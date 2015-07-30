@@ -165,6 +165,18 @@ extern "C"
         PROTOCOL_BINARY_CMD_TAP_CHECKPOINT_END = 0x47,
         /* End TAP */
 
+        /* Configuration storage commands */
+        PROTOCOL_BINARY_CMD_CONFIG_GET = 0x60,
+        PROTOCOL_BINARY_CMD_CONFIG_GETQ = 0x61,
+        PROTOCOL_BINARY_CMD_CONFIG_GETK = 0x62,
+        PROTOCOL_BINARY_CMD_CONFIG_GETKQ = 0x63,
+        PROTOCOL_BINARY_CMD_CONFIG_SET = 0x64,
+        PROTOCOL_BINARY_CMD_CONFIG_SETQ = 0x65,
+        PROTOCOL_BINARY_CMD_CONFIG_DELETE = 0x66,
+        PROTOCOL_BINARY_CMD_CONFIG_DELETEQ = 0x67,
+        PROTOCOL_BINARY_CMD_CONFIG_LIST = 0x68,
+        /* End Configuration storage commands */
+
         PROTOCOL_BINARY_CMD_LAST_RESERVED = 0xef,
 
         /* Scrub the data */

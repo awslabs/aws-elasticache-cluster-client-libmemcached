@@ -374,7 +374,8 @@ bool Memcached::build(size_t argc, const char *argv[])
     add_option("-u", "root");
   }
 
-  add_option("-l", "localhost");
+  //Commenting out localhost option to test replace node scenario.
+  //add_option("-l", "localhost");
   add_option("-m", "128");
   add_option("-M");
 

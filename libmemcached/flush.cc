@@ -32,6 +32,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <libmemcached/common.h>
@@ -153,6 +163,16 @@ memcached_return_t memcached_flush(memcached_st *ptr, time_t expiration)
   if (memcached_failed(rc= initialize_query(ptr, true)))
   {
     return rc;
+  }
+
+  // only attempt periodic polling in dynamic mode
+  if(memcached_is_dynamic_client_mode(ptr))
+  {
+    // periodic polling touchpoint
+    if (is_time_to_poll(ptr)) 
+    {
+      update_server_list(ptr);
+    }
   }
 
   bool reply= memcached_is_replying(ptr);

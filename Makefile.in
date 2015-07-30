@@ -1536,7 +1536,7 @@ noinst_HEADERS = libtest/timer.hpp libtest/binaries.h libtest/cpu.hpp \
 	libtest/blobslap_worker.h libtest/callbacks.h \
 	libtest/cmdline.h libtest/collection.h libtest/common.h \
 	libtest/comparison.hpp libtest/core.h libtest/dream.h \
-	libtest/error.h libtest/failed.h libtest/fatal.hpp \
+	libtest/error.h libtest/failed.h libtest/fatal.hpp libtest/dynamic_mode.h \
 	libtest/framework.h libtest/gearmand.h libtest/drizzled.h \
 	libtest/get.h libtest/has.hpp libtest/http.hpp \
 	libtest/is_pid.hpp libtest/is_local.hpp libtest/killpid.h \
@@ -1786,7 +1786,7 @@ libtest_libtest_la_LIBADD = $(PTHREAD_LIBS) $(CURL_LIBS) \
 	$(am__append_15) $(am__append_20)
 libtest_libtest_la_SOURCES = libtest/binaries.cc libtest/cmdline.cc \
 	libtest/comparison.cc libtest/collection.cc libtest/core.cc \
-	libtest/cpu.cc libtest/dream.cc libtest/fatal.cc \
+	libtest/cpu.cc libtest/dream.cc libtest/fatal.cc libtest/dynamic_mode.cc \
 	libtest/framework.cc libtest/has.cc libtest/drizzled.cc \
 	libtest/http.cc libtest/is_local.cc libtest/killpid.cc \
 	libtest/libtool.cc libtest/main.cc libtest/port.cc \

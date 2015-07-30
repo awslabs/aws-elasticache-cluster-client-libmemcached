@@ -418,5 +418,34 @@ std::string server_startup_st::option_string() const
   return temp;
 }
 
+/*
+void server_startup_st::set_config_for_dynamic_mode()
+{
+  std::string buffer;
+  uint32_t count_server = servers.size();
+  if(socket())
+  {
+    //The last server is socket server.  Dynamic mode does not operate in mixed mode with tcp and socket servers.
+    count_server--;
+  }
 
+  for(uint32_t i=0; i<count_server; i++)
+  {
+    Server *server = servers[i];
+    buffer+= "localhost|127.0.0.1|";
+    char port[6];
+    sprintf(port,"%d ", server->port());
+    buffer += port;
+  }
+
+  const char *servers_config= buffer.c_str();
+
+  for(uint32_t i=0; i<count_server; i++)
+  {
+    Server *server = servers[i];
+    set_config(servers_config, server->port(), "1");
+  }
+
+}
+*/
 } // namespace libtest

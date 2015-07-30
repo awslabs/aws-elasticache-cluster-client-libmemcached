@@ -79,6 +79,10 @@ public:
 
   std::string option_string() const;
 
+  std::string get_server_list_for_dynamic_mode() const;
+
+  void set_config_for_dynamic_mode();
+
   const std::string& password() const
   {
     return _password;

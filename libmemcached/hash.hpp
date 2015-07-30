@@ -38,3 +38,5 @@
 #pragma once
 
 uint32_t memcached_generate_hash_with_redistribution(memcached_st *ptr, const char *key, size_t key_length);
+
+uint32_t memcached_generate_hash_with_redistribution_skip_polling(memcached_st *ptr, const char *key, size_t key_length);

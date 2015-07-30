@@ -34,6 +34,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 /*
@@ -92,13 +102,15 @@ LIBMEMCACHED_LOCAL
 memcached_server_write_instance_st memcached_server_instance_fetch(memcached_st *ptr, uint32_t server_key);
 
 LIBMEMCACHED_LOCAL
+memcached_server_write_instance_st memcached_config_server_fetch(memcached_st *ptr);
+
+LIBMEMCACHED_LOCAL
 memcached_return_t memcached_server_execute(memcached_st *ptr,
                                             memcached_server_execute_fn callback,
                                             void *context);
 #ifdef __cplusplus
 } // extern "C"
 #endif
-
 
 /* These are private not to be installed headers */
 #include <libmemcached/error.hpp>
@@ -164,6 +176,21 @@ extern "C" {
 
 LIBMEMCACHED_LOCAL
 memcached_return_t run_distribution(memcached_st *ptr);
+
+LIBMEMCACHED_LOCAL
+memcached_server_list_st get_server_list_if_dynamic_mode(memcached_st *ptr, const memcached_server_list_st list, memcached_return_t *error);
+
+LIBMEMCACHED_LOCAL
+memcached_return_t add_servers_to_client(memcached_st *ptr, const memcached_server_list_st list);
+
+LIBMEMCACHED_LOCAL
+bool is_time_to_poll(memcached_st *ptr);
+
+LIBMEMCACHED_LOCAL
+void update_server_list(memcached_st *ptr);
+
+LIBMEMCACHED_LOCAL
+memcached_return_t complete_dynamic_initialization(memcached_st *ptr, const char *config);
 
 #define memcached_server_response_increment(A) (A)->cursor_active++
 #define memcached_server_response_decrement(A) (A)->cursor_active--

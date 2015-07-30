@@ -33,14 +33,25 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <libmemcached/common.h>
 #include <libmemcached/string.hpp>
 
-static memcached_return_t textual_value_fetch(memcached_server_write_instance_st instance,
+static memcached_return_t textual_fetch(memcached_server_write_instance_st instance,
                                               char *buffer,
-                                              memcached_result_st *result)
+                                              memcached_result_st *result,
+                                              int header_prefix_length)
 {
   char *next_ptr;
   ssize_t read_length= 0;
@@ -52,7 +63,7 @@ static memcached_return_t textual_value_fetch(memcached_server_write_instance_st
   memcached_result_reset(result);
 
   char *string_ptr= buffer;
-  string_ptr+= 6; /* "VALUE " */
+  string_ptr+= header_prefix_length;
 
 
   // Just used for cases of AES decrypt currently
@@ -76,7 +87,6 @@ static memcached_return_t textual_value_fetch(memcached_server_write_instance_st
     }
     result->item_key[result->key_length]= 0;
   }
-
   if (end_ptr == string_ptr)
   {
     goto read_error;
@@ -205,6 +215,29 @@ read_error:
   memcached_io_reset(instance);
 
   return MEMCACHED_PARTIAL_READ;
+}
+
+/**
+ * Parse the memcached response for config cmd. Here is sample response:
+ * COMMAND:
+ * config get cluster
+ *   
+ * RESPONSE:
+ * CONFIG cluster 0 33
+ * testcachehost.amazonaws.com:11211
+ *
+ */
+static memcached_return_t textual_config_fetch(memcached_server_write_instance_st ptr,
+                                              char *buffer,
+                                              memcached_result_st *result)
+{
+  return textual_fetch(ptr, buffer, result, 7);/* header_prefix_length=7, "CONFIG " */
+}
+
+static memcached_return_t textual_value_fetch(memcached_server_write_instance_st ptr,
+                                              char *buffer,
+                                              memcached_result_st *result){
+  return textual_fetch(ptr, buffer, result, 6); /* header_prefix_length= 6; "VALUE " */
 }
 
 static memcached_return_t textual_read_one_response(memcached_server_write_instance_st instance,
@@ -409,7 +442,7 @@ static memcached_return_t textual_read_one_response(memcached_server_write_insta
     }
     break;
 
-  case 'C': /* CLIENT ERROR */
+  case 'C':
     {
       // CLIENT_ERROR
       if (buffer[1] == 'L' and buffer[2] == 'I' and buffer[3] == 'E' and buffer[4] == 'N' and buffer[5] == 'T'
@@ -417,6 +450,11 @@ static memcached_return_t textual_read_one_response(memcached_server_write_insta
           and buffer[7] == 'E' and buffer[8] == 'R' and buffer[9] == 'R' and buffer[10] == 'O' and buffer[11] == 'R')
       {
         return MEMCACHED_CLIENT_ERROR;
+      }else if (buffer[1] == 'O' and buffer[2] == 'N' and buffer[3] == 'F' and buffer[4] == 'I'  and buffer[5] == 'G') /* CONFIG */
+      {
+        /* We add back in one because we will need to search for END */
+        memcached_server_response_increment(instance);
+        return textual_config_fetch(instance, buffer, result);
       }
     }
     break;
@@ -502,6 +540,7 @@ static memcached_return_t binary_read_one_response(memcached_server_write_instan
   {
     switch (header.response.opcode)
     {
+    case PROTOCOL_BINARY_CMD_CONFIG_GETKQ:
     case PROTOCOL_BINARY_CMD_GETKQ:
       /*
        * We didn't increment the response counter for the GETKQ packet
@@ -509,6 +548,8 @@ static memcached_return_t binary_read_one_response(memcached_server_write_instan
        */
       memcached_server_response_increment(instance);
       /* FALLTHROUGH */
+    case PROTOCOL_BINARY_CMD_CONFIG_GETK:
+    case PROTOCOL_BINARY_CMD_CONFIG_GET:
     case PROTOCOL_BINARY_CMD_GETK:
       {
         uint16_t keylen= header.response.keylen;
@@ -703,6 +744,7 @@ static memcached_return_t binary_read_one_response(memcached_server_write_instan
         memcached_string_set_length(&result->value, bodylen);
       }
       break;
+
     default:
       {
         /* Command not implemented yet! */
@@ -776,8 +818,33 @@ static memcached_return_t binary_read_one_response(memcached_server_write_instan
       rc= MEMCACHED_AUTH_FAILURE;
       break;
 
-    case PROTOCOL_BINARY_RESPONSE_EINVAL:
     case PROTOCOL_BINARY_RESPONSE_UNKNOWN_COMMAND:
+      // It is an expected use case that the server
+      // may not understand the CONFIG GET commands.
+      //
+      // If the operation it does not understand
+      // is a CONFIG operation, then return MEMCACHED_NOTFOUND instead.
+      switch (header.response.opcode)
+      {
+      case PROTOCOL_BINARY_CMD_CONFIG_GET:
+      case PROTOCOL_BINARY_CMD_CONFIG_GETQ:
+      case PROTOCOL_BINARY_CMD_CONFIG_GETK:
+      case PROTOCOL_BINARY_CMD_CONFIG_GETKQ:
+      case PROTOCOL_BINARY_CMD_CONFIG_SET:
+      case PROTOCOL_BINARY_CMD_CONFIG_SETQ:
+      case PROTOCOL_BINARY_CMD_CONFIG_DELETE:
+      case PROTOCOL_BINARY_CMD_CONFIG_DELETEQ:
+      case PROTOCOL_BINARY_CMD_CONFIG_LIST:
+        rc = MEMCACHED_NOTFOUND;
+        break;
+
+      // if UNKNOWN_COMMAND and not a config protocol command
+      default:
+        return memcached_set_error(*instance, MEMCACHED_UNKNOWN_READ_FAILURE, MEMCACHED_AT);
+      }
+      break;
+
+    case PROTOCOL_BINARY_RESPONSE_EINVAL:
     default:
       return memcached_set_error(*instance, MEMCACHED_UNKNOWN_READ_FAILURE, MEMCACHED_AT);
       break;

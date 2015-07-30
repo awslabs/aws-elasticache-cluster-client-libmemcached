@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <libmemcached/common.h>
@@ -59,6 +69,41 @@ memcached_return_t memcached_behavior_set(memcached_st *ptr,
 
   switch (flag)
   {
+  case MEMCACHED_BEHAVIOR_CLIENT_MODE:
+  {
+    uint32_t mode = (uint32_t)data;
+    if(mode != STATIC_MODE && mode != DYNAMIC_MODE && mode != UNDEFINED)
+    {
+      return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                       memcached_literal_param("MEMCACHED_BEHAVIOR_CLIENT_MODE requires either STATIC_MODE, DYNAMIC_MODE or UNDEFINED."));
+    }
+
+    // UDP is not supported in DYNAMIC mode
+    if (memcached_is_udp(ptr) && mode == DYNAMIC_MODE)
+    {
+      return memcached_set_error(*ptr, MEMCACHED_NOT_SUPPORTED, MEMCACHED_AT,
+                                       memcached_literal_param("MEMCACHED_BEHAVIOR_CLIENT_MODE cannot be set to DYNAMIC_MODE if MEMCACHED_BEHAVIOR_USE_UDP is enabled."));
+    }
+
+    ptr->flags.client_mode = (memcached_client_mode)mode;
+    break;
+  }
+
+  case MEMCACHED_BEHAVIOR_DYNAMIC_POLLING_THRESHOLD_SECS:
+  {
+    uint32_t threshold_secs = (uint32_t)data;
+    if (threshold_secs > 0)
+    {
+      ptr->polling.threshold_secs = threshold_secs;
+    }
+    else
+    {
+      return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                       memcached_literal_param("MEMCACHED_BEHAVIOR_DYNAMIC_POLLING_THRESHOLD_SECS requires a value greater then zero."));
+    }
+    break;
+  }
+
   case MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS:
     ptr->number_of_replicas= (uint32_t)data;
     break;
@@ -96,7 +141,7 @@ memcached_return_t memcached_behavior_set(memcached_st *ptr,
     break;
 
   case MEMCACHED_BEHAVIOR_BINARY_PROTOCOL:
-    send_quit(ptr); // We need t shutdown all of the connections to make sure we do the correct protocol
+    send_quit(ptr); // We need to shutdown all of the connections to make sure we do the correct protocol
     if (data)
     {
       ptr->flags.verify_key= false;
@@ -124,7 +169,16 @@ memcached_return_t memcached_behavior_set(memcached_st *ptr,
     break;
 
   case MEMCACHED_BEHAVIOR_USE_UDP:
-    send_quit(ptr); // We need t shutdown all of the connections to make sure we do the correct protocol
+    send_quit(ptr); // We need to shutdown all of the connections to make sure we do the correct protocol
+
+    // if trying to set the flag to enable UDP
+    // and in dynamic mode, then return NOT SUPPORTED
+    if(memcached_is_dynamic_client_mode(ptr) && bool(data))
+    {
+      return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                 memcached_literal_param("MEMCACHED_BEHAVIOR_USE_UDP cannot be enabled while MEMCACHED_BEHAVIOR_CLIENT_MODE is set to DYNAMIC_MODE."));
+    }
+
     ptr->flags.use_udp= bool(data);
     if (bool(data))
     {
@@ -294,6 +348,12 @@ uint64_t memcached_behavior_get(memcached_st *ptr,
 
   switch (flag)
   {
+  case MEMCACHED_BEHAVIOR_CLIENT_MODE:
+    return ptr->flags.client_mode;
+
+  case MEMCACHED_BEHAVIOR_DYNAMIC_POLLING_THRESHOLD_SECS:
+    return ptr->polling.threshold_secs;
+
   case MEMCACHED_BEHAVIOR_NUMBER_OF_REPLICAS:
     return ptr->number_of_replicas;
 
@@ -477,7 +537,7 @@ uint64_t memcached_behavior_get(memcached_st *ptr,
 
   case MEMCACHED_BEHAVIOR_MAX:
   default:
-    assert_msg(0, "Invalid behavior passed to memcached_behavior_set()");
+    assert_msg(0, "Invalid behavior passed to memcached_behavior_get()");
     return 0;
   }
 
@@ -583,6 +643,8 @@ const char *libmemcached_string_behavior(const memcached_behavior_t flag)
   case MEMCACHED_BEHAVIOR_TCP_KEEPALIVE: return "MEMCACHED_BEHAVIOR_TCP_KEEPALIVE";
   case MEMCACHED_BEHAVIOR_TCP_KEEPIDLE: return "MEMCACHED_BEHAVIOR_TCP_KEEPIDLE";
   case MEMCACHED_BEHAVIOR_LOAD_FROM_FILE: return "MEMCACHED_BEHAVIOR_LOAD_FROM_FILE";
+  case MEMCACHED_BEHAVIOR_CLIENT_MODE: return "MEMCACHED_BEHAVIOR_CLIENT_MODE";
+  case MEMCACHED_BEHAVIOR_DYNAMIC_POLLING_THRESHOLD_SECS: return "MEMCACHED_BEHAVIOR_DYNAMIC_POLLING_THRESHOLD_SECS";
   default:
   case MEMCACHED_BEHAVIOR_MAX: return "INVALID memcached_behavior_t";
   }

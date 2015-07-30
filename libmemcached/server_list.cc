@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 
@@ -41,7 +51,7 @@
 
 memcached_server_list_st 
 memcached_server_list_append_with_weight(memcached_server_list_st ptr,
-                                         const char *hostname, in_port_t port,
+                                         const char *hostname, const char *ipaddress, in_port_t port,
                                          uint32_t weight,
                                          memcached_return_t *error)
 {
@@ -82,8 +92,15 @@ memcached_server_list_append_with_weight(memcached_server_list_st ptr,
   }
 
   memcached_string_t _hostname= { memcached_string_make_from_cstr(hostname) };
+
+  if(ipaddress == NULL){
+    ipaddress = "";
+  }
+
+  memcached_string_t _ipaddress = { memcached_string_make_from_cstr(ipaddress) };
+
   /* @todo Check return type */
-  if (__server_create_with(NULL, &new_host_list[count-1], _hostname, port, weight, port ? MEMCACHED_CONNECTION_TCP : MEMCACHED_CONNECTION_UNIX_SOCKET) == NULL)
+  if (__server_create_with(NULL, &new_host_list[count-1], _hostname, _ipaddress, port, weight, port ? MEMCACHED_CONNECTION_TCP : MEMCACHED_CONNECTION_UNIX_SOCKET) == NULL)
   {
     *error= memcached_set_errno(*ptr, MEMCACHED_MEMORY_ALLOCATION_FAILURE, MEMCACHED_AT);
     return NULL;
@@ -102,11 +119,27 @@ memcached_server_list_append_with_weight(memcached_server_list_st ptr,
 }
 
 memcached_server_list_st
+memcached_server_list_append_with_weight(memcached_server_list_st ptr,
+                                         const char *hostname, in_port_t port,
+                                         uint32_t weight,
+                                         memcached_return_t *error){
+  return memcached_server_list_append_with_weight(ptr, hostname, "", port, weight, error);
+}
+
+memcached_server_list_st
 memcached_server_list_append(memcached_server_list_st ptr,
                              const char *hostname, in_port_t port,
                              memcached_return_t *error)
 {
   return memcached_server_list_append_with_weight(ptr, hostname, port, 0, error);
+}
+
+memcached_server_list_st
+memcached_server_list_append_with_ipaddress(memcached_server_list_st ptr,
+                             const char *hostname, const char *ipaddress,
+                             in_port_t port, memcached_return_t *error)
+{
+  return memcached_server_list_append_with_weight(ptr, hostname, ipaddress, port, 0, error);
 }
 
 uint32_t memcached_server_list_count(const memcached_server_list_st self)
@@ -129,6 +162,14 @@ memcached_server_st *memcached_server_list(const memcached_st *self)
 void memcached_server_list_set(memcached_st *self, memcached_server_st *list)
 {
   self->servers= list;
+}
+
+/**
+ * Setter for the configuration server in client object.
+ */
+void memcached_configserver_set(memcached_st *self, memcached_server_st *configserver)
+{
+  self->configserver= configserver;
 }
 
 void memcached_server_list_free(memcached_server_list_st self)

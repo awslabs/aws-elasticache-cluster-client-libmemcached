@@ -33,10 +33,21 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <libmemcached/common.h>
 
+#include <pthread.h>
 #include <libmemcached/options.hpp>
 #include <libmemcached/virtual_bucket.h>
 
@@ -46,6 +57,7 @@ static inline bool _memcached_init(memcached_st *self)
   self->state.is_processing_input= false;
   self->state.is_time_for_rebuild= false;
 
+  self->flags.client_mode = UNDEFINED;
   self->flags.auto_eject_hosts= false;
   self->flags.binary_protocol= false;
   self->flags.buffer_requests= false;
@@ -121,6 +133,16 @@ static inline bool _memcached_init(memcached_st *self)
   self->configure.version= -1;
   self->configure.filename= NULL;
 
+  self->configserver = NULL;
+
+  // Polling 
+  self->polling.last_attempted = 0L;
+  self->polling.last_successful = 0L;
+  self->polling.last_server_key = -1;
+  self->polling.threshold_secs = MEMCACHED_POLLING_TIMEOUT_SECS;
+  self->polling.current_config_version = 0;
+  self->polling.current_config = NULL;
+
   return true;
 }
 
@@ -129,6 +151,7 @@ static void __memcached_free(memcached_st *ptr, bool release_st)
   /* If we have anything open, lets close it now */
   send_quit(ptr);
   memcached_server_list_free(memcached_server_list(ptr));
+  memcached_server_free(ptr->configserver);
   memcached_result_free(&ptr->result);
 
   memcached_virtual_bucket_free(ptr);
@@ -160,7 +183,9 @@ static void __memcached_free(memcached_st *ptr, bool release_st)
 
   hashkit_free(&ptr->hashkit);
 
-  if (memcached_is_allocated(ptr) and release_st)
+  libmemcached_free(NULL, ptr->polling.current_config);
+
+  if (memcached_is_allocated(ptr) && release_st)
   {
     libmemcached_free(ptr, ptr);
   }
@@ -421,6 +446,11 @@ void *memcached_set_user_data(memcached_st *ptr, void *data)
 
 memcached_return_t memcached_push(memcached_st *destination, const memcached_st *source)
 {
+  if(memcached_is_dynamic_client_mode(source))
+  {
+    return memcached_server_push(destination, source->configserver);
+  }
+
   return memcached_server_push(destination, source->servers);
 }
 
@@ -432,6 +462,14 @@ memcached_server_write_instance_st memcached_server_instance_fetch(memcached_st 
   }
 
   return &ptr->servers[server_key];
+}
+
+/**
+ * Return the configuration server object.
+ */
+memcached_server_write_instance_st memcached_config_server_fetch(memcached_st *ptr)
+{
+  return ptr->configserver;
 }
 
 memcached_server_instance_st memcached_server_instance_by_position(const memcached_st *ptr, uint32_t server_key)

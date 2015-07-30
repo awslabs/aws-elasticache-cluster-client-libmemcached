@@ -37,6 +37,7 @@
 #include <config.h>
 
 #include <libtest/test.hpp>
+#include <libtest/dynamic_mode.h>
 
 #if defined(LIBTEST_WITH_LIBMEMCACHED_SUPPORT) && LIBTEST_WITH_LIBMEMCACHED_SUPPORT
 #include <libmemcached-1.0/memcached.h>
@@ -925,6 +926,26 @@ test_st http_tests[] ={
   {0, 0, 0}
 };
 
+/*
+test_st dynamic_mode_tests[] = {
+  {"check_bad_config_with_no_newline", 0, check_bad_config_with_no_newline },
+  {"check_bad_config_with_missing_pipe", 0, check_bad_config_with_missing_pipe },
+  {"check_bad_config_with_missing_pipe2", 0, check_bad_config_with_missing_pipe2 },
+  {"invalid_config", 0, check_invalid_config },
+  {"1host_config", 0, check_1host_config },
+  {"emptyip_config", 0, check_emptyip_config },
+  {"3host_config", 0, check_3host_config },
+  {"dynamic_mode_behavior_set", 0, check_dynamic_behavior_set },
+  {"static_mode_behavior_set", 0, check_static_behavior_set },
+  {"default_static_mode_behavior", 0, check_default_static_mode },
+  {"dynamic_mode_behavior_get", 0, check_dynamic_behavior_get },
+  {"static_mode_behavior_get", 0, check_static_behavior_get },
+  {"check_has_ipaddress_true", 0, check_has_ipaddress_true},
+  {"check_has_ipaddress_false", 0, check_has_ipaddress_false},
+  {"check_get_ipaddress", 0, check_get_ipaddress},
+  {0, 0, 0}
+};
+*/
 collection_st collection[] ={
   {"environment", 0, 0, environment_tests},
   {"return values", 0, 0, tests_log},
@@ -943,6 +964,7 @@ collection_st collection[] ={
   {"fatal", disable_fatal_exception, enable_fatal_exception, fatal_message_TESTS },
   {"number_of_cpus()", 0, 0, number_of_cpus_TESTS },
   {"create_tmpfile()", 0, 0, create_tmpfile_TESTS },
+  // {"dynamic_mode_unit_tests", 0, 0, dynamic_mode_tests},
   {0, 0, 0, 0}
 };
 

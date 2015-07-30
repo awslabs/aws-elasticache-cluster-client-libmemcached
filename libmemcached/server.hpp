@@ -32,6 +32,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 
@@ -42,6 +52,19 @@
 #endif
 
 #include <cassert>
+
+memcached_server_st *__configserver_connect(memcached_st *memc,
+                                                    memcached_server_write_instance_st configserver,
+                                                    const memcached_string_t& hostname,
+                                                    const in_port_t port);
+
+memcached_server_st *__server_create_with(memcached_st *memc,
+                                          memcached_server_write_instance_st host,
+                                          const memcached_string_t& hostname,
+                                          const memcached_string_t& ipaddress,
+                                          const in_port_t port,
+                                          uint32_t weight,
+                                          const memcached_connection_t type);
 
 memcached_server_st *__server_create_with(memcached_st *memc,
                                           memcached_server_write_instance_st host,

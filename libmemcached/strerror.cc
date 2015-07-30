@@ -33,6 +33,16 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  *  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
+ *
+ * Portions Copyright (C) 2012-2012 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * Licensed under the Amazon Software License (the "License"). You may not use this
+ * file except in compliance with the License. A copy of the License is located at
+ *  http://aws.amazon.com/asl/
+ * or in the "license" file accompanying this file. This file is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, express or
+ * implied. See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 #include <libmemcached/common.h>
@@ -49,6 +59,9 @@ const char *memcached_strerror(memcached_st *, memcached_return_t rc)
 
   case MEMCACHED_HOST_LOOKUP_FAILURE: // getaddrinfo only
     return "getaddrinfo() or getnameinfo() HOSTNAME LOOKUP FAILURE";
+
+  case MEMCACHED_NO_CONFIG_SERVER:
+    return "DYNAMIC MODE NO CONFIG SERVER FAILURE";
 
   case MEMCACHED_CONNECTION_FAILURE:
     return "CONNECTION FAILURE";

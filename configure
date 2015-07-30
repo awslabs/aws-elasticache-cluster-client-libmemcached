@@ -7584,11 +7584,7 @@ fi
 
 
 
-  if test "$pandora_building_from_vc" = "yes"; then :
-  ac_cv_warnings_as_errors=yes
-else
-  ac_cv_warnings_as_errors=no
-fi
+ac_cv_warnings_as_errors=no
 
   # Check whether --enable-gcc-profile-mode was given.
 if test "${enable_gcc_profile_mode+set}" = set; then :
@@ -18685,8 +18681,6 @@ $as_echo "$lt_cv_archive_cmds_need_lc_CXX" >&6; }
   fi
   ;;
 esac
-
-
 
 
 
