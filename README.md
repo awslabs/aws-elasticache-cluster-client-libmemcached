@@ -11,7 +11,7 @@ To compile the libmemcached library (verified on Amazon Linux 201503 AMI)
 
 3) Under the aws-elasticache-cluster-client-libmemcached/ directory, run the following commands
 
-> configure --prefix=<libmemcached-install-directory>
+> configure --prefix=\<libmemcached-install-directory\>
 
 > make
 
