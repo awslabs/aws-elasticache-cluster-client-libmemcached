@@ -11,7 +11,7 @@ To compile the libmemcached library (verified on Amazon Linux 201503 AMI)
 
 3) Under the aws-elasticache-cluster-client-libmemcached/ directory, run the following commands
 
-> configure
+> configure --prefix=<libmemcached-install-directory>
 
 > make
 
@@ -21,7 +21,7 @@ Note: if compilation fails due to warnings being treated as errors, update Makef
 
 Then track the installation directory path for libmemcached, as that will be needed to compile PHP memcached client. 
 
-Note: if you want to run the ElastiCache memcached PHP client on AMIs other than Amazon Linux, statically link the libmemcached library in the PHP-memcached clent compilation, which will generate memcached.so binary extension which should be portable across Linux platforms. 
+Note: if you want to run the ElastiCache memcached PHP client on AMIs other than Amazon Linux, statically link the libmemcached library in the PHP-memcached client compilation, which will generate memcached.so binary extension which should be portable across Linux platforms. 
 
 # Resources
 ---------
