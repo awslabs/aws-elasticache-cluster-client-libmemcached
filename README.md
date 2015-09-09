@@ -2,12 +2,16 @@
 
 Libmemcached library support for Amazon ElastiCache Memcached Cluster client for PHP. The client is available at https://github.com/awslabs/aws-elasticache-cluster-client-memcached-for-php
 
-To compile the libmemcached library (verified on Amazon Linux 201503 AMI)
+To compile the libmemcached library
 
 1) Launch the instance
 2) Install the library dependencies.
 
+a) On Amazon Linux 201503 AMI
 > sudo yum install gcc gcc-c++ autoconf libevent-devel 
+b) On Ubuntu 14.04 AMI
+> sudo apt-get update
+> sudo apt-get install libevent-dev gcc g++ make autoconf libsasl2-dev
 
 3) Under the aws-elasticache-cluster-client-libmemcached/ directory, run the following commands
 
