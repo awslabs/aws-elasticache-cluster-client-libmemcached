@@ -8,9 +8,13 @@ To compile the libmemcached library
 2) Install the library dependencies.
 
 a) On Amazon Linux 201503 AMI
+
 > sudo yum install gcc gcc-c++ autoconf libevent-devel 
+
 b) On Ubuntu 14.04 AMI
+
 > sudo apt-get update
+
 > sudo apt-get install libevent-dev gcc g++ make autoconf libsasl2-dev
 
 3) Under the aws-elasticache-cluster-client-libmemcached/ directory, run the following commands
