@@ -5,6 +5,7 @@ Libmemcached library support for Amazon ElastiCache Memcached Cluster client for
 To compile the libmemcached library
 
 1) Launch the instance
+
 2) Install the library dependencies.
 
 a) On Amazon Linux 201509 AMI
