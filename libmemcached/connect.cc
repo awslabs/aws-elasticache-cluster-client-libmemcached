@@ -268,29 +268,31 @@ static void set_socket_options(memcached_server_st *server)
   }
 
 #ifdef HAVE_SNDTIMEO
-  if (server->root->snd_timeout)
+  if (server->root->snd_timeout > 0)
   {
     struct timeval waittime;
 
-    waittime.tv_sec= 0;
-    waittime.tv_usec= server->root->snd_timeout;
+    waittime.tv_sec= server->root->snd_timeout / 1000000;
+    waittime.tv_usec= server->root->snd_timeout % 1000000;
 
     int error= setsockopt(server->fd, SOL_SOCKET, SO_SNDTIMEO,
-                      &waittime, (socklen_t)sizeof(struct timeval));
+                          (char*)&waittime, (socklen_t)sizeof(struct timeval));
+    (void)error;
     assert(error == 0);
   }
 #endif
 
 #ifdef HAVE_RCVTIMEO
-  if (server->root->rcv_timeout)
+  if (server->root->rcv_timeout > 0)
   {
     struct timeval waittime;
 
-    waittime.tv_sec= 0;
-    waittime.tv_usec= server->root->rcv_timeout;
+    waittime.tv_sec= server->root->rcv_timeout / 1000000;
+    waittime.tv_usec= server->root->rcv_timeout % 1000000;
 
     int error= setsockopt(server->fd, SOL_SOCKET, SO_RCVTIMEO,
-                          &waittime, (socklen_t)sizeof(struct timeval));
+                          (char*)&waittime, (socklen_t)sizeof(struct timeval));
+    (void)(error);
     assert(error == 0);
   }
 #endif
