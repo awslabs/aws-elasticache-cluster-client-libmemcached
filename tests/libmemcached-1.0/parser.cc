@@ -35,7 +35,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
@@ -44,11 +44,12 @@ using namespace libtest;
 #include <string>
 #include <cerrno>
 
-#include <libmemcached/memcached.h>
-#include <libmemcached/util.h>
+#include <libmemcached-1.0/memcached.h>
+#include <libmemcachedutil-1.0/util.h>
 
 #include <tests/libmemcached-1.0/parser.h>
 #include <tests/print.h>
+#include "libmemcached/instance.hpp"
 
 enum scanner_type_t
 {
@@ -84,7 +85,7 @@ struct scanner_variable_t {
 // Check and make sure the first host is what we expect it to be
 static test_return_t __check_host(memcached_st *memc, const scanner_string_st &hostname)
 {
-  memcached_server_instance_st instance=
+  const memcached_instance_st * instance=
     memcached_server_instance_by_position(memc, 0);
 
   test_true(instance);
@@ -187,6 +188,7 @@ scanner_variable_t test_number_options[]= {
 };
 
 scanner_variable_t test_boolean_options[]= {
+  { ARRAY,  make_scanner_string("--FETCH-VERSION"), scanner_string_null, NULL },
   { ARRAY,  make_scanner_string("--BINARY-PROTOCOL"), scanner_string_null, NULL },
   { ARRAY,  make_scanner_string("--BUFFER-REQUESTS"), scanner_string_null, NULL },
   { ARRAY,  make_scanner_string("--HASH-WITH-NAMESPACE"), scanner_string_null, NULL },
@@ -485,7 +487,7 @@ test_return_t random_statement_build_test(memcached_st*)
   {
     std::string random_options;
 
-    uint32_t number_of= random() % option_list.size();
+    uint32_t number_of= random() % uint32_t(option_list.size());
     for (uint32_t options= 0; options < number_of; options++)
     {
       size_t option_list_position= random() % option_list.size();
@@ -615,7 +617,7 @@ test_return_t random_statement_build_test(memcached_st*)
 }
 
 static memcached_return_t dump_server_information(const memcached_st *,
-                                                  const memcached_server_st *instance,
+                                                  const memcached_instance_st * instance,
                                                   void *)
 {
   if (strcmp(memcached_server_name(instance), "localhost")) 
@@ -661,23 +663,36 @@ test_return_t test_hostname_port_weight(memcached_st *)
 struct socket_weight_t {
   const char *socket;
   size_t weight;
+  const char* type;
 };
 
 static memcached_return_t dump_socket_information(const memcached_st *,
-                                                  const memcached_server_st *instance,
+                                                  const memcached_instance_st * instance,
                                                   void *context)
 {
   socket_weight_t *check= (socket_weight_t *)context;
 
-  if (strcmp(memcached_server_name(instance), check->socket))
+  if (strcmp(memcached_server_type(instance), check->type) == 0)
   {
-    Error << memcached_server_name(instance) << " != " << check->socket;
-    return MEMCACHED_FAILURE;
+    if (strcmp(memcached_server_name(instance), check->socket) == 0)
+    {
+      if (instance->weight == check->weight)
+      {
+        return MEMCACHED_SUCCESS;
+      }
+      else
+      {
+        Error << instance->weight << " != " << check->weight;
+      }
+    }
+    else
+    {
+      Error << "'" << memcached_server_name(instance) << "'" << " != " << "'" << check->socket << "'";
+    }
   }
-
-  if (instance->weight == check->weight)
+  else
   {
-    return MEMCACHED_SUCCESS;
+    Error << "'" << memcached_server_type(instance) << "'" << " != " << "'" << check->type << "'";
   }
 
   return MEMCACHED_FAILURE;
@@ -695,7 +710,7 @@ test_return_t test_parse_socket(memcached_st *)
 
     memcached_st *memc= memcached(test_literal_param("--socket=\"/tmp/foo\""));
     test_true(memc);
-    socket_weight_t check= { "/tmp/foo", 1 };
+    socket_weight_t check= { "/tmp/foo", 1, "SOCKET"};
     test_compare(MEMCACHED_SUCCESS,
                  memcached_server_cursor(memc, callbacks, &check, 1));
     memcached_free(memc);
@@ -708,7 +723,7 @@ test_return_t test_parse_socket(memcached_st *)
 
     memcached_st *memc= memcached(test_literal_param("--socket=\"/tmp/foo\"/?23"));
     test_true(memc);
-    socket_weight_t check= { "/tmp/foo", 23 };
+    socket_weight_t check= { "/tmp/foo", 23, "SOCKET"};
     test_compare(MEMCACHED_SUCCESS,
                  memcached_server_cursor(memc, callbacks, &check, 1));
     memcached_free(memc);
@@ -747,7 +762,9 @@ test_return_t regression_bug_71231153_connect(memcached_st *)
 test_return_t regression_bug_71231153_poll(memcached_st *)
 {
   if (libmemcached_util_ping("10.0.2.252", 0, NULL)) // If for whatever reason someone has a host at this address, skip
+  {
     return TEST_SKIPPED;
+  }
 
   { // Test the poll timeout, on a bad host we should get MEMCACHED_CONNECTION_FAILURE
     memcached_st *memc= memcached(test_literal_param("--SERVER=10.0.2.252 --POLL-TIMEOUT=0"));

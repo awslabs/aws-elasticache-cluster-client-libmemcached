@@ -35,7 +35,8 @@
  *
  */
 
-#include <libmemcached/common.h>
+#include "mem_config.h"
+#include "libmemcached/byteorder.h"
 
 /* Byte swap a 64-bit number. */
 #ifndef swap64
@@ -45,7 +46,7 @@ static inline uint64_t swap64(uint64_t in)
   /* Little endian, flip the bytes around until someone makes a faster/better
    * way to do this. */
   uint64_t rv= 0;
-  for (uint8_t x= 0; x < 8; x++)
+  for (uint8_t x= 0; x < 8; ++x)
   {
     rv= (rv << 8) | (in & 0xff);
     in >>= 8;
@@ -58,28 +59,21 @@ static inline uint64_t swap64(uint64_t in)
 }
 #endif
 
+
+uint64_t memcached_ntohll(uint64_t value)
+{
 #ifdef HAVE_HTONLL
-
-uint64_t memcached_ntohll(uint64_t value)
-{
   return ntohll(value);
+#else
+  return swap64(value);
+#endif
 }
 
 uint64_t memcached_htonll(uint64_t value)
 {
+#ifdef HAVE_HTONLL
   return htonll(value);
-}
-
-#else // HAVE_HTONLL
-
-uint64_t memcached_ntohll(uint64_t value)
-{
+#else
   return swap64(value);
+#endif
 }
-
-uint64_t memcached_htonll(uint64_t value)
-{
-  return swap64(value);
-}
-
-#endif // HAVE_HTONLL

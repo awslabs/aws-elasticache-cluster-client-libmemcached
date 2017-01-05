@@ -39,7 +39,7 @@
 #pragma once
 
 #include "tests/libmemcached-1.0/generate.h"
-#include "tests/memc.h"
+#include "tests/memc.hpp"
 #include "tests/print.h"
 
 class LibmemcachedRunner : public libtest::Runner {
@@ -56,7 +56,7 @@ public:
 
   test_return_t flush(libmemcached_test_container_st *container)
   {
-    Memc memc(container->parent());
+    test::Memc memc(container->parent());
     memcached_flush(&memc, 0);
     memcached_quit(&memc);
 
@@ -78,7 +78,7 @@ private:
   {
     test_true(container);
     test_true(container->parent());
-    Memc memc(container->parent());
+    test::Memc memc(container->parent());
 
     test_compare(true, check());
 
@@ -86,14 +86,7 @@ private:
     if (func)
     {
       test_true(container);
-      try {
-        ret= func(&memc);
-      }
-      catch (std::exception& e)
-      {
-        libtest::Error << e.what();
-        ret= TEST_FAILURE;
-      }
+      ret= func(&memc);
     }
 
     return ret;
@@ -105,10 +98,9 @@ private:
     {
       char buffer[BUFSIZ];
 
-      test_compare_got(MEMCACHED_SUCCESS,
-                       libmemcached_check_configuration(container->construct.option_string().c_str(), container->construct.option_string().size(),
-                                                        buffer, sizeof(buffer)),
-                       container->construct.option_string().c_str());
+      test_compare(MEMCACHED_SUCCESS,
+                   libmemcached_check_configuration(container->construct.option_string().c_str(), container->construct.option_string().size(),
+                                                    buffer, sizeof(buffer)));
 
       test_null(container->parent());
       container->parent(memcached(container->construct.option_string().c_str(), container->construct.option_string().size()));

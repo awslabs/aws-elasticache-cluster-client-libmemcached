@@ -37,13 +37,13 @@
 
 #pragma once
 
-#include <arpa/inet.h>
-#include <cstdio>
-#include <cerrno>
 #include <cassert>
+#include <cerrno>
 #include <cstddef>
-#include <sys/socket.h>
+#include <cstdio>
+#include <netinet/in.h>
 #include <string>
+#include <sys/socket.h>
 
 #include "util/operation.hpp"
 

@@ -2,7 +2,7 @@
   C++ to libhashkit
 */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <libtest/test.hpp>
 
@@ -130,6 +130,12 @@ static test_return_t set_function_test(void *)
       list= hsieh_values;
       break;
 
+    case HASHKIT_HASH_MURMUR3:
+#ifdef WORDS_BIGENDIAN
+      continue;
+#endif
+      list= murmur3_values;
+      break;
     case HASHKIT_HASH_MURMUR:
 #ifdef WORDS_BIGENDIAN
       continue;
@@ -158,7 +164,7 @@ static test_return_t set_function_test(void *)
       hash_val= hashk.digest(*ptr, strlen(*ptr));
       char buffer[1024];
       snprintf(buffer, sizeof(buffer), "%lu %lus %s", (unsigned long)list[x], (unsigned long)hash_val, libhashkit_string_hash(*algo));
-      test_true_got(list[x] == hash_val, buffer);
+      test_compare(list[x], hash_val);
     }
   }
 
@@ -171,7 +177,7 @@ static test_return_t set_distribution_function_test(void *)
   hashkit_return_t rc;
 
   rc= hashk.set_distribution_function(HASHKIT_HASH_CUSTOM);
-  test_true_got(rc == HASHKIT_FAILURE or rc == HASHKIT_INVALID_ARGUMENT, hashkit_strerror(NULL, rc));
+  test_true(rc == HASHKIT_FAILURE or rc == HASHKIT_INVALID_ARGUMENT);
 
   test_compare(HASHKIT_SUCCESS,
                hashk.set_distribution_function(HASHKIT_HASH_JENKINS));
@@ -213,7 +219,7 @@ collection_st collection[] ={
   {0, 0, 0, 0}
 };
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
 }

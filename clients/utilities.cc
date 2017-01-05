@@ -1,4 +1,5 @@
 /* LibMemcached
+ * Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  * Copyright (C) 2006-2009 Brian Aker
  * All rights reserved.
  *
@@ -8,7 +9,7 @@
  * Summary:
  *
  */
-#include <config.h>
+#include <mem_config.h>
 
 #include <clients/utilities.h>
 
@@ -143,7 +144,9 @@ void process_hash_option(memcached_st *memc, char *opt_hash)
   memcached_return_t rc;
 
   if (opt_hash == NULL)
+  {
     return;
+  }
 
   set= MEMCACHED_HASH_DEFAULT; /* Just here to solve warning */
   if (!strcasecmp(opt_hash, "CRC"))
@@ -183,12 +186,12 @@ void process_hash_option(memcached_st *memc, char *opt_hash)
 void initialize_sockets(void)
 {
   /* Define the function for all platforms to avoid #ifdefs in each program */
-#if defined(WIN32) && WIN32
+#if defined(_WIN32)
   WSADATA wsaData;
   if (WSAStartup(MAKEWORD(2,0), &wsaData) != 0)
   {
     fprintf(stderr, "Socket Initialization Error. Program aborted\n");
     exit(EXIT_FAILURE);
   }
-#endif
+#endif // #if defined(_WIN32)
 }

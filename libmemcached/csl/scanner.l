@@ -46,19 +46,25 @@
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #pragma GCC diagnostic ignored "-Wunused-parameter"
+#pragma GCC diagnostic ignored "-Wmissing-declarations"
+#pragma GCC diagnostic ignored "-Wunused-result"
+#pragma GCC diagnostic ignored "-Wmissing-noreturn"
 #endif
 
-#define YY_NO_INPUT
+#ifdef __clang__
+#pragma GCC diagnostic ignored "-Wshorten-64-to-32"
+#endif
 
-#define YY_EXTRA_TYPE Context*
+#ifndef __INTEL_COMPILER
+#ifndef __clang__
+#pragma GCC diagnostic ignored "-Wlogical-op"
+#endif
+#endif
 
 }
 
 
 %{
-#include <cstdlib>
-#include <cstring>
-
 #define PARAM yyget_extra(yyscanner)
 
 #define get_lex_chars(buffer, result, max_size, context) \
@@ -76,15 +82,23 @@
   } \
 }
 
+#define YY_FATAL_ERROR(msg) \
+{ \
+}
+
 
 #define YY_INPUT(buffer, result, max_size) get_lex_chars(buffer, result, max_size, PARAM)
 
 %}
 
+%option nostdinit
 %option 8bit
+%option warn
 %option bison-bridge
+%option never-interactive
 %option case-insensitive
-%option debug
+%option nodefault
+%option noinput
 %option nounput
 %option noyywrap
 %option outfile="libmemcached/csl/scanner.cc" header-file="libmemcached/csl/scanner.h"
@@ -112,7 +126,7 @@
 
 "--SERVER="                          { yyextra->begin= yytext; yyextra->set_server(); return yyextra->previous_token= SERVER; }
 
-"--SOCKET="                          { yyextra->begin= yytext; return yyextra->previous_token= SOCKET; }
+"--SOCKET="                          { yyextra->begin= yytext; return yyextra->previous_token= CSL_SOCKET; }
 
 "--BINARY-PROTOCOL"			{ yyextra->begin= yytext; return yyextra->previous_token= BINARY_PROTOCOL; }
 "--BUFFER-REQUESTS"			{ yyextra->begin= yytext; return yyextra->previous_token= BUFFER_REQUESTS; }
@@ -148,15 +162,17 @@
 
 "--NAMESPACE="	       		        { yyextra->begin= yytext; return yyextra->previous_token= NAMESPACE; }
 
+"--FETCH-VERSION"	       		        { yyextra->begin= yytext; return yyextra->previous_token= FETCH_VERSION; }
+
 INCLUDE           { yyextra->begin= yytext; return yyextra->previous_token= INCLUDE; }
 RESET           { yyextra->begin= yytext; return yyextra->previous_token= RESET; }
 DEBUG           { yyextra->begin= yytext; return yyextra->previous_token= PARSER_DEBUG; }
 SERVERS           { yyextra->begin= yytext; return yyextra->previous_token= SERVERS; }
 END           { yyextra->begin= yytext; return yyextra->previous_token= END; }
-ERROR           { yyextra->begin= yytext; return yyextra->previous_token= ERROR; }
+CSL_ERROR           { yyextra->begin= yytext; return yyextra->previous_token= CSL_ERROR; }
 
-TRUE           { return yyextra->previous_token= TRUE; }
-FALSE           { return yyextra->previous_token= FALSE; }
+TRUE           { return yyextra->previous_token= CSL_TRUE; }
+FALSE           { return yyextra->previous_token= CSL_FALSE; }
 
 
 "--"[[:alnum:]]*   {
@@ -179,36 +195,26 @@ MURMUR			{ return MURMUR; }
 JENKINS			{ return JENKINS; }
 
 (([[:digit:]]{1,3}"."){3}([[:digit:]]{1,3})) {
-      yylval->server.port= MEMCACHED_DEFAULT_PORT;
-      yylval->server.weight= 1;
-      yylval->server.c_str= yyextra->set_hostname(yytext, yyleng);
-      if (yylval->server.c_str)
-        yylval->server.size= yyleng;
+      yyextra->hostname(yytext, yyleng, yylval->server);
       return IPADDRESS;
     }
 
 [[:alnum:]]["."[:alnum:]_-]+[[:alnum:]] {
       if (yyextra->is_server())
       {
-        yylval->server.port= MEMCACHED_DEFAULT_PORT;
-        yylval->server.weight= 1;
-        yylval->server.c_str= yyextra->set_hostname(yytext, yyleng);
-        if (yylval->server.c_str)
-          yylval->server.size= yyleng;
+        yyextra->hostname(yytext, yyleng, yylval->server);
 
         return HOSTNAME;
       }
 
-      yylval->string.c_str = yytext;
-      yylval->string.size = yyleng;
+      yyextra->string_buffer(yytext, yyleng, yylval->string);
 
       return STRING;
     }
 
 L?\"(\\.|[^\\"])*\" {
       yyget_text(yyscanner)[yyleng -1]= 0;
-      yylval->string.c_str= yytext +1;
-      yylval->string.size= yyleng -2;
+      yyextra->string_buffer(yytext +1, yyleng -2, yylval->string);
       return QUOTED_STRING;
     }
 
@@ -227,6 +233,7 @@ void Context::init_scanner()
 
 void Context::destroy_scanner()
 {
+  (void)yy_fatal_error; // Removes warning about unused yy_fatal_error()
   yylex_destroy(scanner);
 }
 

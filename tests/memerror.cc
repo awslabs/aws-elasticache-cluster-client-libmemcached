@@ -39,10 +39,10 @@
   Test that we are cycling the servers we are creating during testing.
 */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <libtest/test.hpp>
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 using namespace libtest;
 
@@ -111,13 +111,19 @@ collection_st collection[] ={
   {0, 0, 0, 0}
 };
 
-static void *world_create(server_startup_st&, test_return_t&)
+static void *world_create(server_startup_st&, test_return_t& error)
 {
+  if (libtest::has_memcached() == false)
+  {
+    error= TEST_SKIPPED;
+    return NULL;
+  }
+
   return NULL;
 }
 
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
   world->create(world_create);

@@ -40,7 +40,7 @@
   Sample test application.
 */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
@@ -62,6 +62,8 @@ using namespace libtest;
 #include <time.h>
 
 #include <libtest/server.h>
+
+#include "libmemcached/instance.hpp"
 
 #ifndef __INTEL_COMPILER
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
@@ -104,9 +106,9 @@ static void get_udp_request_ids(memcached_st *memc, Expected &ids)
 {
   for (uint32_t x= 0; x < memcached_server_count(memc); x++)
   {
-    memcached_server_instance_st instance= memcached_server_instance_by_position(memc, x);
+    const memcached_instance_st * instance= memcached_server_instance_by_position(memc, x);
 
-    ids.push_back(get_udp_datagram_request_id((struct udp_datagram_header_st *) ((memcached_server_instance_st )instance)->write_buffer));
+    ids.push_back(get_udp_datagram_request_id((struct udp_datagram_header_st *) ((const memcached_instance_st * )instance)->write_buffer));
   }
 }
 
@@ -143,7 +145,7 @@ static test_return_t init_udp(memcached_st *memc)
 
 static test_return_t init_udp_valgrind(memcached_st *memc)
 {
-  if (getenv("TESTS_ENVIRONMENT"))
+  if (getenv("LOG_COMPILER"))
   {
     return TEST_SKIPPED; 
   }
@@ -155,7 +157,7 @@ static test_return_t init_udp_valgrind(memcached_st *memc)
 
 static test_return_t binary_init_udp(memcached_st *memc)
 {
-  if (getenv("TESTS_ENVIRONMENT"))
+  if (getenv("LOG_COMPILER"))
   {
     return TEST_SKIPPED; 
   }
@@ -171,7 +173,7 @@ static test_return_t add_tcp_server_udp_client_test(memcached_st *memc)
   (void)memc;
 #if 0
   memcached_server_st server;
-  memcached_server_instance_st instance=
+  const memcached_instance_st * instance=
     memcached_server_instance_by_position(memc, 0);
   memcached_server_clone(&server, &memc->hosts[0]);
   test_true(memcached_server_remove(&(memc->hosts[0])) == MEMCACHED_SUCCESS);
@@ -186,7 +188,7 @@ static test_return_t add_udp_server_tcp_client_test(memcached_st *memc)
   (void)memc;
 #if 0
   memcached_server_st server;
-  memcached_server_instance_st instance=
+  const memcached_instance_st * instance=
     memcached_server_instance_by_position(memc, 0);
   memcached_server_clone(&server, &memc->hosts[0]);
   test_true(memcached_server_remove(&(memc->hosts[0])) == MEMCACHED_SUCCESS);
@@ -267,7 +269,7 @@ static test_return_t set_udp_behavior_test(memcached_st *memc)
 static test_return_t udp_set_test(memcached_st *memc)
 {
   // Assume we are running under valgrind, and bail 
-  if (getenv("TESTS_ENVIRONMENT"))
+  if (getenv("LOG_COMPILER"))
   {
     return TEST_SUCCESS; 
   }
@@ -282,7 +284,7 @@ static test_return_t udp_set_test(memcached_st *memc)
     get_udp_request_ids(memc, expected_ids);
     unsigned int server_key= memcached_generate_hash(memc, test_literal_param("foo"));
     test_true(server_key < memcached_server_count(memc));
-    memcached_server_instance_st instance= memcached_server_instance_by_position(memc, server_key);
+    const memcached_instance_st * instance= memcached_server_instance_by_position(memc, server_key);
     size_t init_offset= instance->write_buffer_offset;
 
     test_compare_hint(MEMCACHED_SUCCESS, 
@@ -347,7 +349,7 @@ static test_return_t udp_delete_test(memcached_st *memc)
     get_udp_request_ids(memc, expected_ids);
 
     unsigned int server_key= memcached_generate_hash(memc, test_literal_param("foo"));
-    memcached_server_instance_st instance= memcached_server_instance_by_position(memc, server_key);
+    const memcached_instance_st * instance= memcached_server_instance_by_position(memc, server_key);
     size_t init_offset= instance->write_buffer_offset;
 
     test_compare(MEMCACHED_SUCCESS,
@@ -481,7 +483,7 @@ static test_return_t udp_get_test(memcached_st *memc)
   size_t vlen;
   Expected expected_ids;
   get_udp_request_ids(memc, expected_ids);
-  test_null(memcached_get(memc, test_literal_param("foo"), &vlen, (uint32_t)0, &rc));
+  test_null(memcached_get(memc, test_literal_param("foo"), &vlen, NULL, &rc));
   test_compare(MEMCACHED_NOT_SUPPORTED, rc);
 
   return post_udp_op_check(memc, expected_ids);
@@ -564,7 +566,7 @@ collection_st collection[] ={
 
 #include "tests/libmemcached_world.h"
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
 

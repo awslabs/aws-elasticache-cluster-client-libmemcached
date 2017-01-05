@@ -34,22 +34,39 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 
-#include <libtest/test.hpp>
+#include <libtest/yatl.h>
 
-#if defined(LIBTEST_WITH_LIBMEMCACHED_SUPPORT) && LIBTEST_WITH_LIBMEMCACHED_SUPPORT
-#include <libmemcached-1.0/memcached.h>
+#if defined(HAVE_LIBMEMCACHED_1_0_TYPES_RETURN_H) && HAVE_LIBMEMCACHED_1_0_TYPES_RETURN_H
+# include <libmemcached-1.0/types/return.h>
 #endif
 
-#if defined(LIBTEST_WITH_LIBGEARMAN_SUPPORT) && LIBTEST_WITH_LIBGEARMAN_SUPPORT
-#include <libgearman/gearman.h>
+#if defined(HAVE_LIBGEARMAN_1_0_RETURN_H) && HAVE_LIBGEARMAN_1_0_RETURN_H
+# include <libgearman-1.0/return.h>
 #endif
 
 #include <cstdlib>
 #include <unistd.h>
 
 using namespace libtest;
+
+static std::string testing_service;
+
+// Used to track setups where we see if failure is happening
+static uint32_t fatal_calls= 0;
+
+static test_return_t getenv_TEST(void *)
+{
+#if 0
+  for (char **ptr= environ; *ptr; ptr++)
+  {
+    Error << *ptr;
+  }
+#endif
+
+  return TEST_SUCCESS;
+}
 
 static test_return_t LIBTOOL_COMMAND_test(void *)
 {
@@ -78,7 +95,7 @@ static test_return_t GDB_COMMAND_test(void *)
 static test_return_t test_success_equals_one_test(void *)
 {
   test_skip(HAVE_LIBMEMCACHED, 1);
-#if defined(HAVE_LIBMEMCACHED) && HAVE_LIBMEMCACHED 
+#if defined(HAVE_LIBMEMCACHED_1_0_TYPES_RETURN_H) && HAVE_LIBMEMCACHED_1_0_TYPES_RETURN_H
   test_zero(MEMCACHED_SUCCESS);
 #endif
   return TEST_SUCCESS;
@@ -89,11 +106,175 @@ static test_return_t test_success_test(void *)
   return TEST_SUCCESS;
 }
 
+static test_return_t test_throw_success_TEST(void *)
+{
+  try {
+    _SUCCESS;
+  }
+  catch (const libtest::__success&)
+  {
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    return TEST_FAILURE;
+  }
+
+  return TEST_FAILURE;
+}
+
+static test_return_t test_throw_skip_macro_TEST(void *)
+{
+  try {
+    SKIP_IF(true);
+  }
+  catch (const libtest::__skipped&)
+  {
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    FAIL("SLIP_IF() failed to throw libtest::_skipped");
+  }
+
+  FAIL("SLIP_IF() failed to throw");
+
+  return TEST_FAILURE;
+}
+
+static test_return_t test_throw_skip_unless_macro_TEST(void *)
+{
+  try {
+    SKIP_UNLESS(false);
+  }
+  catch (const libtest::__skipped&)
+  {
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    FAIL("SLIP_UNLESS() failed to throw libtest::_skipped");
+  }
+
+  FAIL("SLIP_UNLESS() failed to throw");
+
+  return TEST_FAILURE;
+}
+
+static test_return_t test_throw_skip_TEST(void *)
+{
+  try {
+    throw libtest::__skipped(LIBYATL_DEFAULT_PARAM, "basic test");
+  }
+  catch (const libtest::__skipped&)
+  {
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    FAIL("SLIP_IF() failed to throw libtest::_skipped");
+  }
+
+  FAIL("SLIP_IF() failed to throw");
+
+  return TEST_FAILURE;
+}
+
+static test_return_t test_throw_fail_TEST(void *)
+{
+  try {
+    FAIL("test message!");
+  }
+  catch (const libtest::__failure& e)
+  {
+    std::string compare_message("test message!");
+    test_zero(compare_message.compare(e.what()));
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    return TEST_FAILURE;
+  }
+
+  return TEST_FAILURE;
+}
+#pragma GCC diagnostic ignored "-Wstack-protector"
+
+#ifdef __clang__
+# pragma GCC diagnostic push
+# pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+
+static test_return_t ASSERT_FALSE__TEST(void *)
+{
+  try {
+    ASSERT_FALSE(true);
+  }
+  catch (const libtest::__failure& e)
+  {
+    ASSERT_STREQ(e.what(), "Assertion '!true'");
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    return TEST_FAILURE;
+  }
+
+  return TEST_FAILURE;
+}
+
+#ifdef __clang__
+# pragma GCC diagnostic pop
+#endif
+
+static test_return_t ASSERT_NEQ_FAIL_TEST(void *)
+{
+  try {
+    ASSERT_NEQ(1,1);
+  }
+  catch (const libtest::__failure& e)
+  {
+    ASSERT_STREQ(e.what(), "Assertion '1' == '1'");
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    return TEST_FAILURE;
+  }
+
+  return TEST_FAILURE;
+}
+
+static test_return_t ASSERT_NEQ_TEST(void *)
+{
+  ASSERT_NEQ(1,0);
+
+  return TEST_SUCCESS;
+}
+
+static test_return_t ASSERT_FALSE_TEST(void *)
+{
+  try {
+    FAIL(__func__);
+  }
+  catch (const libtest::__failure& e)
+  {
+    ASSERT_STREQ(e.what(), __func__);
+    return TEST_SUCCESS;
+  }
+  catch (...)
+  {
+    return TEST_FAILURE;
+  }
+
+  return TEST_FAILURE;
+}
+
 static test_return_t test_failure_test(void *)
 {
   return TEST_SKIPPED; // Only run this when debugging
 
-  test_compare(1, 2);
+  ASSERT_EQ(1, 2);
   return TEST_SUCCESS;
 }
 
@@ -125,20 +306,20 @@ static test_return_t local_not_test(void *)
 
   // unsetenv() will cause issues with valgrind
   _compare(__FILE__, __LINE__, __func__, 0, unsetenv("LIBTEST_LOCAL"), true);
-  test_compare(0, unsetenv("LIBTEST_LOCAL"));
+  ASSERT_EQ(0, unsetenv("LIBTEST_LOCAL"));
   test_false(test_is_local());
 
-  test_compare(0, setenv("LIBTEST_LOCAL", "1", 1));
+  ASSERT_EQ(0, setenv("LIBTEST_LOCAL", "1", 1));
   test_true(test_is_local());
 
   if (temp.empty())
   {
-    test_compare(0, unsetenv("LIBTEST_LOCAL"));
+    ASSERT_EQ(0, unsetenv("LIBTEST_LOCAL"));
   }
   else
   {
     char *old_string= strdup(temp.c_str());
-    test_compare(0, setenv("LIBTEST_LOCAL", old_string, 1));
+    ASSERT_EQ(0, setenv("LIBTEST_LOCAL", old_string, 1));
   }
 
   return TEST_SUCCESS;
@@ -146,40 +327,38 @@ static test_return_t local_not_test(void *)
 
 static test_return_t var_exists_test(void *)
 {
-  test_compare(0, access("var", R_OK | W_OK | X_OK));
+  ASSERT_EQ(0, access("var", R_OK | W_OK | X_OK));
   return TEST_SUCCESS;
 }
 
 static test_return_t var_tmp_exists_test(void *)
 {
-  test_compare(0, access("var/tmp", R_OK | W_OK | X_OK));
+  ASSERT_EQ(0, access("var/tmp", R_OK | W_OK | X_OK));
   return TEST_SUCCESS;
 }
 
 static test_return_t var_run_exists_test(void *)
 {
-  test_compare(0, access("var/run", R_OK | W_OK | X_OK));
+  ASSERT_EQ(0, access("var/run", R_OK | W_OK | X_OK));
   return TEST_SUCCESS;
 }
 
 static test_return_t var_log_exists_test(void *)
 {
-  test_compare(0, access("var/log", R_OK | W_OK | X_OK));
+  ASSERT_EQ(0, access("var/log", R_OK | W_OK | X_OK));
   return TEST_SUCCESS;
 }
 
 static test_return_t var_drizzle_exists_test(void *)
 {
-  test_compare(0, access("var/drizzle", R_OK | W_OK | X_OK));
+  ASSERT_EQ(0, access("var/drizzle", R_OK | W_OK | X_OK));
   return TEST_SUCCESS;
 }
 
 static test_return_t var_tmp_test(void *)
 {
   FILE *file= fopen("var/tmp/junk", "w+");
-  char buffer[1024];
-  const char *dir= getcwd(buffer, sizeof(buffer));
-  test_true_got(file, dir);
+  test_true(file);
   fclose(file);
   return TEST_SUCCESS;
 }
@@ -234,7 +413,7 @@ static test_return_t var_drizzle_rm_test(void *)
 
 static test_return_t _compare_test_return_t_test(void *)
 {
-  test_compare(TEST_SUCCESS, TEST_SUCCESS);
+  ASSERT_EQ(TEST_SUCCESS, TEST_SUCCESS);
 
   return TEST_SUCCESS;
 }
@@ -242,8 +421,8 @@ static test_return_t _compare_test_return_t_test(void *)
 static test_return_t _compare_memcached_return_t_test(void *)
 {
   test_skip(HAVE_LIBMEMCACHED, true);
-#if defined(HAVE_LIBMEMCACHED) && HAVE_LIBMEMCACHED 
-  test_compare(MEMCACHED_SUCCESS, MEMCACHED_SUCCESS);
+#if defined(HAVE_LIBMEMCACHED_1_0_TYPES_RETURN_H) && HAVE_LIBMEMCACHED_1_0_TYPES_RETURN_H
+  ASSERT_EQ(MEMCACHED_SUCCESS, MEMCACHED_SUCCESS);
 #endif
 
   return TEST_SUCCESS;
@@ -252,8 +431,8 @@ static test_return_t _compare_memcached_return_t_test(void *)
 static test_return_t _compare_gearman_return_t_test(void *)
 {
   test_skip(HAVE_LIBGEARMAN, true);
-#if defined(HAVE_LIBGEARMAN) && HAVE_LIBGEARMAN
-  test_compare(GEARMAN_SUCCESS, GEARMAN_SUCCESS);
+#if defined(HAVE_LIBGEARMAN_1_0_RETURN_H) && HAVE_LIBGEARMAN_1_0_RETURN_H
+  ASSERT_EQ(GEARMAN_SUCCESS, GEARMAN_SUCCESS);
 #endif
 
   return TEST_SUCCESS;
@@ -265,12 +444,12 @@ static test_return_t drizzled_cycle_test(void *object)
   test_true(servers and servers->validate());
 
 #if defined(HAVE_GEARMAND_BINARY) && HAVE_GEARMAND_BINARY
-  test_true(has_drizzled_binary());
+  test_true(has_drizzled());
 #endif
 
-  test_skip(true, has_drizzled_binary());
+  test_skip(true, has_drizzled());
 
-  test_true(server_startup(*servers, "drizzled", get_free_port(), 0, NULL));
+  test_skip(true, server_startup(*servers, "drizzled", get_free_port(), NULL));
 
   return TEST_SUCCESS;
 }
@@ -280,25 +459,9 @@ static test_return_t gearmand_cycle_test(void *object)
   server_startup_st *servers= (server_startup_st*)object;
   test_true(servers and servers->validate());
 
-#if defined(HAVE_GEARMAND_BINARY) && HAVE_GEARMAND_BINARY
-  test_true(has_gearmand_binary());
-#endif
-
-  test_skip(true, has_gearmand_binary());
-
-  test_true(server_startup(*servers, "gearmand", get_free_port(), 0, NULL));
-
-  return TEST_SUCCESS;
-}
-
-static test_return_t memcached_light_cycle_TEST(void *object)
-{
-  server_startup_st *servers= (server_startup_st*)object;
-  test_true(servers);
-
-  test_skip(true, bool(HAVE_MEMCACHED_LIGHT_BINARY));
-
-  test_true(server_startup(*servers, "memcached-light", get_free_port(), 0, NULL));
+  test_skip(true, has_gearmand());
+  test_skip(true, server_startup(*servers, "gearmand", get_free_port(), NULL));
+  servers->clear();
 
   return TEST_SUCCESS;
 }
@@ -309,71 +472,82 @@ static test_return_t skip_shim(bool a, bool b)
   return TEST_SUCCESS;
 }
 
-static test_return_t test_skip_true_TEST(void *object)
+static test_return_t test_skip_true_TEST(void*)
 {
-  test_compare(true, true);
-  test_compare(false, false);
-  test_compare(TEST_SUCCESS, skip_shim(true, true));
-  test_compare(TEST_SUCCESS, skip_shim(false, false));
+  ASSERT_EQ(true, true);
+  ASSERT_EQ(false, false);
+  ASSERT_EQ(TEST_SUCCESS, skip_shim(true, true));
+  ASSERT_EQ(TEST_SUCCESS, skip_shim(false, false));
 
   return TEST_SUCCESS;
 }
 
-static test_return_t test_skip_false_TEST(void *object)
+static test_return_t test_skip_false_TEST(void*)
 {
-  test_compare(TEST_SKIPPED, skip_shim(true, false));
-  test_compare(TEST_SKIPPED, skip_shim(false, true));
+  ASSERT_EQ(TEST_SKIPPED, skip_shim(true, false));
+  ASSERT_EQ(TEST_SKIPPED, skip_shim(false, true));
   return TEST_SUCCESS;
 }
 
-static test_return_t memcached_cycle_test(void *object)
+static test_return_t server_startup_fail_TEST(void *object)
 {
   server_startup_st *servers= (server_startup_st*)object;
   test_true(servers);
 
-  if (MEMCACHED_BINARY and HAVE_LIBMEMCACHED) 
-  {
-    test_true(has_memcached_binary());
-    test_true(server_startup(*servers, "memcached", get_free_port(), 0, NULL));
+  fatal::disable();
+  ASSERT_EQ(servers->start_server(testing_service, LIBTEST_FAIL_PORT, NULL), true);
+  fatal::enable();
 
-    return TEST_SUCCESS;
-  }
-
-  return TEST_SKIPPED;
+  return TEST_SUCCESS;
 }
 
-static test_return_t memcached_socket_cycle_test(void *object)
+static test_return_t server_startup_TEST(void *object)
 {
   server_startup_st *servers= (server_startup_st*)object;
   test_true(servers);
 
-  if (MEMCACHED_BINARY)
-  {
-    if (HAVE_LIBMEMCACHED)
-    {
-      test_true(has_memcached_binary());
-      test_true(servers->start_socket_server("memcached", get_free_port(), 0, NULL));
+  ASSERT_EQ(servers->start_server(testing_service, get_free_port(), NULL), true);
 
-      return TEST_SUCCESS;
-    }
-  }
+  test_true(servers->last());
+  pid_t last_pid= servers->last()->pid();
 
-  return TEST_SKIPPED;
+  ASSERT_EQ(servers->last()->pid(), last_pid);
+  test_true(last_pid > 1);
+  ASSERT_EQ(kill(last_pid, 0), 0);
+
+  test_true(servers->shutdown());
+#if 0
+  ASSERT_EQ(servers->last()->pid(), -1);
+  ASSERT_EQ(kill(last_pid, 0), -1);
+#endif
+
+  return TEST_SUCCESS;
 }
 
+static test_return_t socket_server_startup_TEST(void *object)
+{
+  server_startup_st *servers= (server_startup_st*)object;
+  test_true(servers);
+
+  test_true(servers->start_socket_server(testing_service, get_free_port(), NULL));
+
+  return TEST_SUCCESS;
+}
+
+#if 0
 static test_return_t memcached_sasl_test(void *object)
 {
   server_startup_st *servers= (server_startup_st*)object;
   test_true(servers);
 
-  test_skip(false, bool(getenv("TESTS_ENVIRONMENT")));
+  test_skip(false, bool(getenv("LOG_COMPILER")));
 
   if (MEMCACHED_SASL_BINARY)
   {
     if (HAVE_LIBMEMCACHED)
     {
-      test_true(has_memcached_sasl_binary());
-      test_true(server_startup(*servers, "memcached-sasl", get_free_port(), 0, NULL));
+      test_true(has_memcached_sasl());
+      test_true(server_startup(*servers, "memcached-sasl", get_free_port(), NULL));
 
       return TEST_SUCCESS;
     }
@@ -381,13 +555,15 @@ static test_return_t memcached_sasl_test(void *object)
 
   return TEST_SKIPPED;
 }
+#endif
 
 static test_return_t application_true_BINARY(void *)
 {
-  Application true_app("true");
+  test_skip(0, access("/usr/bin/true", X_OK ));
+  Application true_app("/usr/bin/true");
 
-  test_compare(Application::SUCCESS, true_app.run());
-  test_compare(Application::SUCCESS, true_app.wait());
+  ASSERT_EQ(Application::SUCCESS, true_app.run());
+  ASSERT_EQ(Application::SUCCESS, true_app.join());
 
   return TEST_SUCCESS;
 }
@@ -395,11 +571,13 @@ static test_return_t application_true_BINARY(void *)
 static test_return_t application_gdb_true_BINARY2(void *)
 {
   test_skip(0, access("/usr/bin/gdb", X_OK ));
-  Application true_app("true");
-  true_app.use_gdb();
+  test_skip(0, access("/usr/bin/true", X_OK ));
 
-  test_compare(Application::SUCCESS, true_app.run());
-  test_compare(Application::SUCCESS, true_app.wait());
+  Application true_app("/usr/bin/true");
+  true_app.use_gdb(true);
+
+  ASSERT_EQ(Application::SUCCESS, true_app.run());
+  ASSERT_EQ(Application::SUCCESS, true_app.join());
 
   return TEST_SUCCESS;
 }
@@ -407,24 +585,27 @@ static test_return_t application_gdb_true_BINARY2(void *)
 static test_return_t application_gdb_true_BINARY(void *)
 {
   test_skip(0, access("/usr/bin/gdb", X_OK ));
-  Application true_app("true");
-  true_app.use_gdb();
+  test_skip(0, access("/usr/bin/true", X_OK ));
+
+  Application true_app("/usr/bin/true");
+  true_app.use_gdb(true);
 
   const char *args[]= { "--fubar", 0 };
-  test_compare(Application::SUCCESS, true_app.run(args));
-  test_compare(Application::SUCCESS, true_app.wait());
+  ASSERT_EQ(Application::SUCCESS, true_app.run(args));
+  ASSERT_EQ(Application::SUCCESS, true_app.join());
 
   return TEST_SUCCESS;
 }
 
 static test_return_t application_true_fubar_BINARY(void *)
 {
-  Application true_app("true");
+  test_skip(0, access("/usr/bin/true", X_OK ));
+  Application true_app("/usr/bin/true");
 
   const char *args[]= { "--fubar", 0 };
-  test_compare(Application::SUCCESS, true_app.run(args));
-  test_compare(Application::SUCCESS, true_app.wait());
-  test_compare(0, true_app.stdout_result().size());
+  ASSERT_EQ(Application::SUCCESS, true_app.run(args));
+  ASSERT_EQ(Application::SUCCESS, true_app.join());
+  test_zero(true_app.stdout_result().size());
 
   return TEST_SUCCESS;
 }
@@ -437,49 +618,25 @@ static test_return_t application_doesnotexist_BINARY(void *)
   true_app.will_fail();
 
   const char *args[]= { "--fubar", 0 };
-#if defined(TARGET_OS_OSX) && TARGET_OS_OSX
-  test_compare(Application::INVALID, true_app.run(args));
+#if defined(__APPLE__) && __APPLE__
+  ASSERT_EQ(Application::INVALID_POSIX_SPAWN, true_app.run(args));
+#elif defined(__FreeBSD__) && __FreeBSD__
+  ASSERT_EQ(Application::INVALID_POSIX_SPAWN, true_app.run(args));
 #else
-  test_compare(Application::SUCCESS, true_app.run(args));
-  test_compare(Application::INVALID, true_app.wait(false));
+  ASSERT_EQ(Application::SUCCESS, true_app.run(args));
+  ASSERT_EQ(Application::INVALID_POSIX_SPAWN, true_app.join());
 #endif
 
-  test_compare(0, true_app.stdout_result().size());
+  test_zero(true_app.stdout_result().size());
 
   return TEST_SUCCESS;
 }
-
-static test_return_t application_true_fubar_eq_doh_BINARY(void *)
-{
-  Application true_app("true");
-
-  const char *args[]= { "--fubar=doh", 0 };
-  test_compare(Application::SUCCESS, true_app.run(args));
-  test_compare(Application::SUCCESS, true_app.wait());
-  test_compare(0, true_app.stdout_result().size());
-
-  return TEST_SUCCESS;
-}
-
-static test_return_t application_true_fubar_eq_doh_option_BINARY(void *)
-{
-  Application true_app("true");
-
-  true_app.add_option("--fubar=", "doh");
-
-  test_compare(Application::SUCCESS, true_app.run());
-  test_compare(Application::SUCCESS, true_app.wait());
-  test_compare(0, true_app.stdout_result().size());
-
-  return TEST_SUCCESS;
-}
-
 
 static test_return_t GET_TEST(void *)
 {
   libtest::http::GET get("http://foo.example.com/");
 
-  test_compare(false, get.execute());
+  ASSERT_EQ(false, get.execute());
 
   return TEST_SUCCESS;
 }
@@ -489,7 +646,7 @@ static test_return_t POST_TEST(void *)
   libtest::vchar_t body;
   libtest::http::POST post("http://foo.example.com/", body);
 
-  test_compare(false, post.execute());
+  ASSERT_EQ(false, post.execute());
 
   return TEST_SUCCESS;
 }
@@ -499,7 +656,7 @@ static test_return_t TRACE_TEST(void *)
   libtest::vchar_t body;
   libtest::http::TRACE trace("http://foo.example.com/", body);
 
-  test_compare(false, trace.execute());
+  ASSERT_EQ(false, trace.execute());
 
   return TEST_SUCCESS;
 }
@@ -509,7 +666,18 @@ static test_return_t vchar_t_TEST(void *)
 {
   libtest::vchar_t response;
   libtest::make_vector(response, test_literal_param("fubar\n"));
-  test_compare(response, response);
+  ASSERT_EQ(response, response);
+
+  return TEST_SUCCESS;
+}
+
+static test_return_t vchar_t_make_append_TEST(void *)
+{
+  libtest::vchar_t hostname;
+  libtest::vchar::make(hostname, 23);
+  libtest::vchar::append(hostname, ".com");
+  ASSERT_EQ(28, hostname.size());
+  ASSERT_EQ(0, hostname[27]);
 
   return TEST_SUCCESS;
 }
@@ -527,49 +695,40 @@ static test_return_t vchar_t_compare_neg_TEST(void *)
 
 static test_return_t application_echo_fubar_BINARY(void *)
 {
-  Application true_app("echo");
+  if (0)
+  {
+    test_skip(0, access("/bin/echo", X_OK ));
+    Application true_app("/bin/echo");
 
-  const char *args[]= { "fubar", 0 };
-  test_compare(Application::SUCCESS, true_app.run(args));
-  test_compare(Application::SUCCESS, true_app.wait());
+    const char *args[]= { "fubar", 0 };
+    ASSERT_EQ(Application::SUCCESS, true_app.run(args));
 
-  while (true_app.slurp() == false) {} ;
+    while (true_app.slurp() == false) {} ;
 
-  libtest::vchar_t response;
-  make_vector(response, test_literal_param("fubar\n"));
-  test_compare(response, true_app.stdout_result());
+    libtest::vchar_t response;
+    make_vector(response, test_literal_param("fubar\n"));
+    ASSERT_EQ(response, true_app.stdout_result());
+  }
 
   return TEST_SUCCESS;
 }
 
 static test_return_t application_echo_fubar_BINARY2(void *)
 {
-  Application true_app("echo");
+  if (0)
+  {
+    test_skip(0, access("/bin/echo", X_OK ));
+    Application true_app("/bin/echo");
 
-  true_app.add_option("fubar");
+    true_app.add_option("fubar");
 
-  test_compare(Application::SUCCESS, true_app.run());
-  test_compare(Application::SUCCESS, true_app.wait(false));
+    ASSERT_EQ(Application::SUCCESS, true_app.run());
+    ASSERT_EQ(Application::SUCCESS, true_app.join());
 
-  libtest::vchar_t response;
-  make_vector(response, test_literal_param("fubar\n"));
-  test_compare(response, true_app.stdout_result());
-
-  return TEST_SUCCESS;
-}
-
-static test_return_t true_BINARY(void *)
-{
-  const char *args[]= { 0 };
-  test_compare(EXIT_SUCCESS, exec_cmdline("true", args));
-
-  return TEST_SUCCESS;
-}
-
-static test_return_t true_fubar_BINARY(void *)
-{
-  const char *args[]= { "--fubar", 0 };
-  test_compare(EXIT_SUCCESS, exec_cmdline("true", args));
+    libtest::vchar_t response;
+    make_vector(response, test_literal_param("fubar\n"));
+    ASSERT_EQ(response, true_app.stdout_result());
+  }
 
   return TEST_SUCCESS;
 }
@@ -577,7 +736,16 @@ static test_return_t true_fubar_BINARY(void *)
 static test_return_t echo_fubar_BINARY(void *)
 {
   const char *args[]= { "fubar", 0 };
-  test_compare(EXIT_SUCCESS, exec_cmdline("echo", args));
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("/bin/echo", args));
+
+  return TEST_SUCCESS;
+}
+
+static test_return_t core_count_BINARY(void *)
+{
+  const char *args[]= { 0 };
+
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("libtest/core-count", args, true));
 
   return TEST_SUCCESS;
 }
@@ -586,7 +754,7 @@ static test_return_t wait_BINARY(void *)
 {
   const char *args[]= { "--quiet", 0 };
 
-  test_compare(EXIT_FAILURE, exec_cmdline("libtest/wait", args, true));
+  ASSERT_EQ(EXIT_FAILURE, exec_cmdline("libtest/wait", args, true));
 
   return TEST_SUCCESS;
 }
@@ -595,7 +763,7 @@ static test_return_t wait_help_BINARY(void *)
 {
   const char *args[]= { "--quiet", "--help", 0 };
 
-  test_compare(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
 
   return TEST_SUCCESS;
 }
@@ -604,7 +772,7 @@ static test_return_t wait_version_BINARY(void *)
 {
   const char *args[]= { "--quiet", "--version", 0 };
 
-  test_compare(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
 
   return TEST_SUCCESS;
 }
@@ -615,7 +783,7 @@ static test_return_t wait_services_BINARY(void *)
 
   const char *args[]= { "--quiet", "/etc/services", 0 };
 
-  test_compare(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
 
   return TEST_SUCCESS;
 }
@@ -626,22 +794,23 @@ static test_return_t wait_services_BINARY2(void *)
 
   const char *args[]= { "/etc/services", 0 };
 
-  test_compare(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("libtest/wait", args, true));
 
   return TEST_SUCCESS;
 }
 
 static test_return_t wait_services_appliction_TEST(void *)
 {
-  test_skip(0, access("/usr/bin/gdb", X_OK ));
   test_skip(0, access("/etc/services", R_OK ));
+  test_skip(0, access("/usr/bin/gdb", X_OK ));
+  test_skip(0, access("libtest/wait", X_OK ));
 
   libtest::Application wait_app("libtest/wait", true);
-  wait_app.use_gdb();
+  wait_app.use_gdb(true);
 
   const char *args[]= { "/etc/services", 0 };
-  test_compare(Application::SUCCESS, wait_app.run(args));
-  test_compare(Application::SUCCESS, wait_app.wait());
+  ASSERT_EQ(Application::SUCCESS, wait_app.run(args));
+  ASSERT_EQ(Application::SUCCESS, wait_app.join());
 
   return TEST_SUCCESS;
 }
@@ -649,46 +818,48 @@ static test_return_t wait_services_appliction_TEST(void *)
 static test_return_t gdb_wait_services_appliction_TEST(void *)
 {
   test_skip(true, false);
-#if defined(TARGET_OS_OSX) && TARGET_OS_OSX
-  test_skip(0, TARGET_OS_OSX);
+#if defined(__APPLE__) && __APPLE__
+  test_skip(0, __APPLE__);
 #endif
 
-  test_skip(0, access("/usr/bin/gdb", X_OK ));
   test_skip(0, access("/etc/services", R_OK ));
+  test_skip(0, access("/usr/bin/gdb", X_OK ));
+  test_skip(0, access("libtest/wait", X_OK ));
 
   libtest::Application wait_app("libtest/wait", true);
-  wait_app.use_gdb();
+  wait_app.use_gdb(true);
 
   const char *args[]= { "/etc/services", 0 };
-  test_compare(Application::SUCCESS, wait_app.run(args));
-  test_compare(Application::SUCCESS, wait_app.wait());
+  ASSERT_EQ(Application::SUCCESS, wait_app.run(args));
+  ASSERT_EQ(Application::SUCCESS, wait_app.join());
 
   return TEST_SUCCESS;
 }
 
 static test_return_t gdb_abort_services_appliction_TEST(void *)
 {
-  test_skip(true, false);
   test_skip(0, access("/usr/bin/gdb", X_OK ));
+  test_skip(0, access("libtest/abort", X_OK ));
+  test_skip(true, false);
 
-#if defined(TARGET_OS_OSX) && TARGET_OS_OSX
-  test_skip(0, TARGET_OS_OSX);
+#if defined(__APPLE__) && __APPLE__
+  test_skip(0, __APPLE__);
 #endif
 
   libtest::Application abort_app("libtest/abort", true);
-  abort_app.use_gdb();
+  abort_app.use_gdb(true);
 
-  test_compare(Application::SUCCESS, abort_app.run());
-  test_compare(Application::SUCCESS, abort_app.wait());
+  ASSERT_EQ(Application::SUCCESS, abort_app.run());
+  ASSERT_EQ(Application::SUCCESS, abort_app.join());
 
   std::string gdb_filename= abort_app.gdb_filename();
   test_skip(0, access(gdb_filename.c_str(), R_OK ));
   const char *args[]= { "SIGABRT", gdb_filename.c_str(), 0 };
-  test_compare(EXIT_SUCCESS, exec_cmdline("grep", args));
+  ASSERT_EQ(EXIT_SUCCESS, exec_cmdline("grep", args));
 
   // Sanity test
   args[0]= "THIS_WILL_NOT_BE_FOUND";
-  test_compare(EXIT_FAILURE, exec_cmdline("grep", args));
+  ASSERT_EQ(EXIT_FAILURE, exec_cmdline("grep", args));
 
   return TEST_SUCCESS;
 }
@@ -696,18 +867,16 @@ static test_return_t gdb_abort_services_appliction_TEST(void *)
 static test_return_t get_free_port_TEST(void *)
 {
   in_port_t ret_port;
-  test_true_hint((ret_port= get_free_port()), ret_port);
+  test_true((ret_port= get_free_port()));
   test_true(get_free_port() != default_port());
   test_true(get_free_port() != get_free_port());
 
   return TEST_SUCCESS;
 }
 
-static uint32_t fatal_calls= 0;
-
 static test_return_t fatal_TEST(void *)
 {
-  test_compare(fatal_calls++, fatal::disabled_counter());
+  ASSERT_EQ(fatal_calls++, fatal::disabled_counter());
   throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "Testing va_args based fatal(): %d", 10); 
 
   return TEST_SUCCESS;
@@ -720,27 +889,64 @@ static test_return_t number_of_cpus_TEST(void *)
   return TEST_SUCCESS;
 }
 
+static test_return_t check_dns_TEST(void *)
+{
+  test_warn(libtest::check_dns(), "Broken DNS server/no DNS server found");
+
+  return TEST_SUCCESS;
+}
+
+static test_return_t Timer_TEST(void *)
+{
+  int64_t minutes= random() % 50;
+  minutes++;
+
+  Timer check;
+
+  check.reset();
+  check.offset(minutes, 2, 200);
+
+  ASSERT_EQ(check.minutes(), minutes);
+
+  return TEST_SUCCESS;
+}
+
+static test_return_t lookup_true_TEST(void *)
+{
+  test_warn(libtest::lookup("exist.gearman.info"), "dns is not currently working");
+  return TEST_SUCCESS;
+}
+
+static test_return_t lookup_false_TEST(void *)
+{
+  SKIP_IF_(libtest::lookup("does_not_exist.gearman.info"),
+           "Broken DNS server detected");
+
+  return TEST_SUCCESS;
+}
+
 static test_return_t create_tmpfile_TEST(void *)
 {
+  test_skip(0, access("/usr/bin/touch", X_OK ));
   std::string tmp= create_tmpfile(__func__);
-  test_compare(-1, access(tmp.c_str(), R_OK));
-  test_compare(-1, access(tmp.c_str(), F_OK));
+  ASSERT_EQ(-1, access(tmp.c_str(), R_OK));
+  ASSERT_EQ(-1, access(tmp.c_str(), F_OK));
 
-  Application touch_app("touch");
+  Application touch_app("/usr/bin/touch");
   const char *args[]= { tmp.c_str(), 0 };
-  test_compare(Application::SUCCESS, touch_app.run(args));
-  test_compare(Application::SUCCESS, touch_app.wait(false));
+  ASSERT_EQ(Application::SUCCESS, touch_app.run(args));
+  ASSERT_EQ(Application::SUCCESS, touch_app.join());
 
-  test_compare_hint(0, access(tmp.c_str(), R_OK), strerror(errno));
-  test_compare_hint(0, unlink(tmp.c_str()), strerror(errno));
+  ASSERT_EQ(0, access(tmp.c_str(), R_OK));
+  ASSERT_EQ(0, unlink(tmp.c_str()));
 
   return TEST_SUCCESS;
 }
 
 static test_return_t fatal_message_TEST(void *)
 {
-  test_compare(fatal_calls++, fatal::disabled_counter());
-  fatal_message("Fatal test");
+  ASSERT_EQ(fatal_calls++, fatal::disabled_counter());
+  FATAL("Fatal test");
 
   return TEST_SUCCESS;
 }
@@ -748,23 +954,47 @@ static test_return_t fatal_message_TEST(void *)
 static test_return_t default_port_TEST(void *)
 {
   in_port_t ret_port= default_port();
-  test_compare(ret_port, libtest::default_port());
-  test_compare(ret_port, libtest::default_port());
+  ASSERT_EQ(ret_port, libtest::default_port());
+  ASSERT_EQ(ret_port, libtest::default_port());
 
+  return TEST_SUCCESS;
+}
+
+static test_return_t check_for_VALGRIND(void *)
+{
+  test_skip_valgrind();
   return TEST_SUCCESS;
 }
 
 static test_return_t check_for_gearman(void *)
 {
   test_skip(true, HAVE_LIBGEARMAN);
-  test_skip(true, has_gearmand_binary());
+  test_skip(true, has_gearmand());
+#if defined(HAVE_GEARMAND_BINARY) && HAVE_GEARMAND_BINARY
+  if (GEARMAND_BINARY)
+  {
+    if (strcmp(GEARMAND_BINARY, "./gearmand/gearmand"))
+    {
+      test_zero(access(GEARMAND_BINARY, X_OK ));
+    }
+  }
+  else
+  {
+    return TEST_SKIPPED;
+  }
+#endif
+
+  testing_service= "gearmand";
+
   return TEST_SUCCESS;
 }
 
 static test_return_t check_for_drizzle(void *)
 {
-  test_skip(true, HAVE_LIBDRIZZLE);
-  test_skip(true, has_drizzled_binary());
+  test_skip(true, has_drizzled());
+
+  testing_service= "drizzled";
+
   return TEST_SUCCESS;
 }
 
@@ -780,22 +1010,39 @@ test_st gearmand_tests[] ={
 #endif
   {"gearmand startup-shutdown", 0, gearmand_cycle_test },
   {"_compare(gearman_return_t)", 0, _compare_gearman_return_t_test },
+  {"server_startup(fail)", 0, server_startup_fail_TEST },
   {0, 0, 0}
 };
 
-static test_return_t check_for_libmemcached(void *)
+static test_return_t clear_servers(void* object)
 {
-  test_skip(true, HAVE_LIBMEMCACHED);
-  test_skip(true, has_memcached_binary());
+  server_startup_st *servers= (server_startup_st*)object;
+  test_true(servers);
+  servers->clear();
+
+  testing_service.clear();
+
   return TEST_SUCCESS;
 }
 
-test_st memcached_tests[] ={
-  {"memcached startup-shutdown", 0, memcached_cycle_test },
-  {"memcached-light startup-shutdown", 0, memcached_light_cycle_TEST },
-  {"memcached(socket file) startup-shutdown", 0, memcached_socket_cycle_test },
-  {"memcached_sasl() startup-shutdown", 0, memcached_sasl_test },
+static test_return_t check_for_memcached(void* object)
+{
+  test_skip(true, has_memcached());
+
+  server_startup_st *servers= (server_startup_st*)object;
+  test_true(servers);
+  servers->clear();
+
+  testing_service= "memcached";
+
+  return TEST_SUCCESS;
+}
+
+test_st memcached_TESTS[] ={
+  {"memcached startup-shutdown", 0, server_startup_TEST },
+  {"memcached(socket file) startup-shutdown", 0, socket_server_startup_TEST },
   {"_compare(memcached_return_t)", 0, _compare_memcached_return_t_test },
+  {"server_startup(fail)", 0, server_startup_fail_TEST },
   {0, 0, 0}
 };
 
@@ -806,6 +1053,7 @@ test_st test_skip_TESTS[] ={
 };
 
 test_st environment_tests[] ={
+  {"getenv()", 0, getenv_TEST },
   {"LIBTOOL_COMMAND", 0, LIBTOOL_COMMAND_test },
   {"VALGRIND_COMMAND", 0, VALGRIND_COMMAND_test },
   {"HELGRIND_COMMAND", 0, HELGRIND_COMMAND_test },
@@ -817,6 +1065,15 @@ test_st tests_log[] ={
   {"TEST_SUCCESS", false, test_success_test },
   {"TEST_FAILURE", false, test_failure_test },
   {"TEST_SUCCESS == 0", false, test_success_equals_one_test },
+  {"SUCCESS", false, test_throw_success_TEST },
+  {"libtest::__skipped", false, test_throw_skip_TEST },
+  {"SKIP_IF", false, test_throw_skip_macro_TEST },
+  {"SKIP_UNLESS", false, test_throw_skip_unless_macro_TEST },
+  {"FAIL", false, test_throw_fail_TEST },
+  {"ASSERT_FALSE_", false, ASSERT_FALSE__TEST },
+  {"ASSERT_FALSE", false, ASSERT_FALSE_TEST },
+  {"ASSERT_NEQ", false, ASSERT_NEQ_TEST },
+  {"ASSERT_NEQ FAIL", false, ASSERT_NEQ_FAIL_TEST },
   {0, 0, 0}
 };
 
@@ -849,9 +1106,8 @@ test_st comparison_tests[] ={
 };
 
 test_st cmdline_tests[] ={
-  {"true", 0, true_BINARY },
-  {"true --fubar", 0, true_fubar_BINARY },
   {"echo fubar", 0, echo_fubar_BINARY },
+  {"core-count", 0, core_count_BINARY },
   {"wait --quiet", 0, wait_BINARY },
   {"wait --quiet --help", 0, wait_help_BINARY },
   {"wait --quiet --version", 0, wait_version_BINARY },
@@ -885,16 +1141,27 @@ test_st create_tmpfile_TESTS[] ={
   {0, 0, 0}
 };
 
+test_st timer_TESTS[] ={
+  {"libtest::Timer", 0, Timer_TEST },
+  {0, 0, 0}
+};
+
+test_st dns_TESTS[] ={
+  {"libtest::lookup(true)", 0, lookup_true_TEST },
+  {"libtest::lookup(false)", 0, lookup_false_TEST },
+  {"libtest::check_dns()", 0, check_dns_TEST },
+  {0, 0, 0}
+};
+
 test_st application_tests[] ={
   {"vchar_t", 0, vchar_t_TEST },
+  {"vchar_t make() append()", 0, vchar_t_make_append_TEST },
   {"vchar_t compare()", 0, vchar_t_compare_neg_TEST },
   {"true", 0, application_true_BINARY },
   {"gbd true --fubar", 0, application_gdb_true_BINARY },
   {"gbd true", 0, application_gdb_true_BINARY2 },
   {"true --fubar", 0, application_true_fubar_BINARY },
   {"doesnotexist --fubar", 0, application_doesnotexist_BINARY },
-  {"true --fubar=doh", 0, application_true_fubar_eq_doh_BINARY },
-  {"true --fubar=doh add_option()", 0, application_true_fubar_eq_doh_option_BINARY },
   {"echo fubar", 0, application_echo_fubar_BINARY },
   {"echo fubar (as option)", 0, application_echo_fubar_BINARY2 },
   {0, 0, 0}
@@ -902,19 +1169,21 @@ test_st application_tests[] ={
 
 static test_return_t check_for_curl(void *)
 {
+  test_skip_valgrind();
   test_skip(true, HAVE_LIBCURL);
   return TEST_SUCCESS;
 }
 
 static test_return_t disable_fatal_exception(void *)
 {
+  fatal_calls= 0;
   fatal::disable();
   return TEST_SUCCESS;
 }
 
 static test_return_t enable_fatal_exception(void *)
 {
-  fatal::disable();
+  fatal::enable();
   return TEST_SUCCESS;
 }
 
@@ -932,9 +1201,9 @@ collection_st collection[] ={
   {"local", 0, 0, local_log},
   {"directories", 0, 0, directories_tests},
   {"comparison", 0, 0, comparison_tests},
-  {"gearmand", check_for_gearman, 0, gearmand_tests},
-  {"memcached", check_for_libmemcached, 0, memcached_tests},
-  {"drizzled", check_for_drizzle, 0, drizzled_tests},
+  {"gearmand", check_for_gearman, clear_servers, gearmand_tests},
+  {"memcached", check_for_memcached, clear_servers, memcached_TESTS },
+  {"drizzled", check_for_drizzle, clear_servers, drizzled_tests},
   {"cmdline", 0, 0, cmdline_tests},
   {"application", 0, 0, application_tests},
   {"http", check_for_curl, 0, http_tests},
@@ -943,6 +1212,8 @@ collection_st collection[] ={
   {"fatal", disable_fatal_exception, enable_fatal_exception, fatal_message_TESTS },
   {"number_of_cpus()", 0, 0, number_of_cpus_TESTS },
   {"create_tmpfile()", 0, 0, create_tmpfile_TESTS },
+  {"dns", check_for_VALGRIND, 0, dns_TESTS },
+  {"libtest::Timer", 0, 0, timer_TESTS },
   {0, 0, 0, 0}
 };
 
@@ -951,7 +1222,7 @@ static void *world_create(server_startup_st& servers, test_return_t&)
   return &servers;
 }
 
-void get_world(Framework *world)
+void get_world(libtest::Framework *world)
 {
   world->collections(collection);
   world->create(world_create);

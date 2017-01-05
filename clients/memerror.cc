@@ -1,4 +1,5 @@
 /* LibMemcached
+ * Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  * Copyright (C) 2006-2009 Brian Aker
  * All rights reserved.
  *
@@ -8,7 +9,7 @@
  * Summary:
  *
  */
-#include "config.h"
+#include "mem_config.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -20,7 +21,7 @@
 #include <iostream>
 #include <unistd.h>
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 #include "utilities.h"
 
@@ -46,7 +47,8 @@ int main(int argc, char *argv[])
     char *nptr;
     unsigned long value= strtoul(argv[optind], &nptr, 10);
 
-    if ((nptr == argv[optind] and value == 0) or
+    if ((errno != 0) or
+        (nptr == argv[optind] and value == 0) or
         (value == ULONG_MAX and errno == ERANGE) or
         (value == 0 and errno == EINVAL))
     {

@@ -2,7 +2,7 @@
  *
  *  Data Differential YATL (i.e. libtest)  library
  *
- *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2012-2013 Data Differential, http://datadifferential.com/
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -34,36 +34,50 @@
  *
  */
 
-#include <config.h>
-#include <libtest/has.hpp>
+#include "libtest/yatlcon.h"
+#include <libtest/common.h>
 
+#include <cstdio>
 #include <cstdlib>
+#include <unistd.h>
 
-bool has_memcached_support(void)
+namespace libtest {
+
+bool has_libmemcached_sasl(void)
 {
-  if (HAVE_LIBMEMCACHED and HAVE_MEMCACHED_BINARY)
+  return false;
+}
+
+bool has_libmemcached(void)
+{
+#if defined(HAVE_LIBMEMCACHED) && HAVE_LIBMEMCACHED
+  if (HAVE_LIBMEMCACHED)
   {
     return true;
   }
+#endif
 
   return false;
 }
 
-bool has_drizzle_support(void)
+bool has_libdrizzle(void)
 {
-  if (HAVE_LIBDRIZZLE and HAVE_DRIZZLED_BINARY)
+#if defined(HAVE_LIBDRIZZLE) && HAVE_LIBDRIZZLE
+  if (HAVE_LIBDRIZZLE)
   {
     return true;
   }
+#endif
 
   return false;
 }
 
 bool has_postgres_support(void)
 {
-  if (getenv("POSTGES_IS_RUNNING_AND_SETUP"))
+  char *getenv_ptr;
+  if (bool((getenv_ptr= getenv("POSTGES_IS_RUNNING_AND_SETUP"))))
   {
-
+    (void)(getenv_ptr);
     if (HAVE_LIBPQ)
     {
       return true;
@@ -72,3 +86,141 @@ bool has_postgres_support(void)
 
   return false;
 }
+
+
+bool has_gearmand()
+{
+#if defined(GEARMAND_BINARY) && defined(HAVE_GEARMAND_BINARY) && HAVE_GEARMAND_BINARY
+  if (HAVE_GEARMAND_BINARY)
+  {
+    std::stringstream arg_buffer;
+
+    char *getenv_ptr;
+    if (bool((getenv_ptr= getenv("PWD"))) and 
+        ((strcmp(GEARMAND_BINARY, "./gearmand/gearmand") == 0) or (strcmp(GEARMAND_BINARY, "gearmand/gearmand") == 0)))
+    {
+      arg_buffer << getenv_ptr;
+      arg_buffer << "/";
+    }
+    arg_buffer << GEARMAND_BINARY;
+
+    if (access(arg_buffer.str().c_str(), X_OK) == 0)
+    {
+      return true;
+    }
+  }
+#endif
+
+  return false;
+}
+
+bool has_drizzled()
+{
+#if defined(DRIZZLED_BINARY) && defined(HAVE_DRIZZLED_BINARY) && HAVE_DRIZZLED_BINARY
+  if (HAVE_DRIZZLED_BINARY)
+  {
+    if (access(DRIZZLED_BINARY, X_OK) == 0)
+    {
+      return true;
+    }
+  }
+#endif
+
+  return false;
+}
+
+bool has_mysqld()
+{
+#if defined(MYSQLD_BINARY) && defined(HAVE_MYSQLD_BUILD) && HAVE_MYSQLD_BUILD
+  if (HAVE_MYSQLD_BUILD)
+  {
+    if (access(MYSQLD_BINARY, X_OK) == 0)
+    {
+      return true;
+    }
+  }
+#endif
+
+  return false;
+}
+
+static char memcached_binary_path[FILENAME_MAX];
+
+static void initialize_memcached_binary_path()
+{
+  memcached_binary_path[0]= 0;
+
+#if defined(MEMCACHED_BINARY) && defined(HAVE_MEMCACHED_BINARY) && HAVE_MEMCACHED_BINARY
+  if (HAVE_MEMCACHED_BINARY)
+  {
+    std::stringstream arg_buffer;
+
+    char *getenv_ptr;
+    if (bool((getenv_ptr= getenv("PWD"))) and strcmp(MEMCACHED_BINARY, "memcached/memcached") == 0)
+    {
+      arg_buffer << getenv_ptr;
+      arg_buffer << "/";
+    }
+    arg_buffer << MEMCACHED_BINARY;
+
+    if (access(arg_buffer.str().c_str(), X_OK) == 0)
+    {
+      strncpy(memcached_binary_path, arg_buffer.str().c_str(), FILENAME_MAX);
+    }
+  }
+#endif
+}
+
+static pthread_once_t memcached_binary_once= PTHREAD_ONCE_INIT;
+static void initialize_memcached_binary(void)
+{
+  int ret;
+  if ((ret= pthread_once(&memcached_binary_once, initialize_memcached_binary_path)) != 0)
+  {
+    FATAL(strerror(ret));
+  }
+}
+
+bool has_memcached()
+{
+  initialize_memcached_binary();
+
+  if (memcached_binary_path[0] and (strlen(memcached_binary_path) > 0))
+  {
+    return true;
+  }
+
+  return false;
+}
+
+const char* memcached_binary()
+{
+  initialize_memcached_binary();
+
+  if (memcached_binary_path[0])
+  {
+    return memcached_binary_path;
+  }
+
+  return NULL;
+}
+
+const char *gearmand_binary() 
+{
+#if defined(GEARMAND_BINARY)
+  return GEARMAND_BINARY;
+#else
+  return NULL;
+#endif
+}
+
+const char *drizzled_binary() 
+{
+#if defined(DRIZZLED_BINARY)
+  return DRIZZLED_BINARY;
+#else
+  return NULL;
+#endif
+}
+
+} // namespace libtest

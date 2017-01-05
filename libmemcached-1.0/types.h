@@ -39,6 +39,7 @@
 #pragma once
 
 #ifdef __cplusplus
+
 struct memcached_st;
 struct memcached_stat_st;
 struct memcached_analysis_st;
@@ -48,7 +49,8 @@ struct memcached_error_t;
 
 // All of the flavors of memcache_server_st
 struct memcached_server_st;
-typedef const struct memcached_server_st *memcached_server_instance_st;
+struct memcached_instance_st;
+typedef struct memcached_instance_st memcached_instance_st;
 typedef struct memcached_server_st *memcached_server_list_st;
 
 struct memcached_callback_st;
@@ -69,7 +71,7 @@ typedef struct memcached_error_t memcached_error_t;
 
 // All of the flavors of memcache_server_st
 typedef struct memcached_server_st memcached_server_st;
-typedef const struct memcached_server_st *memcached_server_instance_st;
+typedef struct memcached_instance_st memcached_instance_st;
 typedef struct memcached_server_st *memcached_server_list_st;
 
 typedef struct memcached_callback_st memcached_callback_st;
@@ -77,6 +79,5 @@ typedef struct memcached_callback_st memcached_callback_st;
 // The following two structures are internal, and never exposed to users.
 typedef struct memcached_string_st memcached_string_st;
 typedef struct memcached_string_t memcached_string_t;
-typedef struct memcached_continuum_item_st memcached_continuum_item_st;
 
 #endif

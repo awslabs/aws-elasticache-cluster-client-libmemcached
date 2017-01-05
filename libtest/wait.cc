@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 
 #include <cstdlib>
 #include <fcntl.h>

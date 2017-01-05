@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 
@@ -42,8 +42,11 @@ namespace libtest {
 
 void create_core(void)
 {
-#ifdef TARGET_OS_OSX 
-  return;
+#if defined(__APPLE__) && __APPLE__
+  if (__APPLE__)
+  {
+    return;
+  }
 #endif
   if (getenv("YATL_COREDUMP"))
   {

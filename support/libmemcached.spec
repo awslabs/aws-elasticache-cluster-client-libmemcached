@@ -1,6 +1,6 @@
 Name:      libmemcached
 Summary:   memcached C library and command line tools
-Version: 1.0.8
+Version:   1.0.18
 Release:   1
 License:   BSD
 Group:     System Environment/Libraries
@@ -8,7 +8,32 @@ URL:       http://launchpad.net/libmemcached
 Source0:   http://download.tangent.org/libmemcached-%{version}.tar.gz
 
 # For test suite
+BuildRequires: bash
+BuildRequires: binutils
+BuildRequires: coreutils
+BuildRequires: cpio
+BuildRequires: cyrus-sasl-devel
+BuildRequires: diffutils
+BuildRequires: elfutils
+BuildRequires: file
+BuildRequires: findutils
+BuildRequires: gawk
+BuildRequires: gcc
+BuildRequires: glibc
+BuildRequires: glibc-common
+BuildRequires: glibc-devel
+BuildRequires: glibc-headers
+BuildRequires: grep
+BuildRequires: gzip
+BuildRequires: libevent-devel
+BuildRequires: libstdc++-devel
+BuildRequires: libuuid-devel
+BuildRequires: make
 BuildRequires: memcached
+BuildRequires: pkgconfig
+BuildRequires: python-sphinx
+BuildRequires: sed
+BuildRequires: tar
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -50,7 +75,7 @@ you will need to install %{name}-devel.
 
 %build
 %configure
-%{__make}
+%{__make} %{?_smp_mflags}
 
 
 %install
@@ -61,7 +86,7 @@ you will need to install %{name}-devel.
 %check
 # test suite cannot run in mock (same port use for memcache server on all arch)
 # 1 test seems to fail.. 
-# %{__make} test
+# %{__make} check
 
 
 %clean
@@ -81,18 +106,14 @@ you will need to install %{name}-devel.
 %exclude %{_libdir}/libmemcached.la
 %exclude %{_libdir}/libhashkit.la
 %exclude %{_libdir}/libmemcachedutil.la
-%exclude %{_libdir}/libmemcachedprotocol.la
 %exclude %{_libdir}/libmemcached.a
 %exclude %{_libdir}/libhashkit.a
 %exclude %{_libdir}/libmemcachedutil.a
-%exclude %{_libdir}/libmemcachedprotocol.a
 %{_libdir}/libhashkit.so.2.0.0
-%{_libdir}/libmemcached.so.10.0.0
+%{_libdir}/libmemcached.so.11.0.0
 %{_libdir}/libmemcachedutil.so.2.0.0
-%{_libdir}/libmemcachedprotocol.so.0.0.0
 %{_libdir}/libhashkit.so.2
-%{_libdir}/libmemcached.so.10
-%{_libdir}/libmemcachedprotocol.so.0
+%{_libdir}/libmemcached.so.11
 %{_libdir}/libmemcachedutil.so.2
 %{_mandir}/man1/memaslap.1.gz
 %{_mandir}/man1/memcapable.1.gz
@@ -113,6 +134,7 @@ you will need to install %{name}-devel.
 %files devel
 %defattr (-,root,root,-) 
 %doc examples
+%{_datadir}/aclocal/ax_libmemcached.m4
 %{_includedir}/libhashkit/hashkit.h
 %{_includedir}/libhashkit-1.0/algorithm.h
 %{_includedir}/libhashkit-1.0/behavior.h
@@ -126,11 +148,6 @@ you will need to install %{name}-devel.
 %{_includedir}/libhashkit-1.0/strerror.h
 %{_includedir}/libhashkit-1.0/types.h
 %{_includedir}/libhashkit-1.0/visibility.h
-
-%{_includedir}/libmemcachedprotocol-0.0/binary.h
-%{_includedir}/libmemcachedprotocol-0.0/callback.h
-%{_includedir}/libmemcachedprotocol-0.0/handler.h
-%{_includedir}/libmemcachedprotocol-0.0/vbucket.h
 
 %{_includedir}/libmemcachedutil-1.0/util.h
 %{_includedir}/libmemcachedutil-1.0/flush.h
@@ -206,7 +223,6 @@ you will need to install %{name}-devel.
 
 %{_libdir}/libhashkit.so
 %{_libdir}/libmemcached.so
-%{_libdir}/libmemcachedprotocol.so
 %{_libdir}/libmemcachedutil.so
 %{_libdir}/pkgconfig/libmemcached.pc
 %{_mandir}/man3/hashkit_clone.3.gz

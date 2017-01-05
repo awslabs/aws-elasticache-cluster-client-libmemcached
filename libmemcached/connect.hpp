@@ -37,6 +37,4 @@
 
 #pragma once
 
-memcached_return_t memcached_connect_try(memcached_server_write_instance_st ptr);
-memcached_return_t memcached_connect(memcached_server_write_instance_st ptr);
-
+memcached_return_t memcached_connect(memcached_instance_st*);

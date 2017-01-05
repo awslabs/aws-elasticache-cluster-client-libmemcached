@@ -44,7 +44,7 @@
 
 #include <libmemcached/common.h>
 
-static memcached_return_t ascii_dump(memcached_st *memc, memcached_dump_fn *callback, void *context, uint32_t number_of_callbacks)
+static memcached_return_t ascii_dump(Memcached *memc, memcached_dump_fn *callback, void *context, uint32_t number_of_callbacks)
 {
   /* MAX_NUMBER_OF_SLAB_CLASSES is defined to 200 in Memcached 1.4.10 */
   for (uint32_t x= 0; x < 200; x++)
@@ -61,14 +61,14 @@ static memcached_return_t ascii_dump(memcached_st *memc, memcached_dump_fn *call
     libmemcached_io_vector_st vector[]=
     {
       { memcached_literal_param("stats cachedump ") },
-      { buffer, buffer_length },
+      { buffer, size_t(buffer_length) },
       { memcached_literal_param(" 0\r\n") }
     };
 
     // Send message to all servers
     for (uint32_t server_key= 0; server_key < memcached_server_count(memc); server_key++)
     {
-      memcached_server_write_instance_st instance= memcached_server_instance_fetch(memc, server_key);
+      memcached_instance_st* instance= memcached_instance_fetch(memc, server_key);
 
       memcached_return_t vdo_rc;
       if (memcached_success((vdo_rc= memcached_vdo(instance, vector, 3, true))))
@@ -82,8 +82,9 @@ static memcached_return_t ascii_dump(memcached_st *memc, memcached_dump_fn *call
     }
 
     // Collect the returned items
-    memcached_server_write_instance_st instance;
-    while ((instance= memcached_io_get_readable_server(memc)))
+    memcached_instance_st* instance;
+    memcached_return_t read_ret= MEMCACHED_SUCCESS;
+    while ((instance= memcached_io_get_readable_server(memc, read_ret)))
     {
       memcached_return_t response_rc= memcached_response(instance, buffer, MEMCACHED_DEFAULT_COMMAND_SIZE, NULL);
       if (response_rc == MEMCACHED_ITEM)
@@ -136,8 +137,9 @@ static memcached_return_t ascii_dump(memcached_st *memc, memcached_dump_fn *call
   return memcached_has_current_error(*memc) ? MEMCACHED_SOME_ERRORS : MEMCACHED_SUCCESS;
 }
 
-memcached_return_t memcached_dump(memcached_st *ptr, memcached_dump_fn *callback, void *context, uint32_t number_of_callbacks)
+memcached_return_t memcached_dump(memcached_st *shell, memcached_dump_fn *callback, void *context, uint32_t number_of_callbacks)
 {
+  Memcached* ptr= memcached2Memcached(shell);
   memcached_return_t rc;
   if (memcached_failed(rc= initialize_query(ptr, true)))
   {

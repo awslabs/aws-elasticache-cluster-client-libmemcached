@@ -47,7 +47,7 @@ typedef struct token_s
 #define MAX_TOKENS    10
 
 /* server information */
-typedef struct mcd_sever
+typedef struct mcd_server
 {
   char srv_host_name[MCD_HOST_LENGTH];              /* host name of server */
   int srv_port;                                     /* server port */
@@ -153,7 +153,7 @@ typedef struct setting
   bool verbose;                         /* whether it outputs detailed information when verification */
   bool facebook_test;                   /* facebook test, TCP set and multi-get with UDP */
   uint32_t sock_per_conn;                    /* number of socks per connection structure */
-  bool binary_prot;                     /* whether it use binary protocol */
+  bool binary_prot_;                     /* whether it use binary protocol */
   int expected_tps;                     /* expected throughput */
   uint32_t rep_write_srv;                    /* which servers are used to do replication writing */
 } ms_setting_st;

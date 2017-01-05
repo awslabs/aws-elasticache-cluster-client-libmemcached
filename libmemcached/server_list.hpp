@@ -36,9 +36,12 @@
 
 #pragma once
 
+memcached_instance_st* memcached_instance_list(const memcached_st *);
+
+uint32_t memcached_instance_list_count(const memcached_st*);
 
 uint32_t memcached_servers_set_count(memcached_server_list_st servers, uint32_t count);
 
-memcached_server_st *memcached_server_list(const memcached_st *);
+void memcached_instance_list_free(memcached_instance_st* self, uint32_t count);
 
-void memcached_server_list_set(memcached_st *self, memcached_server_list_st list);
+void memcached_instance_set(memcached_st*, memcached_instance_st*, const uint32_t host_list_size);

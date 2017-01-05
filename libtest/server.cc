@@ -34,7 +34,8 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
+
 #include <libtest/common.h>
 
 #include <cassert>
@@ -90,6 +91,22 @@ std::ostream& operator<<(std::ostream& output, const Server &arg)
   return output;  // for multiple << operators
 }
 
+#ifdef __GLIBC__
+namespace {
+
+class Buffer
+{
+public:
+  Buffer(char *b) : b_(b) {}
+   ~Buffer() { if (b_) free(b_); }
+  char* buf() { return b_; }
+private:
+  char *b_;
+};
+
+}
+#endif // __GLIBC__
+
 #define MAGIC_MEMORY 123570
 
 Server::Server(const std::string& host_arg, const in_port_t port_arg,
@@ -99,12 +116,15 @@ Server::Server(const std::string& host_arg, const in_port_t port_arg,
   _is_socket(is_socket_arg),
   _port(port_arg),
   _hostname(host_arg),
-  _app(executable, _is_libtool)
+  _app(executable, _is_libtool),
+  out_of_ban_killed_(false),
+  _timeout(40)
 {
 }
 
 Server::~Server()
 {
+  kill();
 }
 
 bool Server::check()
@@ -153,6 +173,22 @@ bool Server::wait_for_pidfile() const
   return wait.successful();
 }
 
+bool Server::init(const char *argv[])
+{
+  if (argv)
+  {
+    for (const char **ptr= argv; *ptr ; ++ptr)
+    {
+      if (ptr)
+      {
+        add_option(*ptr);
+      }
+    }
+  }
+
+  return build();
+}
+
 bool Server::has_pid() const
 {
   return (_app.pid() > 1);
@@ -169,34 +205,40 @@ bool Server::start()
 #endif
   }
 
-  // This needs more work.
-#if 0
-  if (gdb_is_caller())
+  if (getenv("YATL_GDB_SERVER"))
   {
-    _app.use_gdb();
+    _app.use_gdb(true);
   }
-#endif
+
+  if (port() == LIBTEST_FAIL_PORT)
+  {
+    throw libtest::disconnected(LIBYATL_DEFAULT_PARAM,
+                                hostname(), port(), "Called failure");
+  }
 
   if (getenv("YATL_PTRCHECK_SERVER"))
   {
-    _app.use_ptrcheck();
+    _app.use_ptrcheck(true);
   }
   else if (getenv("YATL_VALGRIND_SERVER"))
   {
-    _app.use_valgrind();
+    _app.use_valgrind(true);
   }
 
+  out_of_ban_killed(false);
   if (args(_app) == false)
   {
-    Error << "Could not build command()";
-    return false;
+    throw libtest::disconnected(LIBYATL_DEFAULT_PARAM,
+                                hostname(), port(), "Could not build command()");
   }
 
   libtest::release_port(_port);
+
   Application::error_t ret;
   if (Application::SUCCESS !=  (ret= _app.run()))
   {
-    Error << "Application::run() " << ret;
+    throw libtest::disconnected(LIBYATL_DEFAULT_PARAM,
+                                hostname(), port(), "Application::run() %s", libtest::Application::toString(ret));
     return false;
   }
   _running= _app.print();
@@ -222,31 +264,42 @@ bool Server::start()
           continue;
         }
 
-        char buf[PATH_MAX];
-        char *getcwd_buf= getcwd(buf, sizeof(buf));
-        throw libtest::fatal(LIBYATL_DEFAULT_PARAM,
-                             "Unable to open pidfile in %s for: %s stderr:%s",
-                             getcwd_buf ? getcwd_buf : "",
-                             _running.c_str(),
-                             _app.stderr_c_str());
+#ifdef __GLIBC__
+        Buffer buf( get_current_dir_name());
+        char *getcwd_buf= buf.buf();
+#else
+        libtest::vchar_t buf;
+        buf.resize(PATH_MAX);
+        char *getcwd_buf= getcwd(&buf[0], buf.size());
+#endif // __GLIBC__
+        throw libtest::disconnected(LIBYATL_DEFAULT_PARAM,
+                                    hostname(), port(),
+                                    "Unable to open pidfile in %s for: %s stderr:%s",
+                                    getcwd_buf ? getcwd_buf : "",
+                                    _running.c_str(),
+                                    _app.stderr_c_str());
       }
     }
   }
 
-  uint32_t this_wait= 0;
   bool pinged= false;
+  uint32_t this_wait= 0;
   {
-    uint32_t timeout= 20; // This number should be high enough for valgrind startup (which is slow)
     uint32_t waited;
     uint32_t retry;
 
     for (waited= 0, retry= 1; ; retry++, waited+= this_wait)
     {
+      if (_app.check() == false)
+      {
+        break;
+      }
+
       if ((pinged= ping()) == true)
       {
         break;
       }
-      else if (waited >= timeout)
+      else if (waited >= _timeout)
       {
         break;
       }
@@ -258,38 +311,48 @@ bool Server::start()
 
   if (pinged == false)
   {
+#if 0
+    Error << "Failed to ping(" << _app.pid() << ") wait: " << this_wait << " " << hostname() << ":" << port() << " run:" << _running << " " << error();
+#endif
+
     // If we happen to have a pid file, lets try to kill it
     if ((pid_file().empty() == false) and (access(pid_file().c_str(), R_OK) == 0))
     {
       _app.slurp();
       if (kill_file(pid_file()) == false)
       {
-        throw libtest::fatal(LIBYATL_DEFAULT_PARAM,
-                             "Failed to kill off server, waited: %u after startup occurred, when pinging failed: %.*s stderr:%.*s",
-                             this_wait,
-                             int(_running.size()), _running.c_str(),
-                             int(_app.stderr_result_length()), _app.stderr_c_str());
+        throw libtest::disconnected(LIBYATL_DEFAULT_PARAM,
+                                    hostname(), port(),
+                                    "Failed to kill off server, waited: %u after startup occurred, when pinging failed: %.*s stderr:%.*s",
+                                    this_wait,
+                                    int(_running.size()), _running.c_str(),
+                                    int(_app.stderr_result_length()), _app.stderr_c_str());
       }
-
-      throw libtest::fatal(LIBYATL_DEFAULT_PARAM, 
-                           "Failed native ping(), pid: %d is alive: %s waited: %u server started, having pid_file. exec: %.*s stderr:%.*s",
-                           int(_app.pid()),
-                           _app.check() ? "true" : "false",
-                           this_wait,
-                           int(_running.size()), _running.c_str(),
-                           int(_app.stderr_result_length()), _app.stderr_c_str());
+      else
+      {
+        throw libtest::disconnected(LIBYATL_DEFAULT_PARAM, 
+                                    hostname(), port(),
+                                    "Failed native ping(), pid: %d was alive: %s waited: %u server started, having pid_file. exec: %.*s stderr:%.*s",
+                                    int(_app.pid()),
+                                    _app.check() ? "true" : "false",
+                                    this_wait,
+                                    int(_running.size()), _running.c_str(),
+                                    int(_app.stderr_result_length()), _app.stderr_c_str());
+      }
     }
     else
     {
-      throw libtest::fatal(LIBYATL_DEFAULT_PARAM,
-                           "Failed native ping(), pid: %d is alive: %s waited: %u server started. exec: %.*s stderr:%.*s",
-                           int(_app.pid()),
-                           _app.check() ? "true" : "false",
-                           this_wait,
-                           int(_running.size()), _running.c_str(),
-                           int(_app.stderr_result_length()), _app.stderr_c_str());
+      throw libtest::disconnected(LIBYATL_DEFAULT_PARAM,
+                                  hostname(), port(),
+                                  "Failed native ping(), pid: %d is alive: %s waited: %u server started. exec: %.*s stderr:%.*s",
+                                  int(_app.pid()),
+                                  _app.check() ? "true" : "false",
+                                  this_wait,
+                                  int(_running.size()), _running.c_str(),
+                                  int(_app.stderr_result_length()), _app.stderr_c_str());
     }
     _running.clear();
+
     return false;
   }
 
@@ -312,80 +375,83 @@ void Server::add_option(const std::string& arg)
   _options.push_back(std::make_pair(arg, std::string()));
 }
 
-void Server::add_option(const std::string& name, const std::string& value)
+void Server::add_option(const std::string& name_, const std::string& value_)
 {
-  _options.push_back(std::make_pair(name, value));
+  _options.push_back(std::make_pair(name_, value_));
 }
 
 bool Server::set_socket_file()
 {
-  char file_buffer[FILENAME_MAX];
+  libtest::vchar_t file_buffer;
+  file_buffer.resize(FILENAME_MAX);
   file_buffer[0]= 0;
 
   if (broken_pid_file())
   {
-    snprintf(file_buffer, sizeof(file_buffer), "/tmp/%s.socketXXXXXX", name());
+    snprintf(&file_buffer[0], file_buffer.size(), "/tmp/%s.socketXXXXXX", name());
   }
   else
   {
-    snprintf(file_buffer, sizeof(file_buffer), "var/run/%s.socketXXXXXX", name());
+    snprintf(&file_buffer[0], file_buffer.size(), "var/run/%s.socketXXXXXX", name());
   }
 
   int fd;
-  if ((fd= mkstemp(file_buffer)) == -1)
+  if ((fd= mkstemp(&file_buffer[0])) == -1)
   {
-    perror(file_buffer);
+    perror(&file_buffer[0]);
     return false;
   }
   close(fd);
-  unlink(file_buffer);
+  unlink(&file_buffer[0]);
 
-  _socket= file_buffer;
+  _socket= &file_buffer[0];
 
   return true;
 }
 
 bool Server::set_pid_file()
 {
-  char file_buffer[FILENAME_MAX];
+  libtest::vchar_t file_buffer;
+  file_buffer.resize(FILENAME_MAX);
   file_buffer[0]= 0;
 
   if (broken_pid_file())
   {
-    snprintf(file_buffer, sizeof(file_buffer), "/tmp/%s.pidXXXXXX", name());
+    snprintf(&file_buffer[0], file_buffer.size(), "/tmp/%s.pidXXXXXX", name());
   }
   else
   {
-    snprintf(file_buffer, sizeof(file_buffer), "var/run/%s.pidXXXXXX", name());
+    snprintf(&file_buffer[0], file_buffer.size(), "var/run/%s.pidXXXXXX", name());
   }
 
   int fd;
-  if ((fd= mkstemp(file_buffer)) == -1)
+  if ((fd= mkstemp(&file_buffer[0])) == -1)
   {
-    throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "mkstemp() failed on %s with %s", file_buffer, strerror(errno));
+    throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "mkstemp() failed on %s with %s", &file_buffer[0], strerror(errno));
   }
   close(fd);
-  unlink(file_buffer);
+  unlink(&file_buffer[0]);
 
-  _pid_file= file_buffer;
+  _pid_file= &file_buffer[0];
 
   return true;
 }
 
 bool Server::set_log_file()
 {
-  char file_buffer[FILENAME_MAX];
+  libtest::vchar_t file_buffer;
+  file_buffer.resize(FILENAME_MAX);
   file_buffer[0]= 0;
 
-  snprintf(file_buffer, sizeof(file_buffer), "var/log/%s.logXXXXXX", name());
+  snprintf(&file_buffer[0], file_buffer.size(), "var/log/%s.logXXXXXX", name());
   int fd;
-  if ((fd= mkstemp(file_buffer)) == -1)
+  if ((fd= mkstemp(&file_buffer[0])) == -1)
   {
-    throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "mkstemp() failed on %s with %s", file_buffer, strerror(errno));
+    throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "mkstemp() failed on %s with %s", &file_buffer[0], strerror(errno));
   }
   close(fd);
 
-  _log_file= file_buffer;
+  _log_file= &file_buffer[0];
 
   return true;
 }
@@ -430,15 +496,18 @@ bool Server::args(Application& app)
     port_option(app, _port);
   }
 
-  for (Options::const_iterator iter= _options.begin(); iter != _options.end(); iter++)
+  for (Options::const_iterator iter= _options.begin(); iter != _options.end(); ++iter)
   {
-    if ((*iter).second.empty() == false)
+    if ((*iter).first.empty() == false)
     {
-      app.add_option((*iter).first, (*iter).second);
-    }
-    else
-    {
-      app.add_option((*iter).first);
+      if ((*iter).second.empty() == false)
+      {
+        app.add_option((*iter).first, (*iter).second);
+      }
+      else
+      {
+        app.add_option((*iter).first);
+      }
     }
   }
 

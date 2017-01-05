@@ -44,14 +44,11 @@
 #include <cassert>
 
 memcached_server_st *__server_create_with(memcached_st *memc,
-                                          memcached_server_write_instance_st host,
+                                          memcached_server_st* self,
                                           const memcached_string_t& hostname,
                                           const in_port_t port,
-                                          uint32_t weight,
+                                          uint32_t weight, 
                                           const memcached_connection_t type);
-
-memcached_server_st *memcached_server_clone(memcached_server_st *destination,
-                                            memcached_server_st *source);
 
 memcached_return_t memcached_server_add_parsed(memcached_st *ptr,
                                                const char *hostname,
@@ -63,57 +60,47 @@ void __server_free(memcached_server_st *);
 
 static inline bool memcached_is_valid_servername(const memcached_string_t& arg)
 {
-  return arg.size > 0 or arg.size < NI_MAXHOST;
+  return (arg.c_str != NULL or arg.size == 0) and arg.size < MEMCACHED_NI_MAXHOST;
 }
 
-static inline void memcached_mark_server_as_clean(memcached_server_write_instance_st server)
+static inline bool memcached_is_valid_filename(const memcached_string_t& arg)
 {
-  server->server_failure_counter= 0;
-  server->next_retry= 0;
+  return arg.c_str != NULL and arg.size > 0 and arg.size < MEMCACHED_NI_MAXHOST;
 }
 
+void memcached_instance_free(memcached_instance_st *);
 
-static inline void set_last_disconnected_host(memcached_server_write_instance_st self)
-{
-  assert(self->root);
-  if (self->root == NULL)
-  {
-    return;
-  }
+void set_last_disconnected_host(memcached_instance_st* self);
 
-  if (self->root->last_disconnected_server and self->root->last_disconnected_server->version == self->version)
-  {
-    return;
-  }
-
-  // const_cast
-  memcached_st *root= (memcached_st *)self->root;
-
-  memcached_server_free(root->last_disconnected_server);
-  root->last_disconnected_server= memcached_server_clone(NULL, self);
-  root->last_disconnected_server->version= self->version;
-}
-
-static inline void memcached_mark_server_for_timeout(memcached_server_write_instance_st server)
+static inline void memcached_mark_server_for_timeout(memcached_instance_st* server)
 {
   if (server->state != MEMCACHED_SERVER_STATE_IN_TIMEOUT)
   {
-    struct timeval next_time;
-    if (gettimeofday(&next_time, NULL) == 0)
+    if (server->server_timeout_counter_query_id != server->root->query_id)
     {
-      server->next_retry= next_time.tv_sec +server->root->retry_timeout;
-    }
-    else
-    {
-      server->next_retry= 1; // Setting the value to 1 causes the timeout to occur immediatly
+      server->server_timeout_counter++;
+      server->server_timeout_counter_query_id= server->root->query_id;
     }
 
-    server->state= MEMCACHED_SERVER_STATE_IN_TIMEOUT;
-    if (server->server_failure_counter_query_id != server->root->query_id)
+    if (server->server_timeout_counter >= server->root->server_timeout_limit)
     {
-      server->server_failure_counter++;
-      server->server_failure_counter_query_id= server->root->query_id;
+      struct timeval next_time;
+      if (gettimeofday(&next_time, NULL) == 0)
+      {
+        server->next_retry= next_time.tv_sec +server->root->retry_timeout;
+      }
+      else
+      {
+        server->next_retry= 1; // Setting the value to 1 causes the timeout to occur immediatly
+      }
+
+      server->state= MEMCACHED_SERVER_STATE_IN_TIMEOUT;
+      if (server->server_failure_counter_query_id != server->root->query_id)
+      {
+        server->server_failure_counter++;
+        server->server_failure_counter_query_id= server->root->query_id;
+      }
+      set_last_disconnected_host(server);
     }
-    set_last_disconnected_host(server);
   }
 }

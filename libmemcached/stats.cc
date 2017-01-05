@@ -2,7 +2,7 @@
  * 
  *  Libmemcached library
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2011-2013 Data Differential, http://datadifferential.com/
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -91,15 +91,20 @@ static memcached_return_t set_data(memcached_stat_st *memc_stat, const char *key
   }
   else if (strcmp("pid", key) == 0)
   {
+    errno= 0;
     int64_t temp= strtoll(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
 
     if (temp <= INT32_MAX and ( sizeof(pid_t) == sizeof(int32_t) ))
     {
-      memc_stat->pid= temp;
+      memc_stat->pid= pid_t(temp);
     }
     else if (temp > -1)
     {
-      memc_stat->pid= temp;
+      memc_stat->pid= pid_t(temp);
     }
     else
     {
@@ -109,11 +114,21 @@ static memcached_return_t set_data(memcached_stat_st *memc_stat, const char *key
   }
   else if (not strcmp("uptime", key))
   {
+    errno= 0;
     memc_stat->uptime= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("time", key))
   {
+    errno= 0;
     memc_stat->time= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("version", key))
   {
@@ -122,7 +137,12 @@ static memcached_return_t set_data(memcached_stat_st *memc_stat, const char *key
   }
   else if (not strcmp("pointer_size", key))
   {
+    errno= 0;
     memc_stat->pointer_size= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("rusage_user", key))
   {
@@ -130,8 +150,20 @@ static memcached_return_t set_data(memcached_stat_st *memc_stat, const char *key
     for (walk_ptr= (char*)value; (!ispunct(*walk_ptr)); walk_ptr++) {};
     *walk_ptr= 0;
     walk_ptr++;
+
+    errno= 0;
     memc_stat->rusage_user_seconds= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
+
+    errno= 0;
     memc_stat->rusage_user_microseconds= strtoul(walk_ptr, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("rusage_system", key))
   {
@@ -139,85 +171,172 @@ static memcached_return_t set_data(memcached_stat_st *memc_stat, const char *key
     for (walk_ptr= (char*)value; (!ispunct(*walk_ptr)); walk_ptr++) {};
     *walk_ptr= 0;
     walk_ptr++;
+
+    errno= 0;
     memc_stat->rusage_system_seconds= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
+
+    errno= 0;
     memc_stat->rusage_system_microseconds= strtoul(walk_ptr, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("curr_items", key))
   {
+    errno= 0;
     memc_stat->curr_items= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("total_items", key))
   {
+    errno= 0;
     memc_stat->total_items= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("bytes_read", key))
   {
+    errno= 0;
     memc_stat->bytes_read= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("bytes_written", key))
   {
+    errno= 0;
     memc_stat->bytes_written= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("bytes", key))
   {
+    errno= 0;
     memc_stat->bytes= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("curr_connections", key))
   {
+    errno= 0;
     memc_stat->curr_connections= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("total_connections", key))
   {
+    errno= 0;
     memc_stat->total_connections= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("connection_structures", key))
   {
+    errno= 0;
     memc_stat->connection_structures= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("cmd_get", key))
   {
+    errno= 0;
     memc_stat->cmd_get= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("cmd_set", key))
   {
+    errno= 0;
     memc_stat->cmd_set= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("get_hits", key))
   {
+    errno= 0;
     memc_stat->get_hits= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("get_misses", key))
   {
+    errno= 0;
     memc_stat->get_misses= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("evictions", key))
   {
+    errno= 0;
     memc_stat->evictions= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("limit_maxbytes", key))
   {
+    errno= 0;
     memc_stat->limit_maxbytes= strtoull(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
   else if (not strcmp("threads", key))
   {
+    errno= 0;
     memc_stat->threads= strtoul(value, (char **)NULL, 10);
+    if (errno != 0)
+    {
+      return MEMCACHED_FAILURE;
+    }
   }
-  else if (not (strcmp("delete_misses", key) == 0 or /* New stats in the 1.3 beta */
-                strcmp("delete_hits", key) == 0 or /* Just swallow them for now.. */
-                strcmp("incr_misses", key) == 0 or
-                strcmp("incr_hits", key) == 0 or
-                strcmp("decr_misses", key) == 0 or
-                strcmp("decr_hits", key) == 0 or
-                strcmp("cas_misses", key) == 0 or
-                strcmp("cas_hits", key) == 0 or
-                strcmp("cas_badval", key) == 0 or
-                strcmp("cmd_flush", key) == 0 or
-                strcmp("accepting_conns", key) == 0 or
-                strcmp("listen_disabled_num", key) == 0 or
-                strcmp("conn_yields", key) == 0 or
-                strcmp("auth_cmds", key) == 0 or
-                strcmp("auth_errors", key) == 0 or
-                strcmp("reclaimed", key) == 0))
+  else if ((strcmp("delete_misses", key) == 0 or /* New stats in the 1.3 beta */
+            strcmp("delete_hits", key) == 0 or /* Just swallow them for now.. */
+            strcmp("incr_misses", key) == 0 or
+            strcmp("incr_hits", key) == 0 or
+            strcmp("decr_misses", key) == 0 or
+            strcmp("decr_hits", key) == 0 or
+            strcmp("cas_misses", key) == 0 or
+            strcmp("cas_hits", key) == 0 or
+            strcmp("cas_badval", key) == 0 or
+            strcmp("cmd_flush", key) == 0 or
+            strcmp("accepting_conns", key) == 0 or
+            strcmp("listen_disabled_num", key) == 0 or
+            strcmp("conn_yields", key) == 0 or
+            strcmp("auth_cmds", key) == 0 or
+            strcmp("auth_errors", key) == 0 or
+            strcmp("reclaimed", key) == 0) == 0)
   {
     WATCHPOINT_STRING(key);
     /* return MEMCACHED_UNKNOWN_STAT_KEY; */
@@ -227,12 +346,23 @@ static memcached_return_t set_data(memcached_stat_st *memc_stat, const char *key
   return MEMCACHED_SUCCESS;
 }
 
-char *memcached_stat_get_value(const memcached_st *ptr, memcached_stat_st *memc_stat,
+char *memcached_stat_get_value(const memcached_st* shell, memcached_stat_st *memc_stat,
                                const char *key, memcached_return_t *error)
 {
+  memcached_return_t not_used;
+  if (error == NULL)
+  {
+    error= &not_used;
+  }
+
+  if (memc_stat == NULL)
+  {
+    *error= MEMCACHED_INVALID_ARGUMENTS;
+    return NULL;
+  }
+
   char buffer[SMALL_STRING_LEN];
   int length;
-  char *ret;
 
   *error= MEMCACHED_SUCCESS;
 
@@ -326,17 +456,20 @@ char *memcached_stat_get_value(const memcached_st *ptr, memcached_stat_st *memc_
   }
   else
   {
-    *error= MEMCACHED_NOTFOUND;
+    Memcached* memc= (Memcached*)memcached2Memcached(shell);
+    *error= memcached_set_error(*memc, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT, memcached_literal_param("Invalid key provided"));
     return NULL;
   }
 
   if (length >= SMALL_STRING_LEN || length < 0)
   {
-    *error= MEMCACHED_FAILURE;
+    Memcached* memc= (Memcached*)memcached2Memcached(shell);
+    *error= memcached_set_error(*memc, MEMCACHED_FAILURE, MEMCACHED_AT, memcached_literal_param("Internal failure occured with buffer, please report this bug."));
     return NULL;
   }
 
-  ret= static_cast<char *>(libmemcached_malloc(ptr, (size_t) (length + 1)));
+  // User is responsible for free() memory, so use malloc()
+  char *ret= static_cast<char *>(malloc(size_t(length +1)));
   memcpy(ret, buffer, (size_t) length);
   ret[length]= '\0';
 
@@ -346,12 +479,14 @@ char *memcached_stat_get_value(const memcached_st *ptr, memcached_stat_st *memc_
 static memcached_return_t binary_stats_fetch(memcached_stat_st *memc_stat,
                                              const char *args,
                                              const size_t args_length,
-                                             memcached_server_write_instance_st instance,
+                                             memcached_instance_st* instance,
                                              struct local_context *check)
 {
   char buffer[MEMCACHED_DEFAULT_COMMAND_SIZE];
   protocol_binary_request_stats request= {}; // = {.bytes= {0}};
-  request.message.header.request.magic= PROTOCOL_BINARY_REQ;
+
+  initialize_binary_request(instance, request.message.header);
+
   request.message.header.request.opcode= PROTOCOL_BINARY_CMD_STAT;
   request.message.header.request.datatype= PROTOCOL_BINARY_RAW_BYTES;
 
@@ -387,7 +522,7 @@ static memcached_return_t binary_stats_fetch(memcached_stat_st *memc_stat,
   }
 
   memcached_server_response_decrement(instance);
-  do
+  while (1)
   {
     memcached_return_t rc= memcached_response(instance, buffer, sizeof(buffer), NULL);
 
@@ -420,13 +555,13 @@ static memcached_return_t binary_stats_fetch(memcached_stat_st *memc_stat,
         WATCHPOINT_ASSERT(0);
       }
     }
-  } while (1);
+  }
 
   /* 
    * memcached_response will decrement the counter, so I need to reset it..
    * todo: look at this and try to find a better solution.  
    * */
-  instance->cursor_active= 0;
+  instance->cursor_active_= 0;
 
   return MEMCACHED_SUCCESS;
 }
@@ -434,7 +569,7 @@ static memcached_return_t binary_stats_fetch(memcached_stat_st *memc_stat,
 static memcached_return_t ascii_stats_fetch(memcached_stat_st *memc_stat,
                                             const char *args,
                                             const size_t args_length,
-                                            memcached_server_write_instance_st instance,
+                                            memcached_instance_st* instance,
                                             struct local_context *check)
 {
   libmemcached_io_vector_st vector[]=
@@ -500,8 +635,9 @@ static memcached_return_t ascii_stats_fetch(memcached_stat_st *memc_stat,
   return rc;
 }
 
-memcached_stat_st *memcached_stat(memcached_st *self, char *args, memcached_return_t *error)
+memcached_stat_st *memcached_stat(memcached_st *shell, char *args, memcached_return_t *error)
 {
+  Memcached* self= memcached2Memcached(shell);
   memcached_return_t unused;
   if (error == NULL)
   {
@@ -524,8 +660,7 @@ memcached_stat_st *memcached_stat(memcached_st *self, char *args, memcached_retu
   if (args)
   {
     args_length= strlen(args);
-    rc= memcached_validate_key_length(args_length, self->flags.binary_protocol);
-    if (memcached_failed(rc))
+    if (memcached_failed(rc= memcached_key_test(*self, (const char **)&args, &args_length, 1)))
     {
       *error= memcached_set_error(*self, rc, MEMCACHED_AT);
       return NULL;
@@ -550,7 +685,7 @@ memcached_stat_st *memcached_stat(memcached_st *self, char *args, memcached_retu
     stat_instance->pid= -1;
     stat_instance->root= self;
 
-    memcached_server_write_instance_st instance= memcached_server_instance_fetch(self, x);
+    memcached_instance_st* instance= memcached_instance_fetch(self, x);
 
     memcached_return_t temp_return;
     if (memcached_is_binary(self))
@@ -585,6 +720,12 @@ memcached_return_t memcached_stat_servername(memcached_stat_st *memc_stat, char 
 {
   memcached_st memc;
 
+  memcached_stat_st unused_memc_stat;
+  if (memc_stat == NULL)
+  {
+    memc_stat= &unused_memc_stat;
+  }
+
   memset(memc_stat, 0, sizeof(memcached_stat_st));
 
   memcached_st *memc_ptr= memcached_create(&memc);
@@ -606,12 +747,12 @@ memcached_return_t memcached_stat_servername(memcached_stat_st *memc_stat, char 
     if (args)
     {
       args_length= strlen(args);
-      rc= memcached_validate_key_length(args_length, memc.flags.binary_protocol);
+      rc= memcached_key_test(*memc_ptr, (const char **)&args, &args_length, 1);
     }
 
     if (memcached_success(rc))
     {
-      memcached_server_write_instance_st instance= memcached_server_instance_fetch(memc_ptr, 0);
+      memcached_instance_st* instance= memcached_instance_fetch(memc_ptr, 0);
       if (memc.flags.binary_protocol)
       {
         rc= binary_stats_fetch(memc_stat, args, args_length, instance, NULL);
@@ -632,68 +773,74 @@ memcached_return_t memcached_stat_servername(memcached_stat_st *memc_stat, char 
   We make a copy of the keys since at some point in the not so distant future
   we will add support for "found" keys.
 */
-char ** memcached_stat_get_keys(memcached_st *ptr,
+char ** memcached_stat_get_keys(memcached_st *shell,
                                 memcached_stat_st *,
                                 memcached_return_t *error)
 {
-  if (ptr == NULL)
+  Memcached* memc= memcached2Memcached(shell);
+  if (memc)
   {
-    return NULL;
+    char **list= static_cast<char **>(libmemcached_malloc(memc, sizeof(memcached_stat_keys)));
+    if (list == NULL)
+    {
+      if (error)
+      {
+        *error= memcached_set_error(*memc, MEMCACHED_MEMORY_ALLOCATION_FAILURE, MEMCACHED_AT);
+      }
+
+      return NULL;
+    }
+
+    memcpy(list, memcached_stat_keys, sizeof(memcached_stat_keys));
+
+    if (error)
+    {
+      *error= MEMCACHED_SUCCESS;
+    }
+
+    return list;
   }
 
-  char **list= static_cast<char **>(libmemcached_malloc(ptr, sizeof(memcached_stat_keys)));
-  if (not list)
-  {
-    *error= memcached_set_error(*ptr, MEMCACHED_MEMORY_ALLOCATION_FAILURE, MEMCACHED_AT);
-    return NULL;
-  }
-
-  memcpy(list, memcached_stat_keys, sizeof(memcached_stat_keys));
-
-  *error= MEMCACHED_SUCCESS;
-
-  return list;
+  return NULL;
 }
 
 void memcached_stat_free(const memcached_st *, memcached_stat_st *memc_stat)
 {
   WATCHPOINT_ASSERT(memc_stat); // Be polite, but when debugging catch this as an error
-  if (memc_stat == NULL)
-  {
-    return;
-  }
-
-  if (memc_stat->root)
+  if (memc_stat)
   {
     libmemcached_free(memc_stat->root, memc_stat);
-    return;
   }
-
-  libmemcached_free(NULL, memc_stat);
 }
 
-static memcached_return_t call_stat_fn(memcached_st *ptr,
-                                       memcached_server_write_instance_st instance,
+static memcached_return_t call_stat_fn(memcached_st *memc,
+                                       memcached_instance_st* instance,
                                        void *context)
 {
-  memcached_return_t rc;
-  local_context *check= (struct local_context *)context;
-
-  if (memcached_is_binary(ptr))
+  if (memc)
   {
-    rc= binary_stats_fetch(NULL, check->args, check->args_length, instance, check);
-  }
-  else
-  {
-    rc= ascii_stats_fetch(NULL, check->args, check->args_length, instance, check);
+    local_context *check= (struct local_context *)context;
+
+    if (memcached_is_binary(memc))
+    {
+      return binary_stats_fetch(NULL, check->args, check->args_length, instance, check);
+    }
+    else
+    {
+      return ascii_stats_fetch(NULL, check->args, check->args_length, instance, check);
+    }
   }
 
-  return rc;
+  return MEMCACHED_INVALID_ARGUMENTS;
 }
 
-memcached_return_t memcached_stat_execute(memcached_st *memc, const char *args,  memcached_stat_fn func, void *context)
+memcached_return_t memcached_stat_execute(memcached_st *shell, const char *args,  memcached_stat_fn func, void *context)
 {
-  memcached_version(memc);
+  Memcached* memc= memcached2Memcached(shell);
+  if (memcached_fatal(memcached_version(memc)))
+  {
+    return memcached_last_error(memc);
+  }
 
  local_context check(func, context, args, args ? strlen(args) : 0);
 

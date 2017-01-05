@@ -46,6 +46,9 @@
 #include <ctype.h>
 #include <stdio.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
+
 /*
 ** **********************************************************************
 ** INTERNAL INTERFACE
@@ -318,6 +321,7 @@ struct memcached_protocol_st *memcached_protocol_create_instance(void)
     {
       free(ret->input_buffer);
       free(ret);
+      ret= NULL;
     }
   }
 

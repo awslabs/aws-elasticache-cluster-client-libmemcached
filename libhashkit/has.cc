@@ -1,8 +1,9 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
  * 
- *  Libmemcached library
+ *  HashKit library
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2009 Brian Aker All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -34,6 +35,7 @@
  *
  */
 
+
 #include <libhashkit/common.h>
 
 bool libhashkit_has_algorithm(const hashkit_hash_algorithm_t algo)
@@ -55,6 +57,7 @@ bool libhashkit_has_algorithm(const hashkit_hash_algorithm_t algo)
     return false;
 #endif
 
+  case HASHKIT_HASH_MURMUR3:
   case HASHKIT_HASH_MURMUR:
 #ifdef HAVE_MURMUR_HASH
     return true;

@@ -34,15 +34,11 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 #include <libtest/gearmand.h>
 
-#include "util/instance.hpp"
-#include "util/operation.hpp"
-
-using namespace datadifferential;
 using namespace libtest;
 
 #include <cassert>
@@ -57,8 +53,6 @@ using namespace libtest;
 #include <sys/wait.h>
 #include <unistd.h>
 
-#include <libgearman/gearman.h>
-
 #ifndef __INTEL_COMPILER
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #endif
@@ -69,43 +63,28 @@ class Gearmand : public libtest::Server
 {
 private:
 public:
-  Gearmand(const std::string& host_arg, in_port_t port_arg) :
-    libtest::Server(host_arg, port_arg, GEARMAND_BINARY, true)
-  {
-    set_pid_file();
-  }
+  Gearmand(const std::string& host_arg, in_port_t port_arg, bool libtool_, const char* binary);
 
   bool ping()
   {
-    gearman_client_st *client= gearman_client_create(NULL);
-    if (client == NULL)
+    reset_error();
+
+    if (out_of_ban_killed())
     {
-      Error << "Could not allocate memory for gearman_client_create()";
       return false;
     }
-    gearman_client_set_timeout(client, 3000);
 
-    if (gearman_success(gearman_client_add_server(client, hostname().c_str(), port())))
-    {
-      gearman_return_t rc= gearman_client_echo(client, test_literal_param("This is my echo test"));
+    SimpleClient client(_hostname, _port);
 
-      if (gearman_success(rc))
-      {
-        gearman_client_free(client);
-        return true;
-      }
-#if 0
-      Error << hostname().c_str() << ":" << port() << " was " << gearman_strerror(rc) << " extended: " << gearman_client_error(client);
-#endif
-    }
-    else
+    std::string response;
+    bool ret= client.send_message("version", response);
+
+    if (client.is_error())
     {
-      Error << "gearman_client_add_server() " << gearman_client_error(client);
+      error(client.error());
     }
 
-    gearman_client_free(client);
-
-    return false;;
+    return ret;
   }
 
   const char *name()
@@ -144,10 +123,16 @@ public:
     return true;
   }
 
-  bool build(size_t argc, const char *argv[]);
+  bool build();
 };
 
-bool Gearmand::build(size_t argc, const char *argv[])
+Gearmand::Gearmand(const std::string& host_arg, in_port_t port_arg, bool libtool_, const char* binary_arg) :
+  libtest::Server(host_arg, port_arg, binary_arg, libtool_)
+{
+  set_pid_file();
+}
+
+bool Gearmand::build()
 {
   if (getuid() == 0 or geteuid() == 0)
   {
@@ -156,19 +141,38 @@ bool Gearmand::build(size_t argc, const char *argv[])
 
   add_option("--listen=localhost");
 
-  for (size_t x= 0 ; x < argc ; x++)
-  {
-    add_option(argv[x]);
-  }
-
   return true;
 }
 
 namespace libtest {
 
-libtest::Server *build_gearmand(const char *hostname, in_port_t try_port)
+libtest::Server *build_gearmand(const char *hostname, in_port_t try_port, const char* binary)
 {
-  return new Gearmand(hostname, try_port);
+  if (binary == NULL)
+  {
+#if defined(HAVE_GEARMAND_BINARY)
+# if defined(GEARMAND_BINARY)
+    if (HAVE_GEARMAND_BINARY)
+    {
+      binary= GEARMAND_BINARY;
+    }
+# endif
+#endif
+  }
+
+  if (binary == NULL)
+  {
+    return NULL;
+  }
+
+  bool is_libtool_script= true;
+
+  if (binary[0] == '/')
+  {
+    is_libtool_script= false;
+  }
+
+  return new Gearmand(hostname, try_port, is_libtool_script, binary);
 }
 
 }

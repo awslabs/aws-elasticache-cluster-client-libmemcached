@@ -2,7 +2,7 @@
  * 
  *  Libmemcached library
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  *  Copyright (C) 2006-2009 Brian Aker All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -36,9 +36,10 @@
  */
 
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <cassert>
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -50,12 +51,11 @@
 #include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/types.h>
-#include <sys/types.h>
 #include <unistd.h>
 
 #include <iostream>
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 #include "client_options.h"
 #include "utilities.h"
@@ -65,6 +65,8 @@
 #define DEFAULT_INITIAL_LOAD 10000
 #define DEFAULT_EXECUTE_NUMBER 10000
 #define DEFAULT_CONCURRENCY 1
+
+#define VALUE_BYTES 4096
 
 #define PROGRAM_NAME "memslap"
 #define PROGRAM_DESCRIPTION "Generates a load against a memcached custer of servers."
@@ -159,7 +161,7 @@ test_t opt_test= SET_TEST;
 
 extern "C" {
 
-static void *run_task(void *p)
+static __attribute__((noreturn)) void *run_task(void *p)
 {
   thread_context_st *context= (thread_context_st *)p;
 
@@ -212,19 +214,33 @@ int main(int argc, char *argv[])
     {
       opt_servers= strdup(temp);
     }
-    else
+    
+    if (opt_servers == NULL)
     {
-      fprintf(stderr, "No Servers provided\n");
-      return EXIT_FAILURE;
+      std::cerr << "No Servers provided" << std::endl;
+      exit(EXIT_FAILURE);
     }
   }
 
   memcached_server_st *servers= memcached_servers_parse(opt_servers);
+  if (servers == NULL or memcached_server_list_count(servers) == 0)
+  {
+    std::cerr << "Invalid server list provided:" << opt_servers << std::endl;
+    return EXIT_FAILURE;
+  }
 
   pthread_mutex_init(&sleeper_mutex, NULL);
   pthread_cond_init(&sleep_threshhold, NULL);
 
-  scheduler(servers, &conclusion);
+  int error_code= EXIT_SUCCESS;
+  try {
+    scheduler(servers, &conclusion);
+  }
+  catch(std::exception& e)
+  {
+    std::cerr << "Died with exception: " << e.what() << std::endl;
+    error_code= EXIT_FAILURE;
+  }
 
   free(opt_servers);
 
@@ -233,7 +249,7 @@ int main(int argc, char *argv[])
   conclusions_print(&conclusion);
   memcached_server_list_free(servers);
 
-  return EXIT_SUCCESS;
+  return error_code;
 }
 
 void scheduler(memcached_server_st *servers, conclusions_st *conclusion)
@@ -305,7 +321,7 @@ void scheduler(memcached_server_st *servers, conclusions_st *conclusion)
 
   pthread_t *threads= new  (std::nothrow) pthread_t[opt_concurrency];
 
-  if (not threads)
+  if (threads == NULL)
   {
     exit(EXIT_FAILURE);
   }
@@ -322,7 +338,7 @@ void scheduler(memcached_server_st *servers, conclusions_st *conclusion)
 
     if (opt_test == SET_TEST)
     {
-      context->execute_pairs= pairs_generate(opt_execute_number, 400);
+      context->execute_pairs= pairs_generate(opt_execute_number, VALUE_BYTES);
       context->execute_number= opt_execute_number;
     }
 
@@ -418,7 +434,7 @@ void options_parse(int argc, char *argv[])
       break;
 
     case OPT_DEBUG: /* --debug or -d */
-      opt_verbose = OPT_DEBUG;
+      opt_verbose= OPT_DEBUG;
       break;
 
     case OPT_VERSION: /* --version or -V */
@@ -460,15 +476,33 @@ void options_parse(int argc, char *argv[])
       break;
 
     case OPT_SLAP_CONCURRENCY:
+      errno= 0;
       opt_concurrency= (unsigned int)strtoul(optarg, (char **)NULL, 10);
+      if (errno != 0)
+      {
+        fprintf(stderr, "Invalid value for concurrency: %s\n", optarg);
+        exit(EXIT_FAILURE);
+      }
       break;
 
     case OPT_SLAP_EXECUTE_NUMBER:
+      errno= 0;
       opt_execute_number= (unsigned int)strtoul(optarg, (char **)NULL, 10);
+      if (errno != 0)
+      {
+        fprintf(stderr, "Invalid value for execute: %s\n", optarg);
+        exit(EXIT_FAILURE);
+      }
       break;
 
     case OPT_SLAP_INITIAL_LOAD:
+      errno= 0;
       opt_createial_load= (unsigned int)strtoul(optarg, (char **)NULL, 10);
+      if (errno != 0)
+      {
+        fprintf(stderr, "Invalid value for initial load: %s\n", optarg);
+        exit(EXIT_FAILURE);
+      }
       break;
 
     case OPT_QUIET:
@@ -534,7 +568,7 @@ pairs_st *load_create_data(memcached_st *memc, unsigned int number_of,
   /* We always used non-blocking IO for load since it is faster */
   memcached_behavior_set(memc_clone, MEMCACHED_BEHAVIOR_NO_BLOCK, 0);
 
-  pairs_st *pairs= pairs_generate(number_of, 400);
+  pairs_st *pairs= pairs_generate(number_of, VALUE_BYTES);
   *actual_loaded= execute_set(memc_clone, pairs, number_of);
 
   memcached_free(memc_clone);

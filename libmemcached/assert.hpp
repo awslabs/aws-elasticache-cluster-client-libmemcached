@@ -2,7 +2,7 @@
  * 
  *  libmcachedd client library.
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2011-2013 Data Differential, http://datadifferential.com/
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,34 @@
 
 #pragma once
 
-#include <cstdlib>
-#include <cstdio>
+#ifdef __cplusplus
+# include <cassert>
+#else
+# include <assert.h>
+#endif // __cplusplus
 
 #ifdef NDEBUG
-#define assert_msg(__expr, __mesg) (void)(__expr); (void)(__mesg);
+# define assert_msg(__expr, __mesg) (void)(__expr); (void)(__mesg);
+# define assert_vmsg(__expr, __mesg, ...) (void)(__expr); (void)(__mesg);
 #else
 
-#define assert_msg(__expr, __mesg) \
+# ifdef _WIN32
+#  include <malloc.h>
+# else
+#  include <alloca.h>
+# endif
+
+#ifdef __cplusplus
+# include <cstdarg>
+# include <cstdio>
+#else
+# include <stdarg.h>
+# include <stdio.h>
+#endif
+
+# include <libmemcached/backtrace.hpp>
+
+# define assert_msg(__expr, __mesg) \
 do \
 { \
   if (not (__expr)) \
@@ -55,4 +75,19 @@ do \
   } \
 } while (0)
 
-#endif
+# define assert_vmsg(__expr, __mesg, ...) \
+do \
+{ \
+  if (not (__expr)) \
+  { \
+    size_t ask= snprintf(0, 0, (__mesg), __VA_ARGS__); \
+    ask++; \
+    char *_error_message= (char*)alloca(sizeof(char) * ask); \
+    size_t _error_message_size= snprintf(_error_message, ask, (__mesg), __VA_ARGS__); \
+    fprintf(stderr, "\n%s:%d Assertion '%s' failed for function '%s' [ %.*s ]\n", __FILE__, __LINE__, #__expr, __func__, int(_error_message_size), _error_message);\
+    custom_backtrace(); \
+    abort(); \
+  } \
+} while (0)
+
+#endif // NDEBUG

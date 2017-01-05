@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 #include <csignal>
@@ -91,11 +91,25 @@ void SignalThread::test()
   assert(magic_memory == MAGIC_MEMORY);
   if (bool(getenv("LIBTEST_IN_GDB")) == false)
   {
+    assert(sigismember(&set, SIGALRM));
     assert(sigismember(&set, SIGABRT));
     assert(sigismember(&set, SIGQUIT));
     assert(sigismember(&set, SIGINT));
+    assert(sigismember(&set, SIGVTALRM));
   }
   assert(sigismember(&set, SIGUSR2));
+}
+
+bool SignalThread::unblock()
+{
+  int error;
+  if ((error= pthread_sigmask(SIG_UNBLOCK, &set, NULL)) != 0)
+  {
+    Error << "While trying to reset signal mask to original set, pthread_sigmask() died during pthread_sigmask(" << strerror(error) << ")";
+    return false;
+  }
+
+  return true;
 }
 
 SignalThread::~SignalThread()
@@ -114,11 +128,7 @@ SignalThread::~SignalThread()
 #endif
   sem_destroy(&lock);
 
-  int error;
-  if ((error= pthread_sigmask(SIG_UNBLOCK, &set, NULL)) != 0)
-  {
-    Error << "While trying to reset signal mask to original set, pthread_sigmask() died during pthread_sigmask(" << strerror(error) << ")";
-  }
+  unblock();
 }
 
 extern "C" {
@@ -142,6 +152,15 @@ static void *sig_thread(void *arg)
 
     switch (sig)
     {
+    case SIGALRM:
+    case SIGVTALRM:
+      Error << strsignal(sig);
+      if (gdb_is_caller())
+      {
+        abort();
+      }
+      exit(EXIT_FAILURE);
+
     case SIGABRT:
     case SIGUSR2:
     case SIGINT:
@@ -180,9 +199,11 @@ SignalThread::SignalThread() :
   sigemptyset(&set);
   if (bool(getenv("LIBTEST_IN_GDB")) == false)
   {
+    sigaddset(&set, SIGALRM);
     sigaddset(&set, SIGABRT);
     sigaddset(&set, SIGQUIT);
     sigaddset(&set, SIGINT);
+    sigaddset(&set, SIGVTALRM);
   }
   sigaddset(&set, SIGPIPE);
 
@@ -203,10 +224,17 @@ bool SignalThread::setup()
   {
     Error << strsignal(SIGQUIT) << " has been previously set.";
   }
+
   if (sigismember(&original_set, SIGINT))
   {
     Error << strsignal(SIGINT) << " has been previously set.";
   }
+
+  if (sigismember(&original_set, SIGVTALRM))
+  {
+    Error << strsignal(SIGVTALRM) << " has been previously set.";
+  }
+
   if (sigismember(&original_set, SIGUSR2))
   {
     Error << strsignal(SIGUSR2) << " has been previously set.";

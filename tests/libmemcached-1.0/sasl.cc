@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
@@ -43,14 +43,15 @@ using namespace libtest;
   Test cases
 */
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 static test_return_t pre_sasl(memcached_st *)
 {
-  if (LIBMEMCACHED_WITH_SASL_SUPPORT == 0)
-  {
-    return TEST_SKIPPED;
-  }
+  SKIP_IF(true);
+#if 0
+  SKIP_IF_(true, "currently we are not testing sasl support");
+#endif
+  SKIP_IF(LIBMEMCACHED_WITH_SASL_SUPPORT == 0);
 
   return TEST_SUCCESS;
 }
@@ -63,6 +64,7 @@ static test_return_t pre_sasl(memcached_st *)
  */
 static test_return_t sasl_auth_test(memcached_st *memc)
 {
+#ifdef LIBMEMCACHED_WITH_SASL_SUPPORT
   if (LIBMEMCACHED_WITH_SASL_SUPPORT)
   {
     test_compare(MEMCACHED_SUCCESS, memcached_set(memc, "foo", 3, "bar", 3, (time_t)0, (uint32_t)0));
@@ -79,6 +81,9 @@ static test_return_t sasl_auth_test(memcached_st *memc)
     memcached_quit(memc);
     return TEST_SUCCESS;
   }
+#else
+  (void)memc;
+#endif
 
   return TEST_SKIPPED;
 }
@@ -99,7 +104,7 @@ collection_st collection[] ={
 
 #include "tests/libmemcached_world.h"
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
 

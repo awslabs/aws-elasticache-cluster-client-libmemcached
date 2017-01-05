@@ -39,11 +39,11 @@
   Test that we are cycling the servers we are creating during testing.
 */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <libtest/test.hpp>
-#include <libmemcached/memcached.h>
-#include <libmemcached/util.h>
+#include <libmemcached-1.0/memcached.h>
+#include <libmemcachedutil-1.0/util.h>
 
 using namespace libtest;
 
@@ -64,10 +64,10 @@ static test_return_t help_test(void *)
 static test_return_t exist_test(void *)
 {
   char buffer[1024];
-  snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
+  int length= snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
   const char *args[]= { buffer, "foo", 0 };
 
-  memcached_st *memc= memcached(buffer, strlen(buffer));
+  memcached_st *memc= memcached(buffer, length);
   test_true(memc);
 
   test_compare(MEMCACHED_SUCCESS,
@@ -90,11 +90,11 @@ static test_return_t exist_test(void *)
 static test_return_t NOT_FOUND_test(void *)
 {
   char buffer[1024];
-  snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
+  int length= snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
   const char *args[]= { buffer, "foo", 0 };
 
-  memcached_st *memc= memcached(buffer, strlen(buffer));
-  test_true(memc);
+  memcached_st *memc= memcached(buffer, length);
+  ASSERT_TRUE(memc);
 
   test_compare(MEMCACHED_SUCCESS, memcached_flush(memc, 0));
 
@@ -115,9 +115,9 @@ static test_return_t NOT_FOUND_test(void *)
 static test_return_t check_version(void*)
 {
   char buffer[1024];
-  snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
-  memcached_st *memc= memcached(buffer, strlen(buffer));
-  test_true(memc);
+  int length= snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
+  memcached_st *memc= memcached(buffer, length);
+  ASSERT_TRUE(memc);
   
   test_return_t result= TEST_SUCCESS;
   if (libmemcached_util_version_check(memc, 1, 4, 8) == false)
@@ -143,22 +143,22 @@ collection_st collection[] ={
 
 static void *world_create(server_startup_st& servers, test_return_t& error)
 {
-  if (HAVE_MEMCACHED_BINARY == 0)
+  if (libtest::has_memcached() == false)
   {
     error= TEST_SKIPPED;
     return NULL;
   }
 
-  if (server_startup(servers, "memcached", libtest::default_port(), 0, NULL) == false)
+  if (server_startup(servers, "memcached", libtest::default_port(), NULL) == false)
   {
-    error= TEST_FAILURE;
+    error= TEST_SKIPPED;
   }
 
   return &servers;
 }
 
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
   world->create(world_create);

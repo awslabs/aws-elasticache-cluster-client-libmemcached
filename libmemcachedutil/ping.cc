@@ -54,28 +54,31 @@ bool libmemcached_util_ping(const char *hostname, in_port_t port, memcached_retu
     return false;
   }
 
-  memcached_return_t rc= memcached_server_add(memc_ptr, hostname, port);
-  if (memcached_success(rc))
+  if (memcached_success((*ret= memcached_behavior_set(memc_ptr, MEMCACHED_BEHAVIOR_CONNECT_TIMEOUT, 400000))))
   {
-    rc= memcached_version(memc_ptr);
-  }
-
-  if (memcached_failed(rc) and rc == MEMCACHED_SOME_ERRORS)
-  {
-    memcached_server_instance_st instance=
-      memcached_server_instance_by_position(memc_ptr, 0);
-
-    assert_msg(instance and instance->error_messages, " ");
-    if (instance and instance->error_messages)
+    memcached_return_t rc= memcached_server_add(memc_ptr, hostname, port);
+    if (memcached_success(rc))
     {
-      rc= memcached_server_error_return(instance);
+      rc= memcached_version(memc_ptr);
     }
+
+    if (memcached_failed(rc) and rc == MEMCACHED_SOME_ERRORS)
+    {
+      const memcached_instance_st * instance=
+        memcached_server_instance_by_position(memc_ptr, 0);
+
+      assert_msg(instance and memcached_server_error(instance), " ");
+      if (instance and memcached_server_error(instance))
+      {
+        rc= memcached_server_error_return(instance);
+      }
+    }
+
+    *ret= rc;
   }
   memcached_free(memc_ptr);
 
-  *ret= rc;
-
-  return memcached_success(rc);
+  return memcached_success(*ret);
 }
 
 bool libmemcached_util_ping2(const char *hostname, in_port_t port, const char *username, const char *password,  memcached_return_t *ret)
@@ -116,11 +119,11 @@ bool libmemcached_util_ping2(const char *hostname, in_port_t port, const char *u
 
   if (memcached_failed(rc) and rc == MEMCACHED_SOME_ERRORS)
   {
-    memcached_server_instance_st instance=
+    const memcached_instance_st * instance=
       memcached_server_instance_by_position(memc_ptr, 0);
 
-    assert_msg(instance and instance->error_messages, " ");
-    if (instance and instance->error_messages)
+    assert_msg(instance and memcached_server_error(instance), " ");
+    if (instance and memcached_server_error(instance))
     {
       rc= memcached_server_error_return(instance);
     }

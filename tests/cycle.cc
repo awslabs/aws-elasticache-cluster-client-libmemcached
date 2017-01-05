@@ -39,16 +39,16 @@
   Test that we are cycling the servers we are creating during testing.
 */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 static test_return_t server_startup_single_TEST(void *obj)
 {
   server_startup_st *servers= (server_startup_st*)obj;
-  test_compare(true, server_startup(*servers, "memcached", libtest::get_free_port(), 0, NULL, false));
+  test_compare(true, server_startup(*servers, "memcached", libtest::get_free_port(), NULL));
   test_compare(true, servers->shutdown());
 
 
@@ -57,10 +57,12 @@ static test_return_t server_startup_single_TEST(void *obj)
 
 static test_return_t server_startup_multiple_TEST(void *obj)
 {
+  test_skip(true, jenkins_is_caller());
+
   server_startup_st *servers= (server_startup_st*)obj;
-  for (size_t x= 0; x < 10; x++)
+  for (size_t x= 0; x < 10; ++x)
   {
-    test_compare(true, server_startup(*servers, "memcached", libtest::get_free_port(), 0, NULL, false));
+    test_compare(true, server_startup(*servers, "memcached", libtest::get_free_port(), NULL));
   }
   test_compare(true, servers->shutdown());
 
@@ -116,12 +118,24 @@ collection_st collection[] ={
   {0, 0, 0, 0}
 };
 
-static void *world_create(server_startup_st& servers, test_return_t& )
+static void *world_create(server_startup_st& servers, test_return_t& error)
 {
+  if (jenkins_is_caller())
+  {
+    error= TEST_SKIPPED;
+    return NULL;
+  }
+
+  if (libtest::has_memcached() == false)
+  {
+    error= TEST_SKIPPED;
+    return NULL;
+  }
+
   return &servers;
 }
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
   world->create(world_create);

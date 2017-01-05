@@ -44,6 +44,8 @@
 
 namespace libtest {
 
+int random_alpha_num(void);
+
 typedef std::vector<char*> vchar_ptr_t;
 typedef std::vector<char> vchar_t;
 
@@ -52,12 +54,16 @@ void make_vector(libtest::vchar_t& arg, const char *str, size_t length);
 namespace vchar {
 
 int compare(libtest::vchar_t& arg, const char *str, size_t length);
+void chomp(libtest::vchar_t& arg);
 void make(libtest::vchar_t& arg);
 void make(libtest::vchar_t& arg, size_t length);
+void append(libtest::vchar_ptr_t& arg, const char*);
+void append(libtest::vchar_t& arg, const char*);
 
 } // namespace vchar
 
 #define vchar_param(__arg) (&__arg[0]), (__arg.size())
+#define vchar_printf(__arg) int(__arg.size()), (&__arg[0])
 
 std::ostream& operator<<(std::ostream& output, const libtest::vchar_t& arg);
 

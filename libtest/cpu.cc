@@ -34,10 +34,12 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 #include <unistd.h>
+
+#pragma GCC diagnostic ignored "-Wundef"
 
 #if defined(HAVE_SYS_SYSCTL_H) && HAVE_SYS_SYSCTL_H
 #include <sys/sysctl.h>
@@ -48,7 +50,7 @@ namespace libtest {
 size_t number_of_cpus()
 {
   size_t number_of_cpu= 1;
-#if TARGET_OS_LINUX
+#if defined(__linux) && __linux
   number_of_cpu= sysconf(_SC_NPROCESSORS_ONLN);
 #elif defined(HAVE_SYS_SYSCTL_H) && defined(CTL_HW) && defined(HW_NCPU) && defined(HW_AVAILCPU) && defined(HW_NCPU)
   int mib[4];
@@ -72,7 +74,7 @@ size_t number_of_cpus()
     }
   }
 #else
-  fprintf(stderr, "Going with guessing\n");
+ // Guessing number of CPU
 #endif
 
   return number_of_cpu;

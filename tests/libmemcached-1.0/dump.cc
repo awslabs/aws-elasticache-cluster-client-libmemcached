@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <cstdlib>
 #include <climits>
@@ -42,7 +42,7 @@
 #include <libtest/test.hpp>
 
 #include <libmemcached-1.0/memcached.h>
-#include <libmemcached/util.h>
+#include <libmemcachedutil-1.0/util.h>
 
 using namespace libtest;
 
@@ -65,7 +65,7 @@ static memcached_return_t callback_dump_counter(const memcached_st *,
   return MEMCACHED_SUCCESS;
 }
 
-static memcached_return_t item_counter(memcached_server_instance_st ,
+static memcached_return_t item_counter(const memcached_instance_st * ,
                                        const char *key, size_t key_length,
                                        const char *value, size_t, // value_length,
                                        void *context)
@@ -119,27 +119,24 @@ test_return_t memcached_dump_TEST2(memcached_st *memc)
 
     test_true(length > 0);
 
-    test_compare_hint(MEMCACHED_SUCCESS,
-                      memcached_set(memc, key, length,
-                                    NULL, 0, // Zero length values
-                                    time_t(0), uint32_t(0)),
-                      memcached_last_error_message(memc));
+    test_compare(MEMCACHED_SUCCESS,
+                 memcached_set(memc, key, length,
+                               NULL, 0, // Zero length values
+                               time_t(0), uint32_t(0)));
   }
   memcached_quit(memc);
 
   uint64_t counter= 0;
-  test_compare_got(MEMCACHED_SUCCESS,
-                   memcached_stat_execute(memc, NULL, item_counter, &counter),
-                   memcached_last_error_message(memc));
-  test_true_got(counter > 0, counter);
+  test_compare(MEMCACHED_SUCCESS,
+               memcached_stat_execute(memc, NULL, item_counter, &counter));
+  test_true(counter > 0);
 
   size_t count= 0;
   memcached_dump_fn callbacks[1];
   callbacks[0]= &callback_dump_counter;
 
-  test_compare_got(MEMCACHED_SUCCESS,
-                   memcached_dump(memc, callbacks, &count, 1),
-                   memcached_last_error_message(memc));
+  test_compare(MEMCACHED_SUCCESS,
+               memcached_dump(memc, callbacks, &count, 1));
 
   test_true(count);
 

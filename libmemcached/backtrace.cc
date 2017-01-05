@@ -1,8 +1,8 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
  * 
- *  libmcachedd client library.
+ *  Libmemcached client library.
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
  *  All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -35,111 +35,97 @@
  *
  */
 
-#include <libmemcached/common.h>
+#include "mem_config.h"
 
-#include <cstring>
+#include "libmemcached/backtrace.hpp"
+
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+
+#if defined(HAVE_SHARED_ENABLED) && HAVE_SHARED_ENABLED
 
 #ifdef HAVE_EXECINFO_H
 #include <execinfo.h>
 #endif
 
-#ifdef HAVE_CXXABI_H
-#include <cxxabi.h>
+#ifdef HAVE_GCC_ABI_DEMANGLE
+# include <cxxabi.h>
+# define USE_DEMANGLE 1
+#else
+# define USE_DEMANGLE 0
 #endif
 
-#ifdef HAVE_GCC_ABI_DEMANGLE
-#define USE_DEMANGLE 1
-#else
-#define USE_DEMANGLE 0
-#endif
+#ifdef HAVE_DLFCN_H
+# include <dlfcn.h>
+#endif   
+
+const int MAX_DEPTH= 50;
 
 void custom_backtrace(void)
 {
 #ifdef HAVE_EXECINFO_H
-  void *array[50];
+  void *backtrace_buffer[MAX_DEPTH +1];
 
-  size_t size= backtrace(array, 50);
-  char **strings= backtrace_symbols(array, size);
-
-  if (strings == NULL)
+  int stack_frames= backtrace(backtrace_buffer, MAX_DEPTH);
+  if (stack_frames)
   {
-    return;
-  }
-
-  fprintf(stderr, "Number of stack frames obtained: %lu\n", (unsigned long)size);
-
-  char *named_function= (char *)std::realloc(NULL, 1024);
-  
-  if (named_function == NULL)
-  {
-    std::free(strings);
-    return;
-  }
-
-  for (size_t x= 1; x < size; x++) 
-  {
-    if (USE_DEMANGLE)
+    char **symbollist= backtrace_symbols(backtrace_buffer, stack_frames);
+    if (symbollist)
     {
-      size_t sz= 200;
-      char *named_function_ptr= (char *)std::realloc(named_function, sz);
-      if (named_function_ptr == NULL)
+      for (int x= 0; x < stack_frames; x++) 
       {
-        continue;
-      }
-      named_function= named_function_ptr;
+        bool was_demangled= false;
 
-      char *begin_name= 0;
-      char *begin_offset= 0;
-      char *end_offset= 0;
+        if (USE_DEMANGLE)
+        {
+#ifdef HAVE_DLFCN_H
+          Dl_info dlinfo;
+          if (dladdr(backtrace_buffer[x], &dlinfo))
+          {
+            char demangled_buffer[1024];
+            const char *called_in= "<unresolved>";
+            if (dlinfo.dli_sname)
+            {
+              size_t demangled_size= sizeof(demangled_buffer);
+              int status;
+              char* demangled;
+              if ((demangled= abi::__cxa_demangle(dlinfo.dli_sname, demangled_buffer, &demangled_size, &status)))
+              {
+                called_in= demangled;
+                fprintf(stderr, "---> demangled: %s -> %s\n", demangled_buffer, demangled);
+              }
+              else
+              {
+                called_in= dlinfo.dli_sname;
+              }
 
-      for (char *j= strings[x]; *j; ++j)
-      {
-        if (*j == '(')
-        {
-          begin_name= j;
+              was_demangled= true;
+              fprintf(stderr, "#%d  %p in %s at %s\n",
+                      x, backtrace_buffer[x],
+                      called_in,
+                      dlinfo.dli_fname);
+            }
+          }
+#endif
         }
-        else if (*j == '+')
-        {
-          begin_offset= j;
-        }
-        else if (*j == ')' and begin_offset) 
-        {
-          end_offset= j;
-          break;
-        }
-      }
 
-      if (begin_name and begin_offset and end_offset and begin_name < begin_offset)
-      {
-        *begin_name++= '\0';
-        *begin_offset++= '\0';
-        *end_offset= '\0';
-
-        int status;
-        char *ret= abi::__cxa_demangle(begin_name, named_function, &sz, &status);
-        if (ret) // realloc()'ed string
+        if (was_demangled == false)
         {
-          named_function= ret;
-          fprintf(stderr, "  %s : %s()+%s\n", strings[x], begin_name, begin_offset);
-        }
-        else
-        {
-          fprintf(stderr, "  %s : %s()+%s\n", strings[x], begin_name, begin_offset);
+          fprintf(stderr, "?%d  %p in %s\n", x, backtrace_buffer[x], symbollist[x]);
         }
       }
-      else
-      {
-        fprintf(stderr, " %s\n", strings[x]);
-      }
-    }
-    else
-    {
-      fprintf(stderr, " unmangled: %s\n", strings[x]);
+
+      ::free(symbollist);
     }
   }
-
-  std::free(named_function);
-  std::free(strings);
 #endif // HAVE_EXECINFO_H
 }
+
+#else // HAVE_SHARED_ENABLED
+
+void custom_backtrace(void)
+{
+  fprintf(stderr, "Backtrace null function called\n");
+}
+#endif // AX_ENABLE_BACKTRACE

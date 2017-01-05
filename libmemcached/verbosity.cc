@@ -43,20 +43,20 @@ struct context_st
   const char *buffer;
 };
 
-static memcached_return_t _set_verbosity(const memcached_st *,
-                                         const memcached_server_st *server,
+static memcached_return_t _set_verbosity(const Memcached *,
+                                         const memcached_instance_st * server,
                                          void *context)
 {
  libmemcached_io_vector_st *vector= (libmemcached_io_vector_st *)context;
 
-  memcached_st local_memc;
-  memcached_st *memc_ptr= memcached_create(&local_memc);
+  Memcached local_memc;
+  Memcached *memc_ptr= memcached_create(&local_memc);
 
   memcached_return_t rc= memcached_server_add(memc_ptr, memcached_server_name(server), memcached_server_port(server));
 
   if (rc == MEMCACHED_SUCCESS)
   {
-    memcached_server_write_instance_st instance= memcached_server_instance_fetch(memc_ptr, 0);
+    memcached_instance_st* instance= memcached_instance_fetch(memc_ptr, 0);
 
 
     rc= memcached_vdo(instance, vector, 4, true);
@@ -73,8 +73,9 @@ static memcached_return_t _set_verbosity(const memcached_st *,
   return rc;
 }
 
-memcached_return_t memcached_verbosity(memcached_st *ptr, uint32_t verbosity)
+memcached_return_t memcached_verbosity(memcached_st *shell, uint32_t verbosity)
 {
+  Memcached* ptr= memcached2Memcached(shell);
   memcached_return_t rc;
   if (memcached_failed(rc= initialize_query(ptr, false)))
   {
@@ -96,7 +97,7 @@ memcached_return_t memcached_verbosity(memcached_st *ptr, uint32_t verbosity)
   {
     { NULL, 0 },
     { memcached_literal_param("verbosity ") },
-    { buffer, send_length },
+    { buffer, size_t(send_length) },
     { memcached_literal_param("\r\n") }
   };
 

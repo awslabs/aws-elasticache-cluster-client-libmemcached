@@ -34,6 +34,14 @@
  *
  */
 
+%{
+
+#include <libmemcached/csl/common.h>
+
+class Context;
+
+%}
+
 %error-verbose
 %debug
 %defines
@@ -42,16 +50,15 @@
 %defines "libmemcached/csl/parser.h"
 %lex-param { yyscan_t *scanner }
 %name-prefix="config_"
-%parse-param { Context *context }
+%parse-param { class Context *context }
 %parse-param { yyscan_t *scanner }
 %pure-parser
-%require "2.4"
+%require "2.5"
 %start begin
 %verbose
 
 %{
 
-#include <libmemcached/csl/common.h>
 #include <libmemcached/options.hpp>
 
 #include <libmemcached/csl/context.h>
@@ -59,7 +66,14 @@
 #include <libmemcached/csl/scanner.h>
 
 #ifndef __INTEL_COMPILER
-#pragma GCC diagnostic ignored "-Wold-style-cast"
+# pragma GCC diagnostic ignored "-Wold-style-cast"
+#endif
+
+#ifndef __INTEL_COMPILER
+# ifndef __clang__
+#  pragma GCC diagnostic ignored "-Wlogical-op"
+#  pragma GCC diagnostic ignored "-Wunsafe-loop-optimizations"
+# endif
 #endif
 
 int conf_lex(YYSTYPE* lvalp, void* scanner);
@@ -90,14 +104,14 @@ inline void __config_error(Context *context, yyscan_t *scanner, const char *erro
 
 %token COMMENT
 %token END
-%token ERROR
+%token CSL_ERROR
 %token RESET
 %token PARSER_DEBUG
 %token INCLUDE
 %token CONFIGURE_FILE
 %token EMPTY_LINE
 %token SERVER
-%token SOCKET
+%token CSL_SOCKET
 %token SERVERS
 %token SERVERS_OPTION
 %token UNKNOWN_OPTION
@@ -133,6 +147,7 @@ inline void __config_error(Context *context, yyscan_t *scanner, const char *erro
 %token _TCP_KEEPALIVE
 %token _TCP_KEEPIDLE
 %token _TCP_NODELAY
+%token FETCH_VERSION
 
 /* Callbacks */
 %token NAMESPACE
@@ -158,13 +173,13 @@ inline void __config_error(Context *context, yyscan_t *scanner, const char *erro
 %token RANDOM
 
 /* Boolean values */
-%token <boolean> TRUE
-%token <boolean> FALSE
+%token <boolean> CSL_TRUE
+%token <boolean> CSL_FALSE
 
 %nonassoc ','
 %nonassoc '='
 
-%token <number> FLOAT
+%token <number> CSL_FLOAT
 %token <number> NUMBER
 %token <number> PORT
 %token <number> WEIGHT_START
@@ -201,7 +216,7 @@ statement:
             context->set_end();
             YYACCEPT;
           }
-        | ERROR
+        | CSL_ERROR
           {
             context->rc= MEMCACHED_PARSE_USER_ERROR;
             parser_abort(context, "ERROR called directly");
@@ -227,7 +242,7 @@ statement:
 expression:
           SERVER HOSTNAME optional_port optional_weight
           {
-            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, $4)))
+            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, uint32_t($4))))
             {
               char buffer[1024];
               snprintf(buffer, sizeof(buffer), "Failed to add server: %s:%u", $2.c_str, uint32_t($3));
@@ -237,7 +252,7 @@ expression:
           }
         | SERVER IPADDRESS optional_port optional_weight
           {
-            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, $4)))
+            if (memcached_failed(context->rc= memcached_server_add_with_weight(context->memc, $2.c_str, $3, uint32_t($4))))
             {
               char buffer[1024];
               snprintf(buffer, sizeof(buffer), "Failed to add server: %s:%u", $2.c_str, uint32_t($3));
@@ -245,12 +260,12 @@ expression:
             }
             context->unset_server();
           }
-        | SOCKET string optional_weight
+        | CSL_SOCKET string optional_weight
           {
-            if (memcached_failed(context->rc= memcached_server_add_unix_socket_with_weight(context->memc, $2.c_str, $3)))
+            if (memcached_failed(context->rc= memcached_server_add_unix_socket_with_weight(context->memc, $2.c_str, uint32_t($3))))
             {
               char buffer[1024];
-              snprintf(buffer, sizeof(buffer), "Failed to add server: %s", $2.c_str);
+              snprintf(buffer, sizeof(buffer), "Failed to add socket: %s", $2.c_str);
               parser_abort(context, buffer);
             }
           }
@@ -260,11 +275,11 @@ expression:
           }
         | POOL_MIN NUMBER
           {
-            context->memc->configure.initial_pool_size= $2;
+            context->memc->configure.initial_pool_size= uint32_t($2);
           }
         | POOL_MAX NUMBER
           {
-            context->memc->configure.max_pool_size= $2;
+            context->memc->configure.max_pool_size= uint32_t($2);
           }
         | behaviors
         ;
@@ -277,10 +292,14 @@ behaviors:
               parser_abort(context, "--NAMESPACE can only be called once");
             }
 
-            if ((context->rc= memcached_set_namespace(context->memc, $2.c_str, $2.size)) != MEMCACHED_SUCCESS)
+            if ((context->rc= memcached_set_namespace(*context->memc, $2.c_str, $2.size)) != MEMCACHED_SUCCESS)
             {
               parser_abort(context, memcached_last_error_message(context->memc));
             }
+          }
+        | FETCH_VERSION
+          {
+            memcached_flag(*context->memc, MEMCACHED_FLAG_IS_FETCHING_VERSION, true);
           }
         | DISTRIBUTION distribution
           {

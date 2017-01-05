@@ -34,14 +34,14 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 namespace libtest {
 
-bool valgrind_is_caller(void)
+bool jenkins_is_caller(void)
 {
-  if (bool(getenv("TESTS_ENVIRONMENT")) and strstr(getenv("TESTS_ENVIRONMENT"), "valgrind"))
+  if (bool(getenv("JENKINS_HOME")))
   {
     return true;
   }
@@ -51,7 +51,12 @@ bool valgrind_is_caller(void)
 
 bool gdb_is_caller(void)
 {
-  if (bool(getenv("TESTS_ENVIRONMENT")) and strstr(getenv("TESTS_ENVIRONMENT"), "gdb"))
+  if (bool(getenv("LOG_COMPILER")) and strstr(getenv("LOG_COMPILER"), "gdb"))
+  {
+    return true;
+  }
+
+  if (bool(getenv("LIBTEST_IN_GDB")))
   {
     return true;
   }
@@ -61,7 +66,7 @@ bool gdb_is_caller(void)
 
 bool helgrind_is_caller(void)
 {
-  if (bool(getenv("TESTS_ENVIRONMENT")) and strstr(getenv("TESTS_ENVIRONMENT"), "helgrind"))
+  if (bool(getenv("LOG_COMPILER")) and strstr(getenv("LOG_COMPILER"), "helgrind"))
   {
     return true;
   }
