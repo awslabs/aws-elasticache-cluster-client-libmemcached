@@ -79,7 +79,7 @@ static inline void _init_string(memcached_string_st *self)
   self->end= self->string= NULL;
 }
 
-memcached_string_st *memcached_string_create(memcached_st *memc, memcached_string_st *self, size_t initial_size)
+memcached_string_st *memcached_string_create(Memcached *memc, memcached_string_st *self, size_t initial_size)
 {
   WATCHPOINT_ASSERT(memc);
 
@@ -115,11 +115,23 @@ memcached_string_st *memcached_string_create(memcached_st *memc, memcached_strin
     return NULL;
   }
 
-  self->options.is_initialized= true;
+  memcached_set_initialized(self, true);
 
   WATCHPOINT_ASSERT(self->string == self->end);
 
   return self;
+}
+
+static memcached_return_t memcached_string_append_null(memcached_string_st& string)
+{
+  if (memcached_failed(_string_check(&string, 1)))
+  {
+    return MEMCACHED_MEMORY_ALLOCATION_FAILURE;
+  }
+
+  *string.end= 0;
+
+  return MEMCACHED_SUCCESS;
 }
 
 static memcached_return_t memcached_string_append_null(memcached_string_st *string)
@@ -184,6 +196,18 @@ char *memcached_string_c_copy(memcached_string_st *string)
   c_ptr[memcached_string_length(string)]= 0;
 
   return c_ptr;
+}
+
+bool memcached_string_set(memcached_string_st& string, const char* value, size_t length)
+{
+  memcached_string_reset(&string);
+  if (memcached_success(memcached_string_append(&string, value, length)))
+  {
+    memcached_string_append_null(string);
+    return true;
+  }
+
+  return false;
 }
 
 void memcached_string_reset(memcached_string_st *string)
@@ -255,16 +279,23 @@ const char *memcached_string_value(const memcached_string_st& self)
 
 char *memcached_string_take_value(memcached_string_st *self)
 {
+  char* value= NULL;
+
   assert_msg(self, "Invalid memcached_string_st");
-  // If we fail at adding the null, we copy and move on
-  if (memcached_success(memcached_string_append_null(self)))
+  if (self)
   {
-    return memcached_string_c_copy(self);
+    if (memcached_string_length(self))
+    {
+      // If we fail at adding the null, we copy and move on
+      if (memcached_failed(memcached_string_append_null(self)))
+      {
+        return NULL;
+      }
+
+      value= self->string;
+      _init_string(self);
+    }
   }
-
-  char *value= self->string;
-
-  _init_string(self);
 
   return value;
 }

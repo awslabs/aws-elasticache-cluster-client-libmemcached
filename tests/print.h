@@ -38,7 +38,7 @@
 #pragma once
 
 memcached_return_t server_print_callback(const memcached_st *ptr,
-                                         const memcached_server_st *server,
+                                         const memcached_instance_st *server,
                                          void *context);
 
 memcached_return_t server_print_version_callback(const memcached_st *ptr,

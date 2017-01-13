@@ -56,12 +56,11 @@ memcached_server_list_append_with_weight(memcached_server_list_st ptr,
                                          uint32_t weight,
                                          memcached_return_t *error)
 {
-  uint32_t count;
-  memcached_server_list_st new_host_list;
-
   memcached_return_t unused;
   if (error == NULL)
+  {
     error= &unused;
+  }
 
   if (hostname == NULL)
   {
@@ -72,23 +71,25 @@ memcached_server_list_append_with_weight(memcached_server_list_st ptr,
   {
     port = 0;
   }
-  else if (not port)
+  else if (port == 0)
   {
     port= MEMCACHED_DEFAULT_PORT;
   }
 
 
   /* Increment count for hosts */
-  count= 1;
+  uint32_t count= 1;
   if (ptr != NULL)
   {
     count+= memcached_server_list_count(ptr);
   }
 
-  new_host_list= (memcached_server_write_instance_st)realloc(ptr, sizeof(memcached_server_st) * count);
-  if (not new_host_list)
+  memcached_server_list_st new_host_list= (memcached_server_st*)realloc(ptr, sizeof(memcached_server_st) * count);
+  if (new_host_list == NULL)
   {
+#if 0
     *error= memcached_set_error(*ptr, MEMCACHED_MEMORY_ALLOCATION_FAILURE, MEMCACHED_AT);
+#endif
     return NULL;
   }
 
@@ -103,7 +104,10 @@ memcached_server_list_append_with_weight(memcached_server_list_st ptr,
   /* @todo Check return type */
   if (__server_create_with(NULL, &new_host_list[count-1], _hostname, _ipaddress, port, weight, port ? MEMCACHED_CONNECTION_TCP : MEMCACHED_CONNECTION_UNIX_SOCKET) == NULL)
   {
+#if 0
     *error= memcached_set_errno(*ptr, MEMCACHED_MEMORY_ALLOCATION_FAILURE, MEMCACHED_AT);
+#endif
+    free(new_host_list);
     return NULL;
   }
 
@@ -150,39 +154,52 @@ uint32_t memcached_server_list_count(const memcached_server_list_st self)
     : self->number_of_hosts;
 }
 
-memcached_server_st *memcached_server_list(const memcached_st *self)
+uint32_t memcached_instance_list_count(const memcached_st* self)
 {
-  if (self)
-  {
-    return self->servers;
-  }
-
-  return NULL;
+  return (self == NULL)
+    ? 0
+    : self->number_of_hosts;
 }
 
-void memcached_server_list_set(memcached_st *self, memcached_server_st *list)
+void memcached_instance_set(memcached_st* memc, memcached_instance_st* list, const uint32_t host_list_size)
 {
-  self->servers= list;
+  assert(memc);
+  memc->servers= list;
+  memc->number_of_hosts= host_list_size;
 }
 
 /**
  * Setter for the configuration server in client object.
  */
-void memcached_configserver_set(memcached_st *self, memcached_server_st *configserver)
+void memcached_configserver_set(memcached_st *self, memcached_instance_st *configserver)
 {
   self->configserver= configserver;
 }
 
 void memcached_server_list_free(memcached_server_list_st self)
 {
-  if (not self)
-    return;
-
-  for (uint32_t x= 0; x < memcached_server_list_count(self); x++)
+  if (self)
   {
-    assert_msg(not memcached_is_allocated(&self[x]), "You have called memcached_server_list_free(), but you did not pass it a valid memcached_server_list_st");
-    __server_free(&self[x]);
-  }
+    for (uint32_t x= 0; x < memcached_server_list_count(self); x++)
+    {
+      assert_msg(not memcached_is_allocated(&self[x]), "You have called memcached_server_list_free(), but you did not pass it a valid memcached_server_list_st");
+      __server_free(&self[x]);
+    }
 
-  libmemcached_free(self->root, self);
+    libmemcached_free(self->root, self);
+  }
+}
+
+void memcached_instance_list_free(memcached_instance_st* self, uint32_t instance_count)
+{
+  if (self)
+  {
+    for (uint32_t x= 0; x < instance_count; x++)
+    {
+      assert_msg(memcached_is_allocated(&self[x]) == false, "You have called memcached_server_list_free(), but you did not pass it a valid memcached_server_list_st");
+      __instance_free(&self[x]);
+    }
+
+    libmemcached_free(self->root, self);
+  }
 }

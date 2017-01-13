@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
@@ -61,7 +61,7 @@ collection_st collection[] ={
   {0, 0, 0, 0}
 };
 
-void get_world(Framework *frame)
+void get_world(libtest::Framework* frame)
 {
   frame->collections(collection);
 }

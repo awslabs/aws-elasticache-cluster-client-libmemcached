@@ -35,7 +35,7 @@
  */
 
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 #include <libtest/blobslap_worker.h>
@@ -50,8 +50,6 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <unistd.h>
-
-#include <libgearman/gearman.h>
 
 #ifndef __INTEL_COMPILER
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -148,21 +146,14 @@ public:
     return true;
   }
 
-  bool build(size_t argc, const char *argv[]);
+  bool build();
 };
 
 
 #include <sstream>
 
-bool BlobslapWorker::build(size_t argc, const char *argv[])
+bool BlobslapWorker::build()
 {
-  std::stringstream arg_buffer;
-
-  for (size_t x= 0 ; x < argc ; x++)
-  {
-    add_option(argv[x]);
-  }
-
   return true;
 }
 

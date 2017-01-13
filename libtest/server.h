@@ -177,7 +177,8 @@ public:
 
   virtual bool ping()= 0;
 
-  virtual bool build(size_t argc, const char *argv[])= 0;
+  bool init(const char *argv[]);
+  virtual bool build()= 0;
 
   void add_option(const std::string&);
   void add_option(const std::string&, const std::string&);
@@ -204,11 +205,29 @@ public:
     _log_file.clear();
   }
 
-  bool args(Application&);
-
   pid_t pid() const;
 
   bool has_pid() const;
+
+  virtual bool has_pid_file() const
+  {
+    return true;
+  }
+
+  const std::string& error()
+  {
+    return _error;
+  }
+
+  void error(std::string arg)
+  {
+    _error= arg;
+  }
+
+  void reset_error()
+  {
+    _error.clear();
+  }
 
   virtual bool wait_for_pidfile() const;
 
@@ -219,7 +238,7 @@ public:
 
   bool is_socket() const
   {
-    return _hostname[0] == '/';
+    return _is_socket;
   }
 
   const std::string running() const
@@ -237,6 +256,21 @@ public:
 
   bool validate();
 
+  void out_of_ban_killed(bool arg)
+  {
+    out_of_ban_killed_= arg;
+  }
+
+  bool out_of_ban_killed()
+  {
+    return out_of_ban_killed_;
+  }
+
+  void timeout(uint32_t timeout_)
+  {
+    _timeout= timeout_;
+  }
+
 protected:
   bool set_pid_file();
   Options _options;
@@ -249,6 +283,11 @@ private:
   bool set_log_file();
   bool set_socket_file();
   void reset_pid();
+  bool out_of_ban_killed_;
+  bool args(Application&);
+
+  std::string _error;
+  uint32_t _timeout; // This number should be high enough for valgrind startup (which is slow)
 };
 
 std::ostream& operator<<(std::ostream& output, const libtest::Server &arg);

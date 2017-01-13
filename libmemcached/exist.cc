@@ -36,7 +36,7 @@
 
 #include <libmemcached/common.h>
 
-static memcached_return_t ascii_exist(memcached_st *memc, memcached_server_write_instance_st instance, const char *key, size_t key_length)
+static memcached_return_t ascii_exist(Memcached *memc, memcached_instance_st* instance, const char *key, size_t key_length)
 {
   libmemcached_io_vector_st vector[]=
   {
@@ -74,12 +74,13 @@ static memcached_return_t ascii_exist(memcached_st *memc, memcached_server_write
   return rc;
 }
 
-static memcached_return_t binary_exist(memcached_st *memc, memcached_server_write_instance_st instance, const char *key, size_t key_length)
+static memcached_return_t binary_exist(Memcached *memc, memcached_instance_st* instance, const char *key, size_t key_length)
 {
   protocol_binary_request_set request= {};
   size_t send_length= sizeof(request.bytes);
 
-  request.message.header.request.magic= PROTOCOL_BINARY_REQ;
+  initialize_binary_request(instance, request.message.header);
+
   request.message.header.request.opcode= PROTOCOL_BINARY_CMD_ADD;
   request.message.header.request.keylen= htons((uint16_t)(key_length + memcached_array_size(memc->_namespace)));
   request.message.header.request.datatype= PROTOCOL_BINARY_RAW_BYTES;
@@ -126,10 +127,11 @@ memcached_return_t memcached_exist(memcached_st *memc, const char *key, size_t k
   return memcached_exist_by_key(memc, key, key_length, key, key_length);
 }
 
-memcached_return_t memcached_exist_by_key(memcached_st *memc,
+memcached_return_t memcached_exist_by_key(memcached_st *shell,
                                           const char *group_key, size_t group_key_length,
                                           const char *key, size_t key_length)
 {
+  Memcached* memc= memcached2Memcached(shell);
   memcached_return_t rc;
   if (memcached_failed(rc= initialize_query(memc, true)))
   {
@@ -142,7 +144,7 @@ memcached_return_t memcached_exist_by_key(memcached_st *memc,
   }
 
   uint32_t server_key= memcached_generate_hash_with_redistribution(memc, group_key, group_key_length);
-  memcached_server_write_instance_st instance= memcached_server_instance_fetch(memc, server_key);
+  memcached_instance_st* instance= memcached_instance_fetch(memc, server_key);
 
   if (memcached_is_binary(memc))
   {

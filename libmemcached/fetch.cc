@@ -2,7 +2,7 @@
  * 
  *  Libmemcached library
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  *  Copyright (C) 2006-2009 Brian Aker All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -37,12 +37,12 @@
 
 #include <libmemcached/common.h>
 
-char *memcached_fetch(memcached_st *ptr, char *key, size_t *key_length, 
+char *memcached_fetch(memcached_st *shell, char *key, size_t *key_length, 
                       size_t *value_length, 
                       uint32_t *flags,
                       memcached_return_t *error)
 {
-  memcached_result_st *result_buffer= &ptr->result;
+  Memcached* ptr= memcached2Memcached(shell);
   memcached_return_t unused;
   if (error == NULL)
   {
@@ -75,6 +75,7 @@ char *memcached_fetch(memcached_st *ptr, char *key, size_t *key_length,
     return NULL;
   }
 
+  memcached_result_st *result_buffer= &ptr->result;
   result_buffer= memcached_fetch_result(ptr, result_buffer, error);
   if (result_buffer == NULL or memcached_failed(*error))
   {
@@ -191,14 +192,21 @@ memcached_result_st *memcached_fetch_result(memcached_st *ptr,
   }
 
   *error= MEMCACHED_MAXIMUM_RETURN; // We use this to see if we ever go into the loop
-  memcached_server_st *server;
-  while ((server= memcached_io_get_readable_server(ptr)))
+  memcached_instance_st *server;
+  memcached_return_t read_ret= MEMCACHED_SUCCESS;
+  bool connection_failures= false;
+  while ((server= memcached_io_get_readable_server(ptr, read_ret)))
   {
     char buffer[MEMCACHED_DEFAULT_COMMAND_SIZE];
     *error= memcached_response(server, buffer, sizeof(buffer), result);
 
     if (*error == MEMCACHED_IN_PROGRESS)
     {
+      continue;
+    }
+    else if (*error == MEMCACHED_CONNECTION_FAILURE)
+    {
+      connection_failures= true;
       continue;
     }
     else if (*error == MEMCACHED_SUCCESS)
@@ -228,6 +236,16 @@ memcached_result_st *memcached_fetch_result(memcached_st *ptr,
   {
     *error= MEMCACHED_NOTFOUND;
   }
+  else if (connection_failures)
+  {
+    /*  
+        If we have a connection failure to some servers, the caller may
+        wish to treat that differently to getting a definitive NOT_FOUND
+        from all servers, so return MEMCACHED_CONNECTION_FAILURE to allow
+        that. 
+        */
+    *error= MEMCACHED_CONNECTION_FAILURE;
+  }
   else if (*error == MEMCACHED_SUCCESS)
   {
     *error= MEMCACHED_END;
@@ -251,11 +269,12 @@ memcached_result_st *memcached_fetch_result(memcached_st *ptr,
   return NULL;
 }
 
-memcached_return_t memcached_fetch_execute(memcached_st *ptr, 
+memcached_return_t memcached_fetch_execute(memcached_st *shell, 
                                            memcached_execute_fn *callback,
                                            void *context,
                                            uint32_t number_of_callbacks)
 {
+  Memcached* ptr= memcached2Memcached(shell);
   memcached_result_st *result= &ptr->result;
   memcached_return_t rc;
   bool some_errors= false;

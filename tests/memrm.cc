@@ -39,10 +39,10 @@
   Test that we are cycling the servers we are creating during testing.
 */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <libtest/test.hpp>
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 using namespace libtest;
 
@@ -84,6 +84,8 @@ static test_return_t rm_test(void *)
   test_null(memcached_get(memc, test_literal_param("foo"), 0, 0, &rc));
   test_compare(MEMCACHED_SUCCESS, rc);
 
+  char memrm_buffer[1024];
+  snprintf(memrm_buffer, sizeof(memrm_buffer), "--servers=localhost:%d", int(default_port()));
   const char *args[]= { buffer, "foo", 0 };
   test_compare(EXIT_SUCCESS, exec_cmdline(executable, args, true));
 
@@ -121,7 +123,7 @@ static test_return_t NOT_FOUND_TEST(void *)
 static test_return_t multiple_NOT_FOUND_TEST(void *)
 {
   char buffer[1024];
-  snprintf(buffer, sizeof(buffer), "--server=localhost:%d", int(default_port()));
+  snprintf(buffer, sizeof(buffer), "--servers=localhost:%d", int(default_port()));
   const char *args[]= { buffer, "protocols", "foo", "mine", "bar", "dog", "cat", "foo", "mine",
     "eye", "for", "the", "to", "not", "know", "what", "I", "should", "be", "doing", 0 };
 
@@ -146,13 +148,13 @@ collection_st collection[] ={
 
 static void *world_create(server_startup_st& servers, test_return_t& error)
 {
-  if (HAVE_MEMCACHED_BINARY == 0)
+  if (libtest::has_memcached() == false)
   {
     error= TEST_SKIPPED;
     return NULL;
   }
 
-  if (server_startup(servers, "memcached", libtest::default_port(), 0, NULL) == false)
+  if (server_startup(servers, "memcached", libtest::default_port(), NULL) == false)
   {
     error= TEST_FAILURE;
   }
@@ -161,7 +163,7 @@ static void *world_create(server_startup_st& servers, test_return_t& error)
 }
 
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
   world->create(world_create);

@@ -2,7 +2,7 @@
  *
  *  Data Differential YATL (i.e. libtest)  library
  *
- *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2012-2013 Data Differential, http://datadifferential.com/
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -34,8 +34,9 @@
  *
  */
 
-#include <config.h>
-#include <libtest/common.h>
+#include "libtest/yatlcon.h"
+
+#include "libtest/common.h"
 
 using namespace libtest;
 
@@ -45,78 +46,77 @@ using namespace libtest;
 #include <fcntl.h>
 #include <fstream>
 #include <memory>
-#include <poll.h>
-#include <spawn.h>
+#ifdef HAVE_POLL_H
+# include <poll.h>
+#endif
+#ifdef HAVE_SPAWN_H
+# include <spawn.h>
+#endif
 #include <sstream>
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <stdexcept>
+
 #ifndef __USE_GNU
 static char **environ= NULL;
 #endif
 
-extern "C" {
-  static int exited_successfully(int status)
-  {
-    if (status == 0)
-    {
-      return EXIT_SUCCESS;
-    }
-
-    if (WIFEXITED(status) == true)
-    {
-      return WEXITSTATUS(status);
-    }
-    else if (WIFSIGNALED(status) == true)
-    {
-      return WTERMSIG(status);
-    }
-
-    return EXIT_FAILURE;
-  }
-}
+#ifndef FD_CLOEXEC
+# define FD_CLOEXEC 0
+#endif
 
 namespace {
 
-  std::string print_argv(char * * & built_argv, const size_t& argc)
+  std::string print_argv(libtest::vchar_ptr_t& built_argv)
   {
     std::stringstream arg_buffer;
 
-    for (size_t x= 0; x < argc; x++)
+    for (vchar_ptr_t::iterator iter= built_argv.begin();
+         iter != built_argv.end();
+         ++iter)
     {
-      arg_buffer << built_argv[x] << " ";
+      if (*iter)
+      {
+        arg_buffer << *iter << " ";
+      }
     }
 
     return arg_buffer.str();
   }
 
+#if 0
   std::string print_argv(char** argv)
   {
     std::stringstream arg_buffer;
 
-    for (char** ptr= argv; *ptr; ptr++)
+    for (char** ptr= argv; *ptr; ++ptr)
     {
       arg_buffer << *ptr << " ";
     }
 
     return arg_buffer.str();
   }
+#endif
 
   static Application::error_t int_to_error_t(int arg)
   {
     switch (arg)
     {
     case 127:
-      return Application::INVALID;
+      return Application::INVALID_POSIX_SPAWN;
 
     case 0:
       return Application::SUCCESS;
 
-    default:
     case 1:
       return Application::FAILURE;
+
+    default:
+      return Application::UNKNOWN;
     }
   }
 }
@@ -134,14 +134,15 @@ Application::Application(const std::string& arg, const bool _use_libtool_arg) :
   stdin_fd(STDIN_FILENO),
   stdout_fd(STDOUT_FILENO),
   stderr_fd(STDERR_FILENO),
-  built_argv(NULL),
-  _pid(-1)
+  _pid(-1),
+  _status(0),
+  _app_exit_state(UNINITIALIZED)
   { 
     if (_use_libtool)
     {
       if (libtool() == NULL)
       {
-        fatal_message("libtool requested, but know libtool was found");
+        FATAL("libtool requested, but know libtool was found");
       }
     }
 
@@ -190,9 +191,25 @@ Application::error_t Application::run(const char *args[])
   posix_spawnattr_t spawnattr;
   posix_spawnattr_init(&spawnattr);
 
-  sigset_t set;
-  sigemptyset(&set);
-  fatal_assert(posix_spawnattr_setsigmask(&spawnattr, &set) == 0);
+  short flags= 0;
+
+  // Child should not block signals
+  flags |= POSIX_SPAWN_SETSIGMASK;
+
+  sigset_t mask;
+  sigemptyset(&mask);
+
+  fatal_assert(posix_spawnattr_setsigmask(&spawnattr, &mask) == 0);
+
+#if defined(POSIX_SPAWN_USEVFORK) || defined(__linux__)
+  // Use USEVFORK on linux
+  flags |= POSIX_SPAWN_USEVFORK;
+#endif
+
+  flags |= POSIX_SPAWN_SETPGROUP;
+  fatal_assert(posix_spawnattr_setpgroup(&spawnattr, 0) == 0);
+
+  fatal_assert(posix_spawnattr_setflags(&spawnattr, flags) == 0);
   
   create_argv(args);
 
@@ -249,14 +266,7 @@ Application::error_t Application::run(const char *args[])
   }
   else
   {
-    if (_use_libtool)
-    {
-      spawn_ret= posix_spawn(&_pid, built_argv[0], &file_actions, &spawnattr, built_argv, NULL);
-    }
-    else
-    {
-      spawn_ret= posix_spawnp(&_pid, built_argv[0], &file_actions, &spawnattr, built_argv, NULL);
-    }
+    spawn_ret= posix_spawn(&_pid, built_argv[0], &file_actions, &spawnattr, &built_argv[0], NULL);
   }
 
   posix_spawn_file_actions_destroy(&file_actions);
@@ -273,8 +283,24 @@ Application::error_t Application::run(const char *args[])
       Error << strerror(spawn_ret) << "(" << spawn_ret << ")";
     }
     _pid= -1;
-    return Application::INVALID;
+    return Application::INVALID_POSIX_SPAWN;
   }
+
+  assert(_pid != -1);
+  if (_pid == -1)
+  {
+    return Application::INVALID_POSIX_SPAWN;
+  }
+
+#if 0
+  app_thread_st* _app_thread= new app_thread_st(_pid, _status, built_argv[0], _app_exit_state);
+  int error;
+  if ((error= pthread_create(&_thread, NULL, &app_thread, _app_thread)) != 0)
+  {
+    Error << "pthread_create() died during pthread_create(" << strerror(error) << ")";
+    return Application::FAILURE;
+  }
+#endif
 
   return Application::SUCCESS;
 }
@@ -296,29 +322,9 @@ void Application::murder()
     int count= 5;
     while ((count--) > 0 and check())
     {
-      int kill_ret= kill(_pid, SIGTERM);
-      if (kill_ret == 0)
+      if (kill(_pid, SIGTERM) == 0)
       {
-        int status= 0;
-        pid_t waitpid_ret;
-        if ((waitpid_ret= waitpid(_pid, &status, WNOHANG)) == -1)
-        {
-          switch (errno)
-          {
-          case ECHILD:
-          case EINTR:
-            break;
-
-          default:
-            Error << "waitpid() failed after kill with error of " << strerror(errno);
-            break;
-          }
-        }
-
-        if (waitpid_ret == 0)
-        {
-          libtest::dream(1, 0);
-        }
+        join();
       }
       else
       {
@@ -332,6 +338,7 @@ void Application::murder()
     // If for whatever reason it lives, kill it hard
     if (check())
     {
+      Error << "using SIGKILL, things will likely go poorly from this point";
       (void)kill(_pid, SIGKILL);
     }
   }
@@ -355,7 +362,7 @@ bool Application::slurp()
     int error;
     switch ((error= errno))
     {
-#ifdef TARGET_OS_LINUX
+#ifdef __linux
     case ERESTART:
 #endif
     case EINTR:
@@ -363,15 +370,15 @@ bool Application::slurp()
 
     case EFAULT:
     case ENOMEM:
-      fatal_message(strerror(error));
+      FATAL(strerror(error));
       break;
 
     case EINVAL:
-      fatal_message("RLIMIT_NOFILE exceeded, or if OSX the timeout value was invalid");
+      FATAL("RLIMIT_NOFILE exceeded, or if OSX the timeout value was invalid");
       break;
 
     default:
-      fatal_message(strerror(error));
+      FATAL(strerror(error));
       break;
     }
 
@@ -403,59 +410,103 @@ bool Application::slurp()
   return data_was_read;
 }
 
-Application::error_t Application::wait(bool nohang)
+Application::error_t Application::join()
 {
-  if (_pid == -1)
-  {
-    return Application::INVALID;
-  }
-
+  pid_t waited_pid= waitpid(_pid, &_status, WUNTRACED);
   slurp();
-
-  error_t exit_code= FAILURE;
+  if (waited_pid == _pid and WIFEXITED(_status) == false)
   {
-    int status= 0;
-    pid_t waited_pid;
-    if ((waited_pid= waitpid(_pid, &status, nohang ? WNOHANG : 0)) == -1)
+    /*
+      What we are looking for here is how the exit status happened.
+      - 127 means that posix_spawn() itself had an error.
+      - If WEXITSTATUS is positive we need to see if it is a signal that we sent to kill the process. If not something bad happened in the process itself. 
+      - Finally something has happened that we don't currently understand.
+    */
+    if (WEXITSTATUS(_status) == 127)
     {
-      switch (errno)
+      _app_exit_state= Application::INVALID_POSIX_SPAWN;
+      std::string error_string("posix_spawn() failed pid:");
+      error_string+= _pid;
+      error_string+= " name:";
+      error_string+= print_argv(built_argv);
+      if (stderr_result_length())
       {
-      case ECHILD:
-        exit_code= Application::SUCCESS;
-        break;
-
-      case EINTR:
-        break;
-
-      default:
-        Error << "Error occured while waitpid(" << strerror(errno) << ") on pid " << int(_pid);
-        break;
+        error_string+= " stderr: ";
+        error_string+= stderr_c_str();
       }
+      throw std::logic_error(error_string);
     }
-    else if (waited_pid == 0)
+    else if (WIFSIGNALED(_status))
     {
-      exit_code= Application::SUCCESS;
+      if (WTERMSIG(_status) != SIGTERM and WTERMSIG(_status) != SIGHUP)
+      {
+        slurp();
+        _app_exit_state= Application::INVALID_POSIX_SPAWN;
+        std::string error_string(print_argv(built_argv));
+        error_string+= " was killed by signal ";
+        error_string+= strsignal(WTERMSIG(_status));
+
+        if (stdout_result_length())
+        {
+          error_string+= " stdout: ";
+          error_string+= stdout_c_str();
+        }
+
+        if (stderr_result_length())
+        {
+          error_string+= " stderr: ";
+          error_string+= stderr_c_str();
+        }
+
+        throw std::runtime_error(error_string);
+      }
+
+      // If we terminted it on purpose then it counts as a success.
+#if defined(DEBUG)
+      if (DEBUG)
+      {
+        Out << "waitpid() application terminated at request"
+          << " pid:" << _pid 
+          << " name:" << built_argv[0];
+      }
+#endif
     }
     else
     {
-      if (waited_pid != _pid)
-      {
-        throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "Pid mismatch, %d != %d", int(waited_pid), int(_pid));
-      }
-      exit_code= int_to_error_t(exited_successfully(status));
+      _app_exit_state= Application::UNKNOWN;
+      Error << "Unknown logic state at exit:" << WEXITSTATUS(_status) 
+        << " pid:" << _pid
+        << " name:" << built_argv[0];
     }
   }
-
-  slurp();
-
-#if 0
-  if (exit_code == Application::INVALID)
+  else if (waited_pid == _pid and WIFEXITED(_status))
   {
-    Error << print_argv(built_argv, _argc);
+    _app_exit_state= int_to_error_t(WEXITSTATUS(_status));
   }
-#endif
+  else if (waited_pid == -1)
+  {
+    std::string error_string;
+    if (stdout_result_length())
+    {
+      error_string+= " stdout: ";
+      error_string+= stdout_c_str();
+    }
 
-  return exit_code;
+    if (stderr_result_length())
+    {
+      error_string+= " stderr: ";
+      error_string+= stderr_c_str();
+    }
+    Error << "waitpid() returned errno:" << strerror(errno) << " " << error_string;
+    _app_exit_state= Application::UNKNOWN;
+  }
+  else
+  {
+    _app_exit_state= Application::UNKNOWN;
+    throw std::logic_error("waitpid() returned an unknown value");
+  }
+
+  return _app_exit_state;
 }
 
 void Application::add_long_option(const std::string& name, const std::string& option_value)
@@ -505,9 +556,10 @@ bool Application::Pipe::read(libtest::vchar_t& arg)
 
   bool data_was_read= false;
 
+  libtest::vchar_t buffer;
+  buffer.resize(1024);
   ssize_t read_length;
-  char buffer[1024]= { 0 };
-  while ((read_length= ::read(_pipe_fd[READ], buffer, sizeof(buffer))))
+  while ((read_length= ::read(_pipe_fd[READ], &buffer[0], buffer.size())))
   {
     if (read_length == -1)
     {
@@ -526,7 +578,7 @@ bool Application::Pipe::read(libtest::vchar_t& arg)
 
     data_was_read= true;
     arg.reserve(read_length +1);
-    for (size_t x= 0; x < read_length; x++)
+    for (size_t x= 0; x < size_t(read_length); ++x)
     {
       arg.push_back(buffer[x]);
     }
@@ -538,14 +590,25 @@ bool Application::Pipe::read(libtest::vchar_t& arg)
 
 void Application::Pipe::nonblock()
 {
-  int ret;
-  if ((ret= fcntl(_pipe_fd[READ], F_GETFL, 0)) == -1)
+  int flags;
+  do 
+  {
+    flags= fcntl(_pipe_fd[READ], F_GETFL, 0);
+  } while (flags == -1 and (errno == EINTR or errno == EAGAIN));
+
+  if (flags == -1)
   {
     Error << "fcntl(F_GETFL) " << strerror(errno);
     throw strerror(errno);
   }
 
-  if ((ret= fcntl(_pipe_fd[READ], F_SETFL, ret | O_NONBLOCK)) == -1)
+  int rval;
+  do
+  {
+    rval= fcntl(_pipe_fd[READ], F_SETFL, flags | O_NONBLOCK);
+  } while (rval == -1 and (errno == EINTR or errno == EAGAIN));
+
+  if (rval == -1)
   {
     Error << "fcntl(F_SETFL) " << strerror(errno);
     throw strerror(errno);
@@ -557,37 +620,53 @@ void Application::Pipe::reset()
   close(READ);
   close(WRITE);
 
-#if HAVE_PIPE2
-  if (pipe2(_pipe_fd, O_NONBLOCK) == -1)
-#else
-  if (pipe(_pipe_fd) == -1)
+#ifdef HAVE_PIPE2
+  if (pipe2(_pipe_fd, O_NONBLOCK|O_CLOEXEC) == -1)
 #endif
   {
-    fatal_message(strerror(errno));
-  }
-  _open[0]= true;
-  _open[1]= true;
+    if (pipe(_pipe_fd) == -1)
+    {
+      FATAL(strerror(errno));
+    }
 
-  if (true)
-  {
+    // Since either pipe2() was not found/called we set the pipe directly
     nonblock();
     cloexec();
   }
+  _open[0]= true;
+  _open[1]= true;
 }
 
 void Application::Pipe::cloexec()
 {
-  int ret;
-  if ((ret= fcntl(_pipe_fd[WRITE], F_GETFD, 0)) == -1)
+  //if (SOCK_CLOEXEC == 0)
   {
-    Error << "fcntl(F_GETFD) " << strerror(errno);
-    throw strerror(errno);
-  }
+    if (FD_CLOEXEC) 
+    {
+      int flags;
+      do 
+      {
+        flags= fcntl(_pipe_fd[WRITE], F_GETFD, 0);
+      } while (flags == -1 and (errno == EINTR or errno == EAGAIN));
 
-  if ((ret= fcntl(_pipe_fd[WRITE], F_SETFD, ret | FD_CLOEXEC)) == -1)
-  {
-    Error << "fcntl(F_SETFD) " << strerror(errno);
-    throw strerror(errno);
+      if (flags == -1)
+      {
+        Error << "fcntl(F_GETFD) " << strerror(errno);
+        throw strerror(errno);
+      }
+
+      int rval;
+      do
+      { 
+        rval= fcntl(_pipe_fd[WRITE], F_SETFD, flags | FD_CLOEXEC);
+      } while (rval == -1 && (errno == EINTR or errno == EAGAIN));
+
+      if (rval == -1)
+      {
+        Error << "fcntl(F_SETFD) " << strerror(errno);
+        throw strerror(errno);
+      }
+    }
   }
 }
 
@@ -611,14 +690,12 @@ void Application::Pipe::dup_for_spawn(posix_spawn_file_actions_t& file_actions)
   int ret;
   if ((ret= posix_spawn_file_actions_adddup2(&file_actions, _pipe_fd[type], _std_fd )) < 0)
   {
-    Error << "posix_spawn_file_actions_adddup2(" << strerror(ret) << ")";
-    fatal_message(strerror(ret));
+    FATAL("posix_spawn_file_actions_adddup2(%s)", strerror(ret));
   }
 
   if ((ret= posix_spawn_file_actions_addclose(&file_actions, _pipe_fd[type])) < 0)
   {
-    Error << "posix_spawn_file_actions_adddup2(" << strerror(ret) << ")";
-    fatal_message(strerror(ret));
+    FATAL("posix_spawn_file_actions_addclose(%s)", strerror(ret));
   }
 }
 
@@ -628,7 +705,6 @@ void Application::Pipe::close(const close_t& arg)
 
   if (_open[type])
   {
-    int ret;
     if (::close(_pipe_fd[type]) == -1)
     {
       Error << "close(" << strerror(errno) << ")";
@@ -641,113 +717,66 @@ void Application::Pipe::close(const close_t& arg)
 void Application::create_argv(const char *args[])
 {
   delete_argv();
-  fatal_assert(_argc == 0);
-
-  if (_use_libtool)
-  {
-    _argc+= 2; // +2 for libtool --mode=execute
-  }
-
-  _argc+= 1; // For the command
-
-  /*
-    valgrind --error-exitcode=1 --leak-check=yes --show-reachable=yes --track-fds=yes --track-origin=yes --malloc-fill=A5 --free-fill=DE --log-file=
-  */
-  if (_use_valgrind)
-  {
-    _argc+= 8;
-  }
-  else if (_use_ptrcheck)
-  {
-    /*
-      valgrind --error-exitcode=1 --tool=exp-ptrcheck --log-file= 
-    */
-    _argc+= 4;
-  }
-  else if (_use_gdb) // gdb
-  {
-    _argc+= 1;
-  }
-
-  for (Options::const_iterator iter= _options.begin(); iter != _options.end(); iter++)
-  {
-    _argc++;
-    if ((*iter).second.empty() == false)
-    {
-      _argc++;
-    }
-  }
-
-  if (args)
-  {
-    for (const char **ptr= args; *ptr; ++ptr)
-    {
-      _argc++;
-    }
-  }
-
-  _argc+= 1; // for the NULL
-
-  built_argv= new char * [_argc];
-
-  size_t x= 0;
   if (_use_libtool)
   {
     assert(libtool());
-    built_argv[x++]= strdup(libtool());
-    built_argv[x++]= strdup("--mode=execute");
+    vchar::append(built_argv, libtool());
+    vchar::append(built_argv, "--mode=execute");
   }
 
   if (_use_valgrind)
   {
     /*
-      valgrind --error-exitcode=1 --leak-check=yes --show-reachable=yes --track-fds=yes --malloc-fill=A5 --free-fill=DE
+      valgrind --error-exitcode=1 --leak-check=yes --track-fds=yes --malloc-fill=A5 --free-fill=DE
     */
-    built_argv[x++]= strdup("valgrind");
-    built_argv[x++]= strdup("--error-exitcode=1");
-    built_argv[x++]= strdup("--leak-check=yes");
-    built_argv[x++]= strdup("--show-reachable=yes");
-    built_argv[x++]= strdup("--track-fds=yes");
+    vchar::append(built_argv, "valgrind");
+    vchar::append(built_argv, "--error-exitcode=1");
+    vchar::append(built_argv, "--leak-check=yes");
+#if 0
+    vchar::append(built_argv, "--show-reachable=yes"));
+#endif
+    vchar::append(built_argv, "--track-fds=yes");
 #if 0
     built_argv[x++]= strdup("--track-origin=yes");
 #endif
-    built_argv[x++]= strdup("--malloc-fill=A5");
-    built_argv[x++]= strdup("--free-fill=DE");
+    vchar::append(built_argv, "--malloc-fill=A5");
+    vchar::append(built_argv, "--free-fill=DE");
 
     std::string log_file= create_tmpfile("valgrind");
-    char buffer[1024];
-    int length= snprintf(buffer, sizeof(buffer), "--log-file=%s", log_file.c_str());
-    fatal_assert(length > 0 and length < sizeof(buffer));
-    built_argv[x++]= strdup(buffer);
+    libtest::vchar_t buffer;
+    buffer.resize(1024);
+    int length= snprintf(&buffer[0], buffer.size(), "--log-file=%s", log_file.c_str());
+    fatal_assert(length > 0 and size_t(length) < buffer.size());
+    vchar::append(built_argv, &buffer[0]);
   }
   else if (_use_ptrcheck)
   {
     /*
       valgrind --error-exitcode=1 --tool=exp-ptrcheck --log-file= 
     */
-    built_argv[x++]= strdup("valgrind");
-    built_argv[x++]= strdup("--error-exitcode=1");
-    built_argv[x++]= strdup("--tool=exp-ptrcheck");
-    _argc+= 4;
+    vchar::append(built_argv, "valgrind");
+    vchar::append(built_argv, "--error-exitcode=1");
+    vchar::append(built_argv, "--tool=exp-ptrcheck");
     std::string log_file= create_tmpfile("ptrcheck");
-    char buffer[1024];
-    int length= snprintf(buffer, sizeof(buffer), "--log-file=%s", log_file.c_str());
-    fatal_assert(length > 0 and length < sizeof(buffer));
-    built_argv[x++]= strdup(buffer);
+    libtest::vchar_t buffer;
+    buffer.resize(1024);
+    int length= snprintf(&buffer[0], buffer.size(), "--log-file=%s", log_file.c_str());
+    fatal_assert(length > 0 and size_t(length) < buffer.size());
+    vchar::append(built_argv, &buffer[0]);
   }
   else if (_use_gdb)
   {
-    built_argv[x++]= strdup("gdb");
+    vchar::append(built_argv, "gdb");
   }
 
-  built_argv[x++]= strdup(_exectuble_with_path.c_str());
+  vchar::append(built_argv, _exectuble_with_path.c_str());
 
-  for (Options::const_iterator iter= _options.begin(); iter != _options.end(); iter++)
+  for (Options::const_iterator iter= _options.begin(); iter != _options.end(); ++iter)
   {
-    built_argv[x++]= strdup((*iter).first.c_str());
+    vchar::append(built_argv, (*iter).first.c_str());
     if ((*iter).second.empty() == false)
     {
-      built_argv[x++]= strdup((*iter).second.c_str());
+      vchar::append(built_argv, (*iter).second.c_str());
     }
   }
 
@@ -755,27 +784,28 @@ void Application::create_argv(const char *args[])
   {
     for (const char **ptr= args; *ptr; ++ptr)
     {
-      built_argv[x++]= strdup(*ptr);
+      vchar::append(built_argv, *ptr);
     }
   }
-  built_argv[x++]= NULL;
-  fatal_assert(x == _argc);
+  built_argv.push_back(NULL);
 }
 
 std::string Application::print()
 {
-  return print_argv(built_argv, _argc);
+  return print_argv(built_argv);
 }
 
 std::string Application::arguments()
 {
   std::stringstream arg_buffer;
 
-  for (size_t x= 1 + _use_libtool ? 2 : 0;
-       x < _argc and built_argv[x];
-       x++)
+  // Skip printing out the libtool reference
+  for (size_t x= _use_libtool ? 2 : 0; x < _argc; ++x)
   {
-    arg_buffer << built_argv[x] << " ";
+    if (built_argv[x])
+    {
+      arg_buffer << built_argv[x] << " ";
+    }
   }
 
   return arg_buffer.str();
@@ -783,19 +813,10 @@ std::string Application::arguments()
 
 void Application::delete_argv()
 {
-  if (built_argv)
-  {
-    for (size_t x= 0; x < _argc; x++)
-    {
-      if (built_argv[x])
-      {
-        ::free(built_argv[x]);
-      }
-    }
-    delete[] built_argv;
-    built_argv= NULL;
-    _argc= 0;
-  }
+  std::for_each(built_argv.begin(), built_argv.end(), FreeFromVector());
+
+  built_argv.clear();
+  _argc= 0;
 }
 
 
@@ -810,17 +831,7 @@ int exec_cmdline(const std::string& command, const char *args[], bool use_libtoo
     return int(ret);
   }
 
-  return int(app.wait(false));
-}
-
-const char *gearmand_binary() 
-{
-  return GEARMAND_BINARY;
-}
-
-const char *drizzled_binary() 
-{
-  return DRIZZLED_BINARY;
+  return int(app.join());
 }
 
 } // namespace exec_cmdline

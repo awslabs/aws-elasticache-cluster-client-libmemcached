@@ -53,9 +53,10 @@
 
 #pragma once
 
-#include <config.h>
+#include <mem_config.h>
 
 #ifdef __cplusplus
+# include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -64,96 +65,127 @@
 #include <cerrno>
 #include <climits>
 #else
+# ifdef HAVE_STDDEF_H
+#  include <stddef.h>
+# endif
+# ifdef HAVE_STDLIB_H
 #include <stdio.h>
+# endif
+# ifdef HAVE_STDLIB_H
 #include <stdlib.h>
+# endif
 #include <string.h>
+# ifdef HAVE_TIME_H
 #include <time.h>
+# endif
+# ifdef HAVE_ERRNO_H
 #include <errno.h>
+# endif
+# ifdef HAVE_LIMITS_H
 #include <limits.h>
 #endif
+#endif
 
+#ifdef HAVE_SYS_UN_H
+# include <sys/un.h>
+#endif
+
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#endif
+
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#ifdef HAVE_SYS_SOCKET_H
+# include <sys/socket.h>
+#endif
 
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
 
-#include <libmemcached-1.0/memcached.h>
-#include <libmemcached/watchpoint.h>
-#include <libmemcached/is.h>
+#ifdef HAVE_DLFCN_H
+# include <dlfcn.h>
+#endif
 
-#include <libmemcached/server_instance.h>
+#if defined(_WIN32)
+# include "libmemcached/windows.hpp"
+#endif
+
+#include <libmemcached-1.0/memcached.h>
+#include "libmemcached/watchpoint.h"
+#include "libmemcached/is.h"
+typedef struct memcached_st Memcached;
 
 #ifdef HAVE_POLL_H
 #include <poll.h>
 #else
-#include "poll/poll.h"
+# include "libmemcached/poll.h"
 #endif
 
-
 #ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef memcached_return_t (*memcached_server_execute_fn)(memcached_st *ptr, memcached_server_write_instance_st server, void *context);
-
-LIBMEMCACHED_LOCAL
-memcached_server_write_instance_st memcached_server_instance_fetch(memcached_st *ptr, uint32_t server_key);
-
-LIBMEMCACHED_LOCAL
-memcached_server_write_instance_st memcached_config_server_fetch(memcached_st *ptr);
-
-LIBMEMCACHED_LOCAL
-memcached_return_t memcached_server_execute(memcached_st *ptr,
-                                            memcached_server_execute_fn callback,
-                                            void *context);
-#ifdef __cplusplus
-} // extern "C"
+memcached_instance_st* memcached_instance_fetch(memcached_st *ptr, uint32_t server_key);
+memcached_instance_st* memcached_config_server_fetch(memcached_st *ptr);
 #endif
 
 /* These are private not to be installed headers */
-#include <libmemcached/error.hpp>
-#include <libmemcached/memory.h>
-#include <libmemcached/io.h>
+#include "libmemcached/error.hpp"
+#include "libmemcached/memory.h"
+#include "libmemcached/io.h"
 #ifdef __cplusplus
-#include <libmemcached/string.hpp>
-#include <libmemcached/io.hpp>
-#include <libmemcached/udp.hpp>
-#include <libmemcached/do.hpp>
-#include <libmemcached/socket.hpp>
-#include <libmemcached/connect.hpp>
-#include <libmemcached/allocators.hpp>
-#include <libmemcached/hash.hpp>
-#include <libmemcached/quit.hpp>
-#include <libmemcached/server.hpp>
-#include <libmemcached/behavior.hpp>
-#include <libmemcached/sasl.hpp>
-#include <libmemcached/server_list.hpp>
-#endif
-#include <libmemcached/internal.h>
-#include <libmemcached/array.h>
-#include <libmemcached/libmemcached_probes.h>
-#include <libmemcached/memcached/protocol_binary.h>
-#include <libmemcached/byteorder.h>
-#include <libmemcached/initialize_query.h>
-#ifdef __cplusplus
-#include <libmemcached/response.h>
-#endif
-#include <libmemcached/namespace.h>
-#include <libmemcached/virtual_bucket.h>
-
-#ifdef __cplusplus
-#include <libmemcached/backtrace.hpp>
-#include <libmemcached/assert.hpp>
-#include <libmemcached/server.hpp>
-#include <libmemcached/key.hpp>
-#include <libmemcached/encoding_key.h>
-#include <libmemcached/result.h>
+# include "libmemcached/string.hpp"
+# include "libmemcached/memcached/protocol_binary.h"
+# include "libmemcached/io.hpp"
+# include "libmemcached/udp.hpp"
+# include "libmemcached/do.hpp"
+# include "libmemcached/socket.hpp"
+# include "libmemcached/connect.hpp"
+# include "libmemcached/allocators.hpp"
+# include "libmemcached/hash.hpp"
+# include "libmemcached/quit.hpp"
+# include "libmemcached/instance.hpp"
+# include "libmemcached/server_instance.h"
+# include "libmemcached/server.hpp"
+# include "libmemcached/flag.hpp"
+# include "libmemcached/behavior.hpp"
+# include "libmemcached/sasl.hpp"
+# include "libmemcached/server_list.hpp"
 #endif
 
-#include <libmemcached/continuum.hpp>
+#include "libmemcached/internal.h"
+#include "libmemcached/array.h"
+#include "libmemcached/libmemcached_probes.h"
+#include "libmemcached/byteorder.h"
+#include "libmemcached/initialize_query.h"
+
+#ifdef __cplusplus
+# include "libmemcached/response.h"
+# include "libmemcached/namespace.h"
+#else
+# include "libmemcached/virtual_bucket.h"
+#endif
+
+#ifdef __cplusplus
+# include "libmemcached/backtrace.hpp"
+# include "libmemcached/assert.hpp"
+# include "libmemcached/server.hpp"
+# include "libmemcached/key.hpp"
+# include "libmemcached/encoding_key.h"
+# include "libmemcached/result.h"
+# include "libmemcached/version.hpp"
+#endif
+
+#include "libmemcached/continuum.hpp"
 
 #if !defined(__GNUC__) || (__GNUC__ == 2 && __GNUC_MINOR__ < 96)
 
@@ -175,30 +207,37 @@ memcached_return_t memcached_server_execute(memcached_st *ptr,
 extern "C" {
 #endif
 
-LIBMEMCACHED_LOCAL
 memcached_return_t run_distribution(memcached_st *ptr);
 
-LIBMEMCACHED_LOCAL
 memcached_server_list_st get_server_list_if_dynamic_mode(memcached_st *ptr, const memcached_server_list_st list, memcached_return_t *error);
 
-LIBMEMCACHED_LOCAL
 memcached_return_t add_servers_to_client(memcached_st *ptr, const memcached_server_list_st list);
 
-LIBMEMCACHED_LOCAL
 bool is_time_to_poll(memcached_st *ptr);
 
-LIBMEMCACHED_LOCAL
 void update_server_list(memcached_st *ptr);
 
-LIBMEMCACHED_LOCAL
 memcached_return_t complete_dynamic_initialization(memcached_st *ptr, const char *config);
 
-#define memcached_server_response_increment(A) (A)->cursor_active++
-#define memcached_server_response_decrement(A) (A)->cursor_active--
-#define memcached_server_response_reset(A) (A)->cursor_active=0
+#ifdef __cplusplus
+static inline void memcached_server_response_increment(memcached_instance_st* instance)
+{
+  instance->events(POLLIN);
+  instance->cursor_active_++;
+}
+#endif
+#define memcached_server_response_decrement(A) (A)->cursor_active_--
+#define memcached_server_response_reset(A) (A)->cursor_active_=0
 
-bool memcached_purge(memcached_server_write_instance_st ptr);
+#define memcached_instance_response_increment(A) (A)->cursor_active_++
+#define memcached_instance_response_decrement(A) (A)->cursor_active_--
+#define memcached_instance_response_reset(A) (A)->cursor_active_=0
 
 #ifdef __cplusplus
 }
+#endif
+
+#ifdef __cplusplus
+bool memcached_purge(memcached_instance_st*);
+memcached_instance_st* memcached_instance_by_position(const memcached_st *ptr, uint32_t server_key);
 #endif

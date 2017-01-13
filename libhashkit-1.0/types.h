@@ -1,9 +1,9 @@
 /*  vim:expandtab:shiftwidth=2:tabstop=2:smarttab:
  * 
- *  HashKit
+ *  HashKit library
  *
- *  Copyright (C) 2011 Data Differential, http://datadifferential.com/
- *  Copyright (C) 2009 Brian Aker All rights reserved.
+ *  Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2009-2010 Brian Aker All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -68,6 +68,7 @@ typedef enum {
   HASHKIT_HASH_HSIEH,
   HASHKIT_HASH_MURMUR,
   HASHKIT_HASH_JENKINS,
+  HASHKIT_HASH_MURMUR3,
   HASHKIT_HASH_CUSTOM,
   HASHKIT_HASH_MAX
 } hashkit_hash_algorithm_t;

@@ -1,8 +1,8 @@
-/* A Bison parser, made by GNU Bison 2.5.  */
+/* A Bison parser, made by GNU Bison 2.7.  */
 
 /* Bison interface for Yacc-like parsers in C
    
-      Copyright (C) 1984, 1989-1990, 2000-2011 Free Software Foundation, Inc.
+      Copyright (C) 1984, 1989-1990, 2000-2012 Free Software Foundation, Inc.
    
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -30,6 +30,15 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
+#ifndef YY_CONFIG_LIBMEMCACHED_CSL_PARSER_H_INCLUDED
+# define YY_CONFIG_LIBMEMCACHED_CSL_PARSER_H_INCLUDED
+/* Enabling traces.  */
+#ifndef YYDEBUG
+# define YYDEBUG 1
+#endif
+#if YYDEBUG
+extern int config_debug;
+#endif
 
 /* Tokens.  */
 #ifndef YYTOKENTYPE
@@ -39,14 +48,14 @@
    enum yytokentype {
      COMMENT = 258,
      END = 259,
-     ERROR = 260,
+     CSL_ERROR = 260,
      RESET = 261,
      PARSER_DEBUG = 262,
      INCLUDE = 263,
      CONFIGURE_FILE = 264,
      EMPTY_LINE = 265,
      SERVER = 266,
-     SOCKET = 267,
+     CSL_SOCKET = 267,
      SERVERS = 268,
      SERVERS_OPTION = 269,
      UNKNOWN_OPTION = 270,
@@ -80,35 +89,35 @@
      _TCP_KEEPALIVE = 298,
      _TCP_KEEPIDLE = 299,
      _TCP_NODELAY = 300,
-     NAMESPACE = 301,
-     POOL_MIN = 302,
-     POOL_MAX = 303,
-     MD5 = 304,
-     CRC = 305,
-     FNV1_64 = 306,
-     FNV1A_64 = 307,
-     FNV1_32 = 308,
-     FNV1A_32 = 309,
-     HSIEH = 310,
-     MURMUR = 311,
-     JENKINS = 312,
-     CONSISTENT = 313,
-     MODULA = 314,
-     RANDOM = 315,
-     TRUE = 316,
-     FALSE = 317,
-     FLOAT = 318,
-     NUMBER = 319,
-     PORT = 320,
-     WEIGHT_START = 321,
-     IPADDRESS = 322,
-     HOSTNAME = 323,
-     STRING = 324,
-     QUOTED_STRING = 325,
-     FILE_PATH = 326
+     FETCH_VERSION = 301,
+     NAMESPACE = 302,
+     POOL_MIN = 303,
+     POOL_MAX = 304,
+     MD5 = 305,
+     CRC = 306,
+     FNV1_64 = 307,
+     FNV1A_64 = 308,
+     FNV1_32 = 309,
+     FNV1A_32 = 310,
+     HSIEH = 311,
+     MURMUR = 312,
+     JENKINS = 313,
+     CONSISTENT = 314,
+     MODULA = 315,
+     RANDOM = 316,
+     CSL_TRUE = 317,
+     CSL_FALSE = 318,
+     CSL_FLOAT = 319,
+     NUMBER = 320,
+     PORT = 321,
+     WEIGHT_START = 322,
+     IPADDRESS = 323,
+     HOSTNAME = 324,
+     STRING = 325,
+     QUOTED_STRING = 326,
+     FILE_PATH = 327
    };
 #endif
-
 
 
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
@@ -118,5 +127,18 @@
 #endif
 
 
+#ifdef YYPARSE_PARAM
+#if defined __STDC__ || defined __cplusplus
+int config_parse (void *YYPARSE_PARAM);
+#else
+int config_parse ();
+#endif
+#else /* ! YYPARSE_PARAM */
+#if defined __STDC__ || defined __cplusplus
+int config_parse (class Context *context, yyscan_t *scanner);
+#else
+int config_parse ();
+#endif
+#endif /* ! YYPARSE_PARAM */
 
-
+#endif /* !YY_CONFIG_LIBMEMCACHED_CSL_PARSER_H_INCLUDED  */

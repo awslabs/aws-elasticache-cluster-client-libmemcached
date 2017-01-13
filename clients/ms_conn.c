@@ -9,7 +9,7 @@
  *
  */
 
-#include "config.h"
+#include "mem_config.h"
 
 #include <stdio.h>
 #include <inttypes.h>
@@ -20,16 +20,15 @@
 #include <netinet/tcp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#if TIME_WITH_SYS_TIME
+
+#if defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
-# include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  include <time.h>
-# endif
 #endif
+
+#if defined(HAVE_TIME_H)
+# include <time.h>
+#endif
+
 #include "ms_setting.h"
 #include "ms_thread.h"
 #include "ms_atomic.h"
@@ -358,7 +357,7 @@ static int ms_conn_init(ms_conn_t *c,
   c->mlget_task.mlget_num= 0;
   c->mlget_task.value_index= -1;         /* default invalid value */
 
-  if (ms_setting.binary_prot)
+  if (ms_setting.binary_prot_)
   {
     c->protocol= binary_prot;
   }
@@ -759,6 +758,7 @@ static void ms_maximize_sndbuf(const int sfd)
       max= avg - 1;
     }
   }
+  (void)last_good;
 } /* ms_maximize_sndbuf */
 
 
@@ -1160,7 +1160,12 @@ static int ms_ascii_process_line(ms_conn_t *c, char *command)
     {
       token_t tokens[MAX_TOKENS];
       ms_tokenize_command(command, tokens, MAX_TOKENS);
+      errno= 0;
       value_len= strtol(tokens[VALUELEN_TOKEN].value, NULL, 10);
+      if (errno != 0)
+      {
+        printf("<%d ERROR %s\n", c->sfd, strerror(errno));
+      }
       c->currcmd.key_prefix= *(uint64_t *)tokens[KEY_TOKEN].value;
 
       /*
@@ -1544,6 +1549,7 @@ static int ms_sort_udp_packet(ms_conn_t *c, char *buf, int rbytes)
       break;
     }
   }
+  (void)packets;
 
   return wbytes == 0 ? -1 : wbytes;
 } /* ms_sort_udp_packet */
@@ -3158,6 +3164,8 @@ int ms_mcd_mlget(ms_conn_t *c)
     item= c->mlget_task.mlget_item[i].item;
     atomic_add_size(&ms_stats.cmd_get, 1);
   }
+
+  (void)item;
 
   return EXIT_SUCCESS;
 } /* ms_mcd_mlget */

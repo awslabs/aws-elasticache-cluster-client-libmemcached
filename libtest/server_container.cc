@@ -34,10 +34,10 @@
  *
  */
 
-#include <config.h>
-#include <libtest/common.h>
+#include "libtest/yatlcon.h"
 
-#include <cassert>
+#include "libtest/common.h"
+
 #include <cerrno>
 #include <cstdlib>
 #include <iostream>
@@ -55,12 +55,14 @@ static inline std::string &rtrim(std::string &s)
 
 namespace libtest {
 
+Server* server_startup_st::last()
+{
+  return servers.back();
+}
+
 void server_startup_st::push_server(Server *arg)
 {
   servers.push_back(arg);
-
-  char port_str[NI_MAXSERV];
-  snprintf(port_str, sizeof(port_str), "%u", int(arg->port()));
 
   std::string server_config_string;
   if (arg->has_socket())
@@ -73,15 +75,18 @@ void server_startup_st::push_server(Server *arg)
   }
   else
   {
+    libtest::vchar_t port_str;
+    port_str.resize(NI_MAXSERV);
+    snprintf(&port_str[0], port_str.size(), "%u", int(arg->port()));
+
     server_config_string+= "--server=";
     server_config_string+= arg->hostname();
     server_config_string+= ":";
-    server_config_string+= port_str;
+    server_config_string+= &port_str[0];
     server_config_string+= " ";
   }
 
   server_list+= server_config_string;
-
 }
 
 Server* server_startup_st::pop_server()
@@ -111,17 +116,14 @@ bool server_startup_st::shutdown(uint32_t host_to_shutdown)
 
 void server_startup_st::clear()
 {
-  for (std::vector<Server *>::iterator iter= servers.begin(); iter != servers.end(); iter++)
-  {
-    delete *iter;
-  }
+  std::for_each(servers.begin(), servers.end(), DeleteFromVector());
   servers.clear();
 }
 
 bool server_startup_st::check() const
 {
   bool success= true;
-  for (std::vector<Server *>::const_iterator iter= servers.begin(); iter != servers.end(); iter++)
+  for (std::vector<Server *>::const_iterator iter= servers.begin(); iter != servers.end(); ++iter)
   {
     if ((*iter)->check()  == false)
     {
@@ -135,7 +137,7 @@ bool server_startup_st::check() const
 bool server_startup_st::shutdown()
 {
   bool success= true;
-  for (std::vector<Server *>::iterator iter= servers.begin(); iter != servers.end(); iter++)
+  for (std::vector<Server *>::iterator iter= servers.begin(); iter != servers.end(); ++iter)
   {
     if ((*iter)->has_pid() and (*iter)->kill() == false)
     {
@@ -149,7 +151,7 @@ bool server_startup_st::shutdown()
 
 void server_startup_st::restart()
 {
-  for (std::vector<Server *>::iterator iter= servers.begin(); iter != servers.end(); iter++)
+  for (std::vector<Server *>::iterator iter= servers.begin(); iter != servers.end(); ++iter)
   {
     (*iter)->start();
   }
@@ -160,7 +162,6 @@ server_startup_st::server_startup_st() :
   _magic(MAGIC_MEMORY),
   _socket(false),
   _sasl(false),
-  _count(0),
   udp(0),
   _servers_to_run(5)
 { }
@@ -175,84 +176,129 @@ bool server_startup_st::validate()
   return _magic == MAGIC_MEMORY;
 }
 
-bool server_startup(server_startup_st& construct, const std::string& server_type, in_port_t try_port, int argc, const char *argv[], const bool opt_startup_message)
+bool server_startup(server_startup_st& construct, const std::string& server_type, in_port_t try_port, const char *argv[])
 {
-  if (try_port <= 0)
+  return construct.start_server(server_type, try_port, argv);
+}
+
+libtest::Server* server_startup_st::create(const std::string& server_type, in_port_t try_port, const bool is_socket)
+{
+  libtest::Server *server= NULL;
+
+  if (is_socket == false)
   {
-    throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "was passed the invalid port number %d", int(try_port));
+    if (try_port <= 0)
+    {
+      throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "was passed the invalid port number %d", int(try_port));
+    }
   }
 
-  libtest::Server *server= NULL;
-  try {
-    if (0)
-    { }
-    else if (server_type.compare("gearmand") == 0)
+  if (is_socket)
+  { 
+    if (server_type.compare("memcached") == 0)
     {
-      if (GEARMAND_BINARY)
+      server= build_memcached_socket("localhost", try_port);
+    }
+    else
+    {
+      Error << "Socket is not support for server: " << server_type;
+      return NULL;
+    }
+  }
+  else if (server_type.compare("gearmand") == 0)
+  {
+    server= build_gearmand("localhost", try_port);
+  }
+  else if (server_type.compare("hostile-gearmand") == 0)
+  {
+    server= build_gearmand("localhost", try_port, "gearmand/hostile_gearmand");
+  }
+  else if (server_type.compare("drizzled") == 0)
+  {
+    if (has_drizzled())
+    {
+      if (has_libdrizzle())
+      {
+        server= build_drizzled("localhost", try_port);
+      }
+    }
+  }
+  else if (server_type.compare("blobslap_worker") == 0)
+  {
+    if (has_gearmand())
+    {
+#ifdef GEARMAND_BLOBSLAP_WORKER
+      if (GEARMAND_BLOBSLAP_WORKER)
       {
         if (HAVE_LIBGEARMAN)
         {
-          server= build_gearmand("localhost", try_port);
+          server= build_blobslap_worker(try_port);
         }
       }
+#endif // GEARMAND_BLOBSLAP_WORKER
     }
-    else if (server_type.compare("drizzled") == 0)
+  }
+  else if (server_type.compare("memcached") == 0)
+  {
+    if (has_memcached())
     {
-      if (DRIZZLED_BINARY)
-      {
-        if (HAVE_LIBDRIZZLE)
-        {
-          server= build_drizzled("localhost", try_port);
-        }
-      }
+      server= build_memcached("localhost", try_port);
     }
-    else if (server_type.compare("blobslap_worker") == 0)
-    {
-      if (GEARMAND_BINARY)
-      {
-        if (GEARMAND_BLOBSLAP_WORKER)
-        {
-          if (HAVE_LIBGEARMAN)
-          {
-            server= build_blobslap_worker(try_port);
-          }
-        }
-      }
-    }
-    else if (server_type.compare("memcached-sasl") == 0)
-    {
-      if (MEMCACHED_SASL_BINARY)
-      {
-        if (HAVE_LIBMEMCACHED)
-        {
-          server= build_memcached_sasl("localhost", try_port, construct.username(), construct.password());
-        }
-      }
-    }
-    else if (server_type.compare("memcached") == 0)
-    {
-      if (MEMCACHED_BINARY)
-      {
-        if (HAVE_LIBMEMCACHED)
-        {
-          server= build_memcached("localhost", try_port);
-        }
-      }
-    }
-    else if (server_type.compare("memcached-light") == 0)
-    {
-      if (MEMCACHED_LIGHT_BINARY)
-      {
-        if (HAVE_LIBMEMCACHED)
-        {
-          server= build_memcached_light("localhost", try_port);
-        }
-      }
-    }
+  }
 
-    if (server == NULL)
+  return server;
+}
+
+class ServerPtr {
+public:
+  ServerPtr(libtest::Server* server_):
+    _server(server_)
+  { }
+
+  ~ServerPtr()
+  {
+    delete _server;
+  }
+
+  void reset()
+  {
+    delete _server;
+    _server= NULL;
+  }
+
+  libtest::Server* release(libtest::Server* server_= NULL)
+  {
+    libtest::Server* tmp= _server;
+    _server= server_;
+    return tmp;
+  }
+
+  libtest::Server* operator->() const
+  {
+    return _server;
+  }
+
+  libtest::Server* operator&() const
+  { 
+    return _server;
+  }
+
+private:
+  libtest::Server* _server;
+};
+
+bool server_startup_st::_start_server(const bool is_socket,
+                                      const std::string& server_type,
+                                      in_port_t try_port,
+                                      const char *argv[])
+{
+  try {
+    ServerPtr server(create(server_type, try_port, is_socket));
+
+    if (&server == NULL)
     {
-      fatal_message("Launching of an unknown server was attempted");
+      Error << "Could not allocate server: " << server_type;
+      return false;
     }
 
     /*
@@ -260,155 +306,82 @@ bool server_startup(server_startup_st& construct, const std::string& server_type
     */
     if (server->cycle() == false)
     {
-      Error << "Could not start up server " << *server;
-      delete server;
+      Error << "Could not start up server " << &server;
       return false;
     }
 
-    server->build(argc, argv);
+    server->init(argv);
 
+#if 0
     if (false)
     {
       Out << "Pausing for startup, hit return when ready.";
       std::string gdb_command= server->base_command();
-      std::string options;
-#if 0
-      Out << "run " << server->args(options);
-#endif
       getchar();
     }
-    else if (server->start() == false)
+    else
+#endif
+
+      if (server->start() == false)
+      {
+        return false;
+      }
+      else
+      {
+        {
+#ifdef DEBUG
+          if (DEBUG)
+          {
+            Outn();
+            Out << "STARTING SERVER(pid:" << server->pid() << "): " << server->running();
+            Outn();
+          }
+#endif
+        }
+      }
+
+    push_server(server.release());
+
+    if (is_socket and &server)
     {
-      delete server;
+      set_default_socket(server->socket().c_str());
+    }
+  }
+  catch (const libtest::disconnected& err)
+  {
+    if (fatal::is_disabled() == false and try_port != LIBTEST_FAIL_PORT)
+    {
+      stream::cerr(err.file(), err.line(), err.func()) << err.what();
       return false;
     }
-    else
-    {
-      if (opt_startup_message)
-      {
-        Outn();
-        Out << "STARTING SERVER(pid:" << server->pid() << "): " << server->running();
-        Outn();
-      }
-    }
+  }
+  catch (const libtest::__test_result& err)
+  {
+    stream::cerr(err.file(), err.line(), err.func()) << err.what();
+    return false;
+  }
+  catch (const std::exception& err)
+  {
+    Error << err.what();
+    return false;
   }
   catch (...)
   {
-    delete server;
-    throw;
+    Error << "error occured while creating server: " << server_type;
+    return false;
   }
-
-  construct.push_server(server);
 
   return true;
 }
 
-bool server_startup_st::start_socket_server(const std::string& server_type, const in_port_t try_port, int argc, const char *argv[])
+bool server_startup_st::start_server(const std::string& server_type, in_port_t try_port, const char *argv[])
 {
-  (void)try_port;
-  Outn();
+  return _start_server(false, server_type, try_port, argv);
+}
 
-  Server *server= NULL;
-  try {
-    if (0)
-    { }
-    else if (server_type.compare("gearmand") == 0)
-    {
-      Error << "Socket files are not supported for gearmand yet";
-    }
-    else if (server_type.compare("memcached-sasl") == 0)
-    {
-      if (MEMCACHED_SASL_BINARY)
-      {
-        if (HAVE_LIBMEMCACHED)
-        {
-          server= build_memcached_sasl_socket("localhost", try_port, username(), password());
-        }
-        else
-        {
-          Error << "Libmemcached was not found";
-        }
-      }
-      else
-      {
-        Error << "No memcached binary is available";
-      }
-    }
-    else if (server_type.compare("memcached") == 0)
-    {
-      if (MEMCACHED_BINARY)
-      {
-        if (HAVE_LIBMEMCACHED)
-        {
-          server= build_memcached_socket("localhost", try_port);
-        }
-        else
-        {
-          Error << "Libmemcached was not found";
-        }
-      }
-      else
-      {
-        Error << "No memcached binary is available";
-      }
-    }
-    else
-    {
-      Error << "Failed to start " << server_type << ", no support was found to be compiled in for it.";
-    }
-
-    if (server == NULL)
-    {
-      Error << "Failure occured while creating server: " <<  server_type;
-      return false;
-    }
-
-    /*
-      We will now cycle the server we have created.
-    */
-    if (server->cycle() == false)
-    {
-      Error << "Could not start up server " << *server;
-      delete server;
-      return false;
-    }
-
-    server->build(argc, argv);
-
-    if (false)
-    {
-      Out << "Pausing for startup, hit return when ready.";
-      std::string gdb_command= server->base_command();
-      std::string options;
-#if 0
-      Out << "run " << server->args(options);
-#endif
-      getchar();
-    }
-    else if (server->start() == false)
-    {
-      Error << "Failed to start " << *server;
-      delete server;
-      return false;
-    }
-    else
-    {
-      Out << "STARTING SERVER(pid:" << server->pid() << "): " << server->running();
-    }
-  }
-  catch (...)
-  {
-    delete server;
-    throw;
-  }
-
-  push_server(server);
-
-  set_default_socket(server->socket().c_str());
-
-  Outn();
-
-  return true;
+bool server_startup_st::start_socket_server(const std::string& server_type, const in_port_t try_port, const char *argv[])
+{
+  return _start_server(true, server_type, try_port, argv);
 }
 
 std::string server_startup_st::option_string() const

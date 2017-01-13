@@ -12,8 +12,8 @@ static void calc_largest_consumption(memcached_analysis_st *result,
 }
 
 static void calc_oldest_node(memcached_analysis_st *result,
-                                     const uint32_t server_num,
-                                     const uint32_t uptime)
+                             const uint32_t server_num,
+                             const uint32_t uptime)
 {
   if (result->longest_uptime < uptime)
   {
@@ -61,10 +61,11 @@ static void calc_hit_ratio(memcached_analysis_st *result,
   result->pool_hit_ratio= temp * 100;
 }
 
-memcached_analysis_st *memcached_analyze(memcached_st *memc,
+memcached_analysis_st *memcached_analyze(memcached_st *shell,
                                          memcached_stat_st *memc_stat,
                                          memcached_return_t *error)
 {
+  Memcached* memc= memcached2Memcached(shell);
   uint64_t total_items= 0, total_bytes= 0;
   uint64_t total_get_cmds= 0, total_get_hits= 0;
 
@@ -96,7 +97,7 @@ memcached_analysis_st *memcached_analyze(memcached_st *memc,
   for (uint32_t x= 0; x < server_count; x++)
   {
     calc_largest_consumption(result, x, memc_stat[x].bytes);
-    calc_oldest_node(result, x, memc_stat[x].uptime);
+    calc_oldest_node(result, x, uint32_t(memc_stat[x].uptime));
     calc_least_free_node(result, x,
                          memc_stat[x].limit_maxbytes,
                          memc_stat[x].bytes);

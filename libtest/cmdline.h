@@ -39,8 +39,21 @@
 #include <spawn.h>
 
 // http://www.gnu.org/software/automake/manual/automake.html#Using-the-TAP-test-protocol
-#define EXIT_SKIP 77
-#define EXIT_FATAL 77
+#ifndef EXIT_SKIP
+# define EXIT_SKIP 77
+#endif
+
+#ifndef EXIT_FATAL
+# define EXIT_FATAL 99
+#endif
+
+#ifndef EX_NOEXEC
+# define EX_NOEXEC 126
+#endif
+
+#ifndef EX_NOTFOUND
+# define EX_NOTFOUND 127
+#endif
 
 namespace libtest {
 
@@ -53,8 +66,42 @@ public:
   enum error_t {
     SUCCESS= EXIT_SUCCESS,
     FAILURE= EXIT_FAILURE,
-    INVALID= 127
+    UNINITIALIZED,
+    SIGTERM_KILLED,
+    UNKNOWN,
+    UNKNOWN_SIGNAL,
+    INVALID_POSIX_SPAWN= 127
   };
+
+  static const char* toString(error_t arg)
+  {
+    switch (arg)
+    {
+    case Application::SUCCESS:
+      return "EXIT_SUCCESS";
+
+    case Application::UNINITIALIZED:
+      return "UNINITIALIZED";
+
+    case Application::SIGTERM_KILLED:
+      return "Exit happened via SIGTERM";
+
+    case Application::FAILURE:
+      return "EXIT_FAILURE";
+
+    case Application::UNKNOWN_SIGNAL:
+      return "Exit happened via a signal which was not SIGTERM";
+
+    case Application::INVALID_POSIX_SPAWN:
+      return "127: Invalid call to posix_spawn()";
+
+    case Application::UNKNOWN:
+    default:
+      break;
+    }
+
+    return "EXIT_UNKNOWN";
+  }
 
   class Pipe {
   public:
@@ -91,7 +138,7 @@ public:
   void add_option(const std::string&, const std::string&);
   void add_long_option(const std::string& option_name, const std::string& option_value);
   error_t run(const char *args[]= NULL);
-  error_t wait(bool nohang= true);
+  Application::error_t join();
 
   libtest::vchar_t stdout_result() const
   {
@@ -101,6 +148,11 @@ public:
   size_t stdout_result_length() const
   {
     return _stdout_buffer.size();
+  }
+
+  const char* stdout_c_str() const
+  {
+    return &_stdout_buffer[0];
   }
 
   libtest::vchar_t stderr_result() const
@@ -120,7 +172,7 @@ public:
 
   std::string print();
 
-  void use_valgrind(bool arg= true)
+  void use_valgrind(bool arg)
   {
     _use_valgrind= arg;
   }
@@ -130,12 +182,12 @@ public:
   bool slurp();
   void murder();
 
-  void use_gdb(bool arg= true)
+  void use_gdb(bool arg)
   {
     _use_gdb= arg;
   }
 
-  void use_ptrcheck(bool arg= true)
+  void use_ptrcheck(bool arg)
   {
     _use_ptrcheck= arg;
   }
@@ -160,6 +212,7 @@ public:
 private:
   void create_argv(const char *args[]);
   void delete_argv();
+  void add_to_build_argv(const char*);
 
 private:
   const bool _use_libtool;
@@ -176,38 +229,20 @@ private:
   Pipe stdin_fd;
   Pipe stdout_fd;
   Pipe stderr_fd;
-  char * * built_argv;
+  libtest::vchar_ptr_t built_argv;
   pid_t _pid;
   libtest::vchar_t _stdout_buffer;
   libtest::vchar_t _stderr_buffer;
+  int _status;
+  pthread_t _thread;
+  error_t _app_exit_state;
 };
 
 static inline std::ostream& operator<<(std::ostream& output, const enum Application::error_t &arg)
 {
-  switch (arg)
-  {
-    case Application::SUCCESS:
-      output << "EXIT_SUCCESS";
-      break;
-
-    case Application::FAILURE:
-      output << "EXIT_FAILURE";
-      break;
-
-    case Application::INVALID:
-      output << "127";
-      break;
-
-    default:
-      output << "EXIT_UNKNOWN";
-  }
-
-  return output;
+  return output << Application::toString(arg);
 }
 
 int exec_cmdline(const std::string& executable, const char *args[], bool use_libtool= false);
-
-const char *gearmand_binary(); 
-const char *drizzled_binary();
 
 }

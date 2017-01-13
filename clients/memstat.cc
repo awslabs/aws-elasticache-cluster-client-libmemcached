@@ -1,4 +1,5 @@
 /* LibMemcached
+ * Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  * Copyright (C) 2006-2009 Brian Aker
  * All rights reserved.
  *
@@ -11,7 +12,7 @@
  *          Brian Aker
  *          Toru Maesaka
  */
-#include <config.h>
+#include <mem_config.h>
 
 #include <cstdio>
 #include <cstring>
@@ -25,7 +26,7 @@
 #include <sys/types.h>
 #include <sys/types.h>
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 #include "client_options.h"
 #include "utilities.h"
@@ -46,6 +47,8 @@ static bool opt_analyze= false;
 static char *opt_servers= NULL;
 static char *stat_args= NULL;
 static char *analyze_mode= NULL;
+static char *opt_username;
+static char *opt_passwd;
 
 static struct option long_options[]=
 {
@@ -59,16 +62,18 @@ static struct option long_options[]=
   {(OPTIONSTRING)"server-version", no_argument, NULL, OPT_SERVER_VERSION},
   {(OPTIONSTRING)"servers", required_argument, NULL, OPT_SERVERS},
   {(OPTIONSTRING)"analyze", optional_argument, NULL, OPT_ANALYZE},
+  {(OPTIONSTRING)"username", required_argument, NULL, OPT_USERNAME},
+  {(OPTIONSTRING)"password", required_argument, NULL, OPT_PASSWD},
   {0, 0, 0, 0},
 };
 
 
-static memcached_return_t stat_printer(memcached_server_instance_st instance,
+static memcached_return_t stat_printer(const memcached_instance_st * instance,
                                        const char *key, size_t key_length,
                                        const char *value, size_t value_length,
                                        void *context)
 {
-  static memcached_server_instance_st last= NULL;
+  static const memcached_instance_st * last= NULL;
   (void)context;
 
   if (last != instance)
@@ -84,13 +89,13 @@ static memcached_return_t stat_printer(memcached_server_instance_st instance,
 }
 
 static memcached_return_t server_print_callback(const memcached_st *,
-                                                const memcached_server_st *instance,
+                                                const memcached_instance_st * instance,
                                                 void *)
 {
   std::cerr << memcached_server_name(instance) << ":" << memcached_server_port(instance) <<
-    " " << int(instance->major_version) << 
-    "." << int(instance->minor_version) << 
-    "." << int(instance->micro_version) << std::endl;
+    " " << int(memcached_server_major_version(instance)) << 
+    "." << int(memcached_server_minor_version(instance)) << 
+    "." << int(memcached_server_micro_version(instance)) << std::endl;
 
   return MEMCACHED_SUCCESS;
 }
@@ -100,28 +105,56 @@ int main(int argc, char *argv[])
   options_parse(argc, argv);
   initialize_sockets();
 
-  if (opt_servers == false)
+  if (opt_servers == NULL)
   {
     char *temp;
     if ((temp= getenv("MEMCACHED_SERVERS")))
     {
       opt_servers= strdup(temp);
     }
-    else
+
+    if (opt_servers == NULL)
     {
       std::cerr << "No Servers provided" << std::endl;
       return EXIT_FAILURE;
     }
   }
 
+  memcached_server_st* servers= memcached_servers_parse(opt_servers);
+  if (servers == NULL or memcached_server_list_count(servers) == 0)
+  {
+    std::cerr << "Invalid server list provided:" << opt_servers << std::endl;
+    return EXIT_FAILURE;
+  }
+  
+  if (opt_servers)
+  {
+    free(opt_servers);
+  }
+
   memcached_st *memc= memcached_create(NULL);
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL, opt_binary);
 
-  memcached_server_st *servers= memcached_servers_parse(opt_servers);
-  free(opt_servers);
-
   memcached_return_t rc= memcached_server_push(memc, servers);
   memcached_server_list_free(servers);
+
+  if (opt_username and LIBMEMCACHED_WITH_SASL_SUPPORT == 0)
+  {
+    memcached_free(memc);
+    std::cerr << "--username was supplied, but binary was not built with SASL support." << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  if (opt_username)
+  {
+    memcached_return_t ret;
+    if (memcached_failed(ret= memcached_set_sasl_auth_data(memc, opt_username, opt_passwd)))
+    {
+      std::cerr << memcached_last_error_message(memc) << std::endl;
+      memcached_free(memc);
+      return EXIT_FAILURE;
+    }
+  }
 
   if (rc != MEMCACHED_SUCCESS and rc != MEMCACHED_SOME_ERRORS)
   {
@@ -188,9 +221,8 @@ static void run_analyzer(memcached_st *memc, memcached_stat_st *memc_stat)
     uint32_t num_of_tests= 32;
     const char *test_key= "libmemcached_test_key";
 
-    memcached_st **servers;
-    servers= static_cast<memcached_st**>(malloc(sizeof(memcached_st*) * server_count));
-    if (not servers)
+    memcached_st **servers= static_cast<memcached_st**>(malloc(sizeof(memcached_st*) * server_count));
+    if (servers == NULL)
     {
       fprintf(stderr, "Failed to allocate memory\n");
       return;
@@ -198,20 +230,25 @@ static void run_analyzer(memcached_st *memc, memcached_stat_st *memc_stat)
 
     for (uint32_t x= 0; x < server_count; x++)
     {
-      memcached_server_instance_st instance=
+      const memcached_instance_st * instance=
         memcached_server_instance_by_position(memc, x);
 
       if ((servers[x]= memcached_create(NULL)) == NULL)
       {
         fprintf(stderr, "Failed to memcached_create()\n");
         if (x > 0)
+        {
           memcached_free(servers[0]);
+        }
         x--;
 
         for (; x > 0; x--)
+        {
           memcached_free(servers[x]);
+        }
 
         free(servers);
+
         return;
       }
       memcached_server_add(servers[x],
@@ -226,7 +263,7 @@ static void run_analyzer(memcached_st *memc, memcached_stat_st *memc_stat)
 
     for (uint32_t x= 0; x < server_count; x++)
     {
-      memcached_server_instance_st instance=
+      const memcached_instance_st * instance=
         memcached_server_instance_by_position(memc, x);
       gettimeofday(&start_time, NULL);
 
@@ -235,8 +272,10 @@ static void run_analyzer(memcached_st *memc, memcached_stat_st *memc_stat)
         size_t vlen;
         char *val= memcached_get(servers[x], test_key, strlen(test_key),
                                  &vlen, &flags, &rc);
-        if (rc != MEMCACHED_NOTFOUND && rc != MEMCACHED_SUCCESS)
+        if (rc != MEMCACHED_NOTFOUND and rc != MEMCACHED_SUCCESS)
+        {
           break;
+        }
         free(val);
       }
       gettimeofday(&end_time, NULL);
@@ -267,7 +306,7 @@ static void run_analyzer(memcached_st *memc, memcached_stat_st *memc_stat)
 
     if (server_count > 1 && slowest_time > 0)
     {
-      memcached_server_instance_st slowest=
+      const memcached_instance_st * slowest=
         memcached_server_instance_by_position(memc, slowest_server);
 
       printf("---\n");
@@ -279,7 +318,9 @@ static void run_analyzer(memcached_st *memc, memcached_stat_st *memc_stat)
     printf("\n");
 
     for (uint32_t x= 0; x < server_count; x++)
+    {
       memcached_free(servers[x]);
+    }
 
     free(servers);
     free(analyze_mode);
@@ -296,9 +337,9 @@ static void print_analysis_report(memcached_st *memc,
                                   
 {
   uint32_t server_count= memcached_server_count(memc);
-  memcached_server_instance_st most_consumed_server= memcached_server_instance_by_position(memc, report->most_consumed_server);
-  memcached_server_instance_st least_free_server= memcached_server_instance_by_position(memc, report->least_free_server);
-  memcached_server_instance_st oldest_server= memcached_server_instance_by_position(memc, report->oldest_server);
+  const memcached_instance_st * most_consumed_server= memcached_server_instance_by_position(memc, report->most_consumed_server);
+  const memcached_instance_st * least_free_server= memcached_server_instance_by_position(memc, report->least_free_server);
+  const memcached_instance_st * oldest_server= memcached_server_instance_by_position(memc, report->oldest_server);
 
   printf("Memcached Cluster Analysis Report\n\n");
 
@@ -391,6 +432,15 @@ static void options_parse(int argc, char *argv[])
 
     case OPT_QUIET:
       close_stdio();
+      break;
+
+    case OPT_USERNAME:
+      opt_username= optarg;
+      opt_binary= true;
+      break;
+
+    case OPT_PASSWD:
+      opt_passwd= optarg;
       break;
 
     case '?':

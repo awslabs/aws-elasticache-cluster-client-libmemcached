@@ -1,4 +1,5 @@
 /* LibMemcached
+ * Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  * Copyright (C) 2006-2009 Brian Aker
  * All rights reserved.
  *
@@ -9,7 +10,7 @@
  *
  */
 
-#include "config.h"
+#include "mem_config.h"
 
 #include <cerrno>
 #include <cstdio>
@@ -24,7 +25,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 #include "client_options.h"
 #include "utilities.h"
@@ -61,9 +62,6 @@ int main(int argc, char *argv[])
 
   options_parse(argc, argv);
 
-  memcached_st *memc= memcached_create(NULL);
-  process_hash_option(memc, opt_hash);
-
   if (opt_servers == NULL)
   {
     char *temp;
@@ -72,22 +70,32 @@ int main(int argc, char *argv[])
     {
       opt_servers= strdup(temp);
     }
-    else
+    else if (argc >= 1 and argv[--argc])
+    {
+      opt_servers= strdup(argv[argc]);
+    }
+
+    if (opt_servers == NULL)
     {
       std::cerr << "No Servers provided" << std::endl;
       exit(EXIT_FAILURE);
     }
   }
 
-  memcached_server_st *servers;
-  if (opt_servers)
+  memcached_server_st* servers= memcached_servers_parse(opt_servers);
+  if (servers == NULL or memcached_server_list_count(servers) == 0)
   {
-    servers= memcached_servers_parse(opt_servers);
+    std::cerr << "Invalid server list provided:" << opt_servers << std::endl;
+    return EXIT_FAILURE;
   }
-  else
+
+  memcached_st *memc= memcached_create(NULL);
+  if (memc == NULL)
   {
-    servers= memcached_servers_parse(argv[--argc]);
+    std::cerr << "Could not allocate a memcached_st structure.\n" << std::endl;
+    return EXIT_FAILURE;
   }
+  process_hash_option(memc, opt_hash);
 
   memcached_server_push(memc, servers);
   memcached_server_list_free(servers);

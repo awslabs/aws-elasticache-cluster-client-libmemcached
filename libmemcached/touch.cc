@@ -38,7 +38,7 @@
 #include <libmemcached/common.h>
 #include <libmemcached/memcached/protocol_binary.h>
 
-static memcached_return_t ascii_touch(memcached_server_write_instance_st instance,
+static memcached_return_t ascii_touch(memcached_instance_st* instance,
                                       const char *key, size_t key_length,
                                       time_t expiration)
 {
@@ -56,7 +56,7 @@ static memcached_return_t ascii_touch(memcached_server_write_instance_st instanc
     { memcached_literal_param("touch ") },
     { memcached_array_string(instance->root->_namespace), memcached_array_size(instance->root->_namespace) },
     { key, key_length },
-    { expiration_buffer, expiration_buffer_length },
+    { expiration_buffer, size_t(expiration_buffer_length) },
     { memcached_literal_param("\r\n") }
   };
 
@@ -70,12 +70,14 @@ static memcached_return_t ascii_touch(memcached_server_write_instance_st instanc
   return rc;
 }
 
-static memcached_return_t binary_touch(memcached_server_write_instance_st instance,
+static memcached_return_t binary_touch(memcached_instance_st* instance,
                                        const char *key, size_t key_length,
                                        time_t expiration)
 {
   protocol_binary_request_touch request= {}; //{.bytes= {0}};
-  request.message.header.request.magic= PROTOCOL_BINARY_REQ;
+
+  initialize_binary_request(instance, request.message.header);
+
   request.message.header.request.opcode= PROTOCOL_BINARY_CMD_TOUCH;
   request.message.header.request.extlen= 4;
   request.message.header.request.keylen= htons((uint16_t)(key_length +memcached_array_size(instance->root->_namespace)));
@@ -108,11 +110,12 @@ memcached_return_t memcached_touch(memcached_st *ptr,
   return memcached_touch_by_key(ptr, key, key_length, key, key_length, expiration);
 }
 
-memcached_return_t memcached_touch_by_key(memcached_st *ptr,
+memcached_return_t memcached_touch_by_key(memcached_st *shell,
                                           const char *group_key, size_t group_key_length,
                                           const char *key, size_t key_length,
                                           time_t expiration)
 {
+  Memcached* ptr= memcached2Memcached(shell);
   LIBMEMCACHED_MEMCACHED_TOUCH_START();
 
   memcached_return_t rc;
@@ -121,13 +124,13 @@ memcached_return_t memcached_touch_by_key(memcached_st *ptr,
     return rc;
   }
 
-  if (memcached_failed(rc= memcached_validate_key_length(key_length, ptr->flags.binary_protocol)))
+  if (memcached_failed(rc= memcached_key_test(*ptr, (const char **)&key, &key_length, 1)))
   {
-    return rc;
+    return memcached_set_error(*ptr, rc, MEMCACHED_AT);
   }
 
   uint32_t server_key= memcached_generate_hash_with_redistribution(ptr, group_key, group_key_length);
-  memcached_server_write_instance_st instance= memcached_server_instance_fetch(ptr, server_key);
+  memcached_instance_st* instance= memcached_instance_fetch(ptr, server_key);
 
   if (ptr->flags.binary_protocol)
   {

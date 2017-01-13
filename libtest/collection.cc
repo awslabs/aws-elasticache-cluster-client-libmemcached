@@ -34,11 +34,12 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 
 #include <libtest/common.h>
 
-static test_return_t runner_code(Framework* frame,
+// @todo possibly have this code fork off so if it fails nothing goes bad
+static test_return_t runner_code(libtest::Framework* frame,
                                  test_st* run, 
                                  libtest::Timer& _timer)
 { // Runner Code
@@ -50,11 +51,14 @@ static test_return_t runner_code(Framework* frame,
   try 
   {
     _timer.reset();
-    return_code= frame->runner()->run(run->test_fn, frame->creators_ptr());
+    assert(frame);
+    assert(frame->runner());
+    assert(run->test_fn);
+    return_code= frame->runner()->main(run->test_fn, frame->creators_ptr());
   }
   // Special case where check for the testing of the exception
   // system.
-  catch (libtest::fatal &e)
+  catch (const libtest::fatal& e)
   {
     if (libtest::fatal::is_disabled())
     {
@@ -84,21 +88,22 @@ Collection::Collection(Framework* frame_arg,
   _success(0),
   _skipped(0),
   _failed(0),
-  _total(0)
+  _total(0),
+  _formatter(frame_arg->name(), _name)
 {
   fatal_assert(arg);
 }
 
 test_return_t Collection::exec()
 {
-  Out << "Collection: " << _name;
-
-  if (test_success(_frame->runner()->pre(_pre, _frame->creators_ptr())))
+  if (test_success(_frame->runner()->setup(_pre, _frame->creators_ptr())))
   {
     for (test_st *run= _tests; run->name; run++)
     {
+      formatter()->push_testcase(run->name);
       if (_frame->match(run->name))
       {
+        formatter()->skipped();
         continue;
       }
       _total++;
@@ -112,49 +117,59 @@ test_return_t Collection::exec()
           {
             Error << "frame->runner()->flush(creators_ptr)";
             _skipped++;
+            formatter()->skipped();
             continue;
           }
         }
 
-        return_code= runner_code(_frame, run, _timer);
+        set_alarm();
+
+        try 
+        {
+          return_code= runner_code(_frame, run, _timer);
+        }
+        catch (...)
+        {
+          cancel_alarm();
+
+          throw;
+        }
+        libtest::cancel_alarm();
       }
-      catch (libtest::fatal &e)
+      catch (const libtest::fatal& e)
       {
-        Error << "Fatal exception was thrown: " << e.what();
+        stream::cerr(e.file(), e.line(), e.func()) << e.what();
         _failed++;
+        formatter()->failed();
         throw;
       }
 
       switch (return_code)
       {
       case TEST_SUCCESS:
-        Out << "\tTesting " 
-          << run->name
-          <<  "\t\t\t\t\t" 
-          << _timer 
-          << " [ " << test_strerror(return_code) << " ]";
         _success++;
+        formatter()->success(_timer);
         break;
 
       case TEST_FAILURE:
         _failed++;
-        Out << "\tTesting " << run->name <<  "\t\t\t\t\t" << "[ " << test_strerror(return_code) << " ]";
+        formatter()->failed();
         break;
 
       case TEST_SKIPPED:
         _skipped++;
-        Out << "\tTesting " << run->name <<  "\t\t\t\t\t" << "[ " << test_strerror(return_code) << " ]";
+        formatter()->skipped();
         break;
 
       default:
-        fatal_message("invalid return code");
+        FATAL("invalid return code");
       }
 #if 0
       @TODO add code here to allow for a collection to define a method to reset to allow tests to continue.
 #endif
     }
 
-    (void) _frame->runner()->post(_post, _frame->creators_ptr());
+    (void) _frame->runner()->teardown(_post, _frame->creators_ptr());
   }
 
   if (_failed == 0 and _skipped == 0 and _success)

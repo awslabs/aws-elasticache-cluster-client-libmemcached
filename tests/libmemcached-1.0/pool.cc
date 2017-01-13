@@ -35,7 +35,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
@@ -55,6 +55,8 @@ using namespace libtest;
 #include <pthread.h>
 #include <poll.h>
 
+#include "libmemcached/instance.hpp"
+
 #ifndef __INTEL_COMPILER
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif
@@ -62,20 +64,19 @@ using namespace libtest;
 
 test_return_t memcached_pool_test(memcached_st *)
 {
-  memcached_return_t rc;
   const char *config_string= "--SERVER=host10.example.com --SERVER=host11.example.com --SERVER=host10.example.com --POOL-MIN=10 --POOL-MAX=32";
 
   char buffer[2048];
-  rc= libmemcached_check_configuration(config_string, sizeof(config_string) -1, buffer, sizeof(buffer));
 
-  test_true_got(rc != MEMCACHED_SUCCESS, buffer);
+  test_compare(libmemcached_check_configuration(config_string, sizeof(config_string) -1, buffer, sizeof(buffer)), MEMCACHED_PARSE_ERROR);
 
   memcached_pool_st* pool= memcached_pool(config_string, strlen(config_string));
-  test_true_got(pool, strerror(errno));
+  test_true(pool);
 
+  memcached_return_t rc;
   memcached_st *memc= memcached_pool_pop(pool, false, &rc);
 
-  test_true(rc == MEMCACHED_SUCCESS);
+  test_compare(rc, MEMCACHED_SUCCESS);
   test_true(memc);
 
   /*
@@ -239,13 +240,10 @@ struct test_pool_context_st {
   }
 };
 
-static void* connection_release(void *arg)
+static __attribute__((noreturn)) void* connection_release(void *arg)
 {
   test_pool_context_st *resource= static_cast<test_pool_context_st *>(arg);
-  if (resource == NULL)
-  {
-    fatal_message("resource == NULL");
-  }
+  FATAL_IF(resource == NULL);
 
   // Release all of the memc we are holding 
   resource->rc= memcached_pool_release(resource->pool, resource->mmc);
@@ -342,7 +340,7 @@ static memcached_st * create_single_instance_memcached(const memcached_st *origi
    * I only want to hit _one_ server so I know the number of requests I'm
    * sending in the pipeline.
    */
-  memcached_server_instance_st instance= memcached_server_instance_by_position(original_memc, 0);
+  const memcached_instance_st * instance= memcached_server_instance_by_position(original_memc, 0);
 
   char server_string[1024];
   int server_string_length;
@@ -395,17 +393,11 @@ static bool _running= false;
 static void set_running(const bool arg)
 {
   int error;
-  if ((error= pthread_mutex_lock(&mutex)) != 0)
-  {
-    fatal_message(strerror(error));
-  }
+  FATAL_IF_((error= pthread_mutex_lock(&mutex)) != 0, strerror(error));
 
   _running= arg;
 
-  if ((error= pthread_mutex_unlock(&mutex)) != 0)
-  {
-    fatal_message(strerror(error));
-  }
+  FATAL_IF_((error= pthread_mutex_unlock(&mutex)) != 0, strerror(error));
 }
 
 static bool running()
@@ -413,17 +405,11 @@ static bool running()
   int error;
   bool ret;
   
-  if ((error= pthread_mutex_lock(&mutex)) != 0)
-  {
-    fatal_message(strerror(error));
-  }
+  FATAL_IF_((error= pthread_mutex_lock(&mutex)) != 0, strerror(error));
 
   ret= _running;
 
-  if ((error= pthread_mutex_unlock(&mutex)) != 0)
-  {
-    fatal_message(strerror(error));
-  }
+  FATAL_IF_((error= pthread_mutex_unlock(&mutex)) != 0, strerror(error));
 
   return ret;
 }
@@ -493,6 +479,8 @@ test_return_t regression_bug_962815(memcached_st *memc)
     {
       Error << "poll() failed with:" << strerror(errno);
     }
+    test_zero(active_fd);
+
     set_running(false);
   }
 
@@ -501,15 +489,9 @@ test_return_t regression_bug_962815(memcached_st *memc)
     test_compare(0, pthread_join(pid[x], NULL));
   }
 
-  if (pool)
-  {
-    memcached_pool_destroy(pool);
-  }
+  memcached_pool_destroy(pool);
 
-  if (master)
-  {
-    memcached_free(master);
-  }
+  memcached_free(master);
 
   return TEST_SUCCESS;
 }

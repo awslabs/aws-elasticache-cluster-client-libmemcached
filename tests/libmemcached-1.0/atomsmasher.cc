@@ -12,11 +12,11 @@
 /*
   Sample test application.
 */
-#include <config.h>
+#include <mem_config.h>
 
 #include <libtest/test.hpp>
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 #include <cstdio>
 #include <cstdlib>
@@ -273,7 +273,7 @@ collection_st collection[] ={
 
 #include "tests/libmemcached_world.h"
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
 

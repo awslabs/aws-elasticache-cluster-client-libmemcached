@@ -67,6 +67,7 @@ struct memcached_st {
     bool is_purging:1;
     bool is_processing_input:1;
     bool is_time_for_rebuild:1;
+    bool is_parsing:1;
   } state;
 
   struct {
@@ -85,6 +86,8 @@ struct memcached_st {
     bool verify_key:1;
     bool tcp_keepalive:1;
     bool is_aes:1;
+    bool is_fetching_version:1;
+    bool not_used:1;
     bool use_config_protocol:1;
     enum memcached_client_mode client_mode;
   } flags;
@@ -96,12 +99,13 @@ struct memcached_st {
   } server_info;
   uint32_t number_of_hosts;
 
-  memcached_server_st *servers;
-  memcached_server_st *last_disconnected_server;
+  memcached_instance_st *servers;
+  memcached_instance_st *last_disconnected_server;
 
   int32_t snd_timeout;
   int32_t rcv_timeout;
   uint32_t server_failure_limit;
+  uint32_t server_timeout_limit;
   uint32_t io_msg_watermark;
   uint32_t io_bytes_watermark;
   uint32_t io_key_prefetch;
@@ -118,11 +122,11 @@ struct memcached_st {
   memcached_result_st result;
 
   struct {
-    bool weighted;
+    bool weighted_;
     uint32_t continuum_count; // Ketama
     uint32_t continuum_points_counter; // Ketama
     time_t next_distribution_rebuild; // Ketama
-    memcached_continuum_item_st *continuum; // Ketama
+    struct memcached_continuum_item_st *continuum; // Ketama
   } ketama;
 
   struct memcached_virtual_bucket_t *virtual_bucket;
@@ -147,7 +151,7 @@ struct memcached_st {
     bool is_allocated:1;
   } options;
 
-  memcached_server_st *configserver;
+  memcached_instance_st *configserver;
 
   /**
    * This struct is to track the last time cluster configuration was polled.

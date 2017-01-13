@@ -34,11 +34,11 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 
 #include <libtest/common.h>
 
-#if defined(HAVE_CURL_CURL_H) && HAVE_CURL_CURL_H
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
 #include <curl/curl.h>
 #else
 class CURL;
@@ -47,33 +47,33 @@ class CURL;
 
 static void cleanup_curl(void)
 {
-#if defined(HAVE_CURL_CURL_H) && HAVE_CURL_CURL_H
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   curl_global_cleanup();
 #endif
 }
 
 static void initialize_curl_startup()
 {
-#if defined(HAVE_CURL_CURL_H) && HAVE_CURL_CURL_H
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   if (curl_global_init(CURL_GLOBAL_ALL))
   {
-    fatal_message("curl_global_init(CURL_GLOBAL_ALL) failed");
+    FATAL("curl_global_init(CURL_GLOBAL_ALL) failed");
   }
 #endif
 
   if (atexit(cleanup_curl))
   {
-    fatal_message("atexit() failed");
+    FATAL("atexit() failed");
   }
 }
 
 static pthread_once_t start_key_once= PTHREAD_ONCE_INIT;
-void initialize_curl(void)
+static void initialize_curl(void)
 {
   int ret;
   if ((ret= pthread_once(&start_key_once, initialize_curl_startup)) != 0)
   {
-    fatal_message(strerror(ret));
+    FATAL(strerror(ret));
   }
 }
 
@@ -82,28 +82,29 @@ namespace http {
 
 #define YATL_USERAGENT "YATL/1.0"
 
-extern "C" size_t
-  http_get_result_callback(void *ptr, size_t size, size_t nmemb, void *data)
-  {
-    vchar_t *_body= (vchar_t*)data;
+static size_t http_get_result_callback(void *ptr, size_t size, size_t nmemb, void *data)
+{
+  vchar_t *_body= (vchar_t*)data;
 
-    _body->resize(size * nmemb);
-    memcpy(&_body[0], ptr, _body->size());
+  _body->resize(size * nmemb);
+  memcpy(&_body[0], ptr, _body->size());
 
-    return _body->size();
-  }
-
+  return _body->size();
+}
 
 static void init(CURL *curl, const std::string& url)
 {
+  (void)http_get_result_callback;
+  (void)curl;
+  (void)url;
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   if (HAVE_LIBCURL)
   {
-#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
     assert(curl);
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
     curl_easy_setopt(curl, CURLOPT_USERAGENT, YATL_USERAGENT);
-#endif
   }
+#endif
 }
 
 HTTP::HTTP(const std::string& url_arg) :
@@ -117,9 +118,9 @@ bool GET::execute()
 {
   (void)init;
 
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   if (HAVE_LIBCURL)
   {
-#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
     CURL *curl= curl_easy_init();
 
     init(curl, url());
@@ -132,18 +133,18 @@ bool GET::execute()
 
     curl_easy_cleanup(curl);
 
-    return retref == CURLE_OK;
-#endif
+    return bool(retref == CURLE_OK);
   }
+#endif
 
   return false;
 }
 
 bool POST::execute()
 {
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   if (HAVE_LIBCURL)
   {
-#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
     CURL *curl= curl_easy_init();;
 
     init(curl, url());
@@ -155,17 +156,19 @@ bool POST::execute()
     curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, _response);
 
     curl_easy_cleanup(curl);
-#endif
+
+    return bool(retref == CURLE_OK);
   }
+#endif
 
   return false;
 }
 
 bool TRACE::execute()
 {
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   if (HAVE_LIBCURL)
   {
-#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
     CURL *curl= curl_easy_init();;
 
     init(curl, url());
@@ -180,18 +183,18 @@ bool TRACE::execute()
     curl_easy_cleanup(curl);
 
     return retref == CURLE_OK;
-#endif
   }
+#endif
 
   return false;
 }
 
 bool HEAD::execute()
 {
+#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
   if (HAVE_LIBCURL)
   {
-#if defined(HAVE_LIBCURL) && HAVE_LIBCURL
-    CURL *curl= curl_easy_init();;
+    CURL *curl= curl_easy_init();
 
     init(curl, url());
 
@@ -204,8 +207,8 @@ bool HEAD::execute()
     curl_easy_cleanup(curl);
 
     return retref == CURLE_OK;
-#endif
   }
+#endif
 
   return false;
 }

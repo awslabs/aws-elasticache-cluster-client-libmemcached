@@ -35,7 +35,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 #include "tests/basic.h"
@@ -69,7 +69,7 @@
 
 #include "tests/libmemcached_world_socket.h"
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
 

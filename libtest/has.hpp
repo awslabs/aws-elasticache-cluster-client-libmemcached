@@ -2,7 +2,7 @@
  *
  *  Data Differential YATL (i.e. libtest)  library
  *
- *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2012-2013 Data Differential, http://datadifferential.com/
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -36,8 +36,41 @@
 
 #pragma once
 
-bool has_memcached_support(void);
+namespace libtest {
 
-bool has_drizzle_support(void);
+LIBTEST_API
+bool has_libmemcached_sasl(void);
 
-bool has_postgres_support(void);
+LIBTEST_API
+bool has_libmemcached();
+
+LIBTEST_API
+bool has_libdrizzle();
+
+LIBTEST_API
+bool has_postgres_support();
+
+LIBTEST_API
+bool has_memcached();
+
+LIBTEST_API
+bool has_memcached_sasl();
+
+LIBTEST_API
+bool has_gearmand();
+
+LIBTEST_API
+bool has_drizzled();
+
+LIBTEST_API
+bool has_mysqld();
+
+LIBTEST_API
+const char* memcached_binary();
+
+LIBTEST_API
+const char *gearmand_binary(); 
+
+LIBTEST_API
+const char *drizzled_binary();
+} // namespace libtest

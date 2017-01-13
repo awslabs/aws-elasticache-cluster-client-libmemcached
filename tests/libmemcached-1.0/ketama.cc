@@ -34,12 +34,14 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
-#include <libmemcached/memcached.h>
-#include <libmemcached/server_instance.h>
-#include <libmemcached/continuum.hpp>
+#include <libmemcached-1.0/memcached.h>
+
+#include "libmemcached/server_instance.h"
+#include "libmemcached/continuum.hpp"
+#include "libmemcached/instance.hpp"
 
 #include <tests/ketama.h>
 #include <tests/ketama_test_cases.h>
@@ -81,7 +83,7 @@ test_return_t ketama_compatibility_libmemcached(memcached_st *)
   for (uint32_t x= 0; x < 99; x++)
   {
     uint32_t server_idx = memcached_generate_hash(memc, ketama_test_cases[x].key, strlen(ketama_test_cases[x].key));
-    memcached_server_instance_st instance=
+    const memcached_instance_st * instance=
       memcached_server_instance_by_position(memc, server_idx);
     const char *hostname = memcached_server_name(instance);
 
@@ -143,7 +145,7 @@ test_return_t user_supplied_bug18(memcached_st *trash)
   {
     uint32_t server_idx = memcached_generate_hash(memc, ketama_test_cases[x].key, strlen(ketama_test_cases[x].key));
 
-    memcached_server_instance_st instance=
+    const memcached_instance_st * instance=
       memcached_server_instance_by_position(memc, server_idx);
 
     const char *hostname = memcached_server_name(instance);
@@ -159,7 +161,6 @@ test_return_t user_supplied_bug18(memcached_st *trash)
 test_return_t auto_eject_hosts(memcached_st *trash)
 {
   (void) trash;
-  memcached_server_instance_st instance;
 
   memcached_return_t rc;
   memcached_st *memc= memcached_create(NULL);
@@ -200,8 +201,8 @@ test_return_t auto_eject_hosts(memcached_st *trash)
   test_true(server_pool[7].port == 11211);
   test_true(server_pool[7].weight == 100);
 
-  instance= memcached_server_instance_by_position(memc, 2);
-  ((memcached_server_write_instance_st)instance)->next_retry = time(NULL) + 15;
+  const memcached_instance_st * instance= memcached_server_instance_by_position(memc, 2);
+  memcached_instance_next_retry(instance, time(NULL) +15);
   memc->ketama.next_distribution_rebuild= time(NULL) - 1;
 
   /*
@@ -215,8 +216,9 @@ test_return_t auto_eject_hosts(memcached_st *trash)
   }
 
   /* and re-added when it's back. */
-  ((memcached_server_write_instance_st)instance)->next_retry = time(NULL) - 1;
-  memc->ketama.next_distribution_rebuild= time(NULL) - 1;
+  time_t absolute_time= time(NULL) -1;
+  memcached_instance_next_retry(instance, absolute_time);
+  memc->ketama.next_distribution_rebuild= absolute_time;
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_DISTRIBUTION,
                          memc->distribution);
   for (ptrdiff_t x= 0; x < 99; x++)
@@ -274,7 +276,7 @@ test_return_t ketama_compatibility_spymemcached(memcached_st *)
   {
     uint32_t server_idx= memcached_generate_hash(memc, ketama_test_cases_spy[x].key, strlen(ketama_test_cases_spy[x].key));
 
-    memcached_server_instance_st instance=
+    const memcached_instance_st * instance=
       memcached_server_instance_by_position(memc, server_idx);
 
     const char *hostname= memcached_server_name(instance);

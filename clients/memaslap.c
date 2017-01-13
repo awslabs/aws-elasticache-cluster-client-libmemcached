@@ -13,20 +13,18 @@
  *      Mingqiang Zhuang <mingqiangzhuang@hengtiansoft.com>
  *
  */
-#include "config.h"
+#include "mem_config.h"
 
 #include <stdlib.h>
 #include <getopt.h>
 #include <limits.h>
-#if TIME_WITH_SYS_TIME
+
+#if defined(HAVE_SYS_TIME_H)
 # include <sys/time.h>
+#endif
+
+#if defined(HAVE_TIME_H)
 # include <time.h>
-#else
-# if HAVE_SYS_TIME_H
-#  include <sys/time.h>
-# else
-#  include <time.h>
-# endif
 #endif
 
 
@@ -116,7 +114,48 @@ static void ms_print_statistics(int in_time);
 static void ms_print_memslap_stats(struct timeval *start_time,
                                    struct timeval *end_time);
 static void ms_monitor_slap_mode(void);
-void ms_help_command(const char *command_name, const char *description);
+
+/**
+ * output the help information
+ *
+ * @param command_name, the string of this process
+ * @param description, description of this process
+ * @param long_options, global options array
+ */
+static __attribute__((noreturn)) void ms_help_command(const char *command_name, const char *description)
+{
+  char *help_message= NULL;
+
+  printf("%s v%u.%u\n", command_name, 1U, 0U);
+  printf("    %s\n\n", description);
+  printf(
+    "Usage:\n"
+    "    memslap -hV | -s servers [-F config_file] [-t time | -x exe_num] [...]\n\n"
+    "Options:\n");
+
+  for (int x= 0; long_options[x].name; x++)
+  {
+    printf("    -%c, --%s%c\n", long_options[x].val, long_options[x].name,
+           long_options[x].has_arg ? '=' : ' ');
+
+    if ((help_message= (char *)ms_lookup_help(long_options[x].val)) != NULL)
+    {
+      printf("        %s\n", help_message);
+    }
+  }
+
+  printf(
+    "\nExamples:\n"
+    "    memslap -s 127.0.0.1:11211 -S 5s\n"
+    "    memslap -s 127.0.0.1:11211 -t 2m -v 0.2 -e 0.05 -b\n"
+    "    memslap -s 127.0.0.1:11211 -F config -t 2m -w 40k -S 20s -o 0.2\n"
+    "    memslap -s 127.0.0.1:11211 -F config -t 2m -T 4 -c 128 -d 20 -P 40k\n"
+    "    memslap -s 127.0.0.1:11211 -F config -t 2m -d 50 -a -n 40\n"
+    "    memslap -s 127.0.0.1:11211,127.0.0.1:11212 -F config -t 2m\n"
+    "    memslap -s 127.0.0.1:11211,127.0.0.1:11212 -F config -t 2m -p 2\n\n");
+
+  exit(0);
+} /* ms_help_command */
 
 
 /* initialize the global locks */
@@ -296,49 +335,6 @@ static const char *ms_lookup_help(ms_options_t option)
 } /* ms_lookup_help */
 
 
-/**
- * output the help information
- *
- * @param command_name, the string of this process
- * @param description, description of this process
- * @param long_options, global options array
- */
-void ms_help_command(const char *command_name, const char *description)
-{
-  char *help_message= NULL;
-
-  printf("%s v%u.%u\n", command_name, 1U, 0U);
-  printf("    %s\n\n", description);
-  printf(
-    "Usage:\n"
-    "    memslap -hV | -s servers [-F config_file] [-t time | -x exe_num] [...]\n\n"
-    "Options:\n");
-
-  for (int x= 0; long_options[x].name; x++)
-  {
-    printf("    -%c, --%s%c\n", long_options[x].val, long_options[x].name,
-           long_options[x].has_arg ? '=' : ' ');
-
-    if ((help_message= (char *)ms_lookup_help(long_options[x].val)) != NULL)
-    {
-      printf("        %s\n", help_message);
-    }
-  }
-
-  printf(
-    "\nExamples:\n"
-    "    memslap -s 127.0.0.1:11211 -S 5s\n"
-    "    memslap -s 127.0.0.1:11211 -t 2m -v 0.2 -e 0.05 -b\n"
-    "    memslap -s 127.0.0.1:11211 -F config -t 2m -w 40k -S 20s -o 0.2\n"
-    "    memslap -s 127.0.0.1:11211 -F config -t 2m -T 4 -c 128 -d 20 -P 40k\n"
-    "    memslap -s 127.0.0.1:11211 -F config -t 2m -d 50 -a -n 40\n"
-    "    memslap -s 127.0.0.1:11211,127.0.0.1:11212 -F config -t 2m\n"
-    "    memslap -s 127.0.0.1:11211,127.0.0.1:11212 -F config -t 2m -p 2\n\n");
-
-  exit(0);
-} /* ms_help_command */
-
-
 /* used to parse the time string  */
 static int64_t ms_parse_time()
 {
@@ -382,7 +378,13 @@ static int64_t ms_parse_size()
   char unit= optarg[strlen(optarg) - 1];
 
   optarg[strlen(optarg) - 1]= '\0';
+  errno= 0;
   ret= strtoll(optarg, (char **)NULL, 10);
+  if (errno != 0)
+  {
+    fprintf(stderr, "strtoll(optarg,..): %s\n", strerror(errno));
+    exit(1);
+  }
 
   switch (unit)
   {
@@ -438,8 +440,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_CONCURRENCY:       /* --concurrency or -c */
+      errno= 0;
       ms_setting.nconns= (uint32_t)strtoul(optarg, (char **) NULL, 10);
-      if (ms_setting.nconns <= 0)
+      if (ms_setting.nconns <= 0 || errno != 0)
       {
         fprintf(stderr, "Concurrency must be greater than 0.:-)\n");
         exit(1);
@@ -447,8 +450,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_EXECUTE_NUMBER:        /* --execute_number or -x */
+      errno= 0;
       ms_setting.exec_num= (int)strtol(optarg, (char **) NULL, 10);
-      if (ms_setting.exec_num <= 0)
+      if (ms_setting.exec_num <= 0 || errno != 0)
       {
         fprintf(stderr, "Execute number must be greater than 0.:-)\n");
         exit(1);
@@ -456,8 +460,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_THREAD_NUMBER:     /* --threads or -T */
+      errno= 0;
       ms_setting.nthreads= (uint32_t)strtoul(optarg, (char **) NULL, 10);
-      if (ms_setting.nthreads <= 0)
+      if (ms_setting.nthreads <= 0 || errno != 0)
       {
         fprintf(stderr, "Threads number must be greater than 0.:-)\n");
         exit(1);
@@ -465,8 +470,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_FIXED_LTH:         /* --fixed_size or -X */
+      errno= 0;
       ms_setting.fixed_value_size= (size_t)strtoull(optarg, (char **) NULL, 10);
-      if ((ms_setting.fixed_value_size <= 0)
+      if ((ms_setting.fixed_value_size <= 0 || errno != 0)
           || (ms_setting.fixed_value_size > MAX_VALUE_SIZE))
       {
         fprintf(stderr, "Value size must be between 0 and 1M.:-)\n");
@@ -486,8 +492,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_GETS_DIVISION:         /* --division or -d */
+      errno= 0;
       ms_setting.mult_key_num= (int)strtol(optarg, (char **) NULL, 10);
-      if (ms_setting.mult_key_num <= 0)
+      if (ms_setting.mult_key_num <= 0 || errno != 0)
       {
         fprintf(stderr, "Multi-get key number must be greater than 0.:-)\n");
         exit(1);
@@ -572,8 +579,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_SOCK_PER_CONN:         /* --conn_sock or -n */
+      errno= 0;
       ms_setting.sock_per_conn= (uint32_t)strtoul(optarg, (char **) NULL, 10);
-      if (ms_setting.sock_per_conn <= 0)
+      if (ms_setting.sock_per_conn <= 0 || errno != 0)
       {
         fprintf(stderr, "Number of socks of each concurrency "
                         "must be greater than 0.:-)\n");
@@ -594,7 +602,7 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_BINARY_PROTOCOL:       /* --binary or -B */
-      ms_setting.binary_prot= true;
+      ms_setting.binary_prot_= true;
       break;
 
     case OPT_TPS:       /* --tps or -P */
@@ -609,8 +617,9 @@ static void ms_options_parse(int argc, char *argv[])
       break;
 
     case OPT_REP_WRITE_SRV:         /* --rep_write or -p */
+      errno= 0;
       ms_setting.rep_write_srv= (uint32_t)strtoul(optarg, (char **) NULL, 10);
-      if (ms_setting.rep_write_srv <= 0)
+      if (ms_setting.rep_write_srv <= 0 || errno != 0)
       {
         fprintf(stderr,
                 "Number of replication writing server must be greater "
@@ -800,7 +809,6 @@ static void ms_print_memslap_stats(struct timeval *start_time,
 /* the loop of the main thread, wait the work threads to complete */
 static void ms_monitor_slap_mode()
 {
-  int second= 0;
   struct timeval start_time, end_time;
 
   /* Wait all the threads complete initialization. */
@@ -828,6 +836,7 @@ static void ms_monitor_slap_mode()
   /* running in "run time" mode, user specify run time */
   if (ms_setting.run_time > 0)
   {
+    int second= 0;
     gettimeofday(&start_time, NULL);
     while (1)
     {

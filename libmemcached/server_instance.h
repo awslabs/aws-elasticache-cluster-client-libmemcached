@@ -38,11 +38,23 @@
 #pragma once
 
 #ifdef __cplusplus
+typedef struct memcached_instance_st* memcached_server_write_instance_st;
+#else
+typedef void* memcached_server_write_instance_st;
+#endif
+
+#ifdef __cplusplus
 extern "C" {
 #endif
 
-typedef struct memcached_server_st * memcached_server_write_instance_st;
+typedef memcached_return_t (*memcached_server_execute_fn)(memcached_st *ptr, memcached_server_write_instance_st server, void *context);
+
+memcached_return_t memcached_server_execute(memcached_st *ptr,
+                                            memcached_server_execute_fn callback,
+                                            void *context);
 
 #ifdef __cplusplus
-}
+} // extern "C"
 #endif
+
+

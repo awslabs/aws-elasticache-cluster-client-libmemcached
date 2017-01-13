@@ -1,4 +1,5 @@
 /* LibMemcached
+ * Copyright (C) 2011-2012 Data Differential, http://datadifferential.com/
  * Copyright (C) 2006-2009 Brian Aker
  * All rights reserved.
  *
@@ -9,19 +10,21 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 
+#include <cerrno>
 #include <cstdio>
 #include <cstring>
 #include <getopt.h>
 #include <iostream>
 #include <unistd.h>
-#include <libmemcached/memcached.h>
+
+#include <libmemcached-1.0/memcached.h>
 
 #include "utilities.h"
 
 #define PROGRAM_NAME "memtouch"
-#define PROGRAM_DESCRIPTION "Update the expiration value of an alreasy existing value in the sever"
+#define PROGRAM_DESCRIPTION "Update the expiration value of an already existing value in the server"
 
 
 /* Prototypes */
@@ -51,17 +54,23 @@ int main(int argc, char *argv[])
     {
       opt_servers= strdup(temp);
     }
-    else
+
+    if (opt_servers == NULL)
     {
       std::cerr << "No Servers provided" << std::endl;
-      return EXIT_FAILURE;
+      exit(EXIT_FAILURE);
     }
+  }
+
+  memcached_server_st* servers= memcached_servers_parse(opt_servers);
+  if (servers == NULL or memcached_server_list_count(servers) == 0)
+  {
+    std::cerr << "Invalid server list provided:" << opt_servers << std::endl;
+    return EXIT_FAILURE;
   }
 
   memcached_st *memc= memcached_create(NULL);
   process_hash_option(memc, opt_hash);
-
-  memcached_server_st *servers= memcached_servers_parse(opt_servers);
 
   memcached_server_push(memc, servers);
   memcached_server_list_free(servers);
@@ -211,7 +220,13 @@ void options_parse(int argc, char *argv[])
       break;
 
     case OPT_EXPIRE:
+      errno= 0;
       expiration= time_t(strtoul(optarg, (char **)NULL, 10));
+      if (errno != 0)
+      {
+        fprintf(stderr, "Invalid value for --expire: %s\n", optarg);
+        exit(EXIT_FAILURE);
+      }
       break;
 
     case OPT_QUIET:

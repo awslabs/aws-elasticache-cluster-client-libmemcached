@@ -5,7 +5,7 @@ AH_TOP([
 
 /* _SYS_FEATURE_TESTS_H is Solaris, _FEATURES_H is GCC */
 #if defined( _SYS_FEATURE_TESTS_H) || defined(_FEATURES_H)
-#error "You should include config.h as your first include file"
+#error "You should include mem_config.h as your first include file"
 #endif
 
 ])
@@ -27,10 +27,6 @@ AH_BOTTOM([
 typedef unsigned long int ulong;
 #endif 
 
-#define RPACKAGE "memcached" 
- 
-#define RVERSION "1.4.13"
- 
 ])
 
 ])dnl CONFIG_EXTRA

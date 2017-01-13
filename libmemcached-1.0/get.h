@@ -55,7 +55,7 @@ extern "C" {
 
 /* Public defines */
 LIBMEMCACHED_API
-char *memcached_config_get(memcached_server_st *server,
+char *memcached_config_get(memcached_instance_st *server,
                                   memcached_st *ptr,
                                   size_t *value_length,
                                   uint32_t *flags,

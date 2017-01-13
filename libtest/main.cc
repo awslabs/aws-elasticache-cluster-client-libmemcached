@@ -2,7 +2,7 @@
  *
  *  Data Differential YATL (i.e. libtest)  library
  *
- *  Copyright (C) 2012 Data Differential, http://datadifferential.com/
+ *  Copyright (C) 2012-2013 Data Differential, http://datadifferential.com/
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions are
@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 #include <cassert>
@@ -43,6 +43,10 @@
 #include <ctime>
 #include <fnmatch.h>
 #include <iostream>
+#ifdef HAVE_STRINGS_H
+# include <strings.h>
+#endif
+#include <fstream>
 #include <memory>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -58,7 +62,7 @@
 
 using namespace libtest;
 
-static void stats_print(Framework *frame)
+static void stats_print(libtest::Framework *frame)
 {
   if (frame->failed() == 0 and frame->success() == 0)
   {
@@ -87,6 +91,34 @@ int main(int argc, char *argv[])
   bool opt_quiet= false;
   std::string collection_to_run;
   std::string wildcard;
+  std::string binary_name;
+
+  const char *just_filename= rindex(argv[0], '/');
+  if (just_filename)
+  {
+    just_filename++;
+  }
+  else
+  {
+    just_filename= argv[0];
+  }
+
+  if (just_filename[0] == 'l' and just_filename[1] == 't' and  just_filename[2] == '-')
+  {
+    just_filename+= 3;
+  }
+  binary_name.append(just_filename);
+
+  /*
+    Valgrind does not currently work reliably, or sometimes at all, on OSX
+    - Fri Jun 15 11:24:07 EDT 2012
+  */
+#if defined(__APPLE__) && __APPLE__
+  if (valgrind_is_caller())
+  {
+    return EXIT_SKIP;
+  }
+#endif
 
   // Options parsing
   {
@@ -103,7 +135,7 @@ int main(int argc, char *argv[])
     {
       { "version", no_argument, NULL, OPT_LIBYATL_VERSION },
       { "quiet", no_argument, NULL, OPT_LIBYATL_QUIET },
-      { "repeat", no_argument, NULL, OPT_LIBYATL_REPEAT },
+      { "repeat", required_argument, NULL, OPT_LIBYATL_REPEAT },
       { "collection", required_argument, NULL, OPT_LIBYATL_MATCH_COLLECTION },
       { "wildcard", required_argument, NULL, OPT_LIBYATL_MATCH_WILDCARD },
       { "massive", no_argument, NULL, OPT_LIBYATL_MASSIVE },
@@ -129,7 +161,13 @@ int main(int argc, char *argv[])
         break;
 
       case OPT_LIBYATL_REPEAT:
+        errno= 0;
         opt_repeat= strtoul(optarg, (char **) NULL, 10);
+        if (errno != 0)
+        {
+          Error << "unknown value passed to --repeat: `" << optarg << "`";
+          exit(EXIT_FAILURE);
+        }
         break;
 
       case OPT_LIBYATL_MATCH_COLLECTION:
@@ -157,9 +195,16 @@ int main(int argc, char *argv[])
 
   srandom((unsigned int)time(NULL));
 
-  if (bool(getenv("YATL_REPEAT")) and (strtoul(getenv("YATL_REPEAT"), (char **) NULL, 10) > 1))
+  errno= 0;
+  if (bool(getenv("YATL_REPEAT")))
   {
+    errno= 0;
     opt_repeat= strtoul(getenv("YATL_REPEAT"), (char **) NULL, 10);
+    if (errno != 0)
+    {
+      Error << "ENV YATL_REPEAT passed an invalid value: `" << getenv("YATL_REPEAT") << "`";
+      exit(EXIT_FAILURE);
+    }
   }
 
   if ((bool(getenv("YATL_QUIET")) and (strcmp(getenv("YATL_QUIET"), "0") == 0)) or opt_quiet)
@@ -176,27 +221,39 @@ int main(int argc, char *argv[])
     }
   }
 
+  if ((bool(getenv("YATL_RUN_MASSIVE_TESTS"))) or opt_massive)
+  {
+    opt_massive= true;
+  }
+
   if (opt_quiet)
   {
     close(STDOUT_FILENO);
   }
 
-  char buffer[1024];
+  if (opt_massive)
+  {
+    is_massive(opt_massive);
+  }
+
+  libtest::vchar_t tmp_directory;
+  tmp_directory.resize(1024);
   if (getenv("LIBTEST_TMP"))
   {
-    snprintf(buffer, sizeof(buffer), "%s", getenv("LIBTEST_TMP"));
+    snprintf(&tmp_directory[0], tmp_directory.size(), "%s", getenv("LIBTEST_TMP"));
   }
   else
   {
-    snprintf(buffer, sizeof(buffer), "%s", LIBTEST_TEMP);
+    snprintf(&tmp_directory[0], tmp_directory.size(), "%s", LIBTEST_TEMP);
   }
 
-  if (chdir(buffer) == -1)
+  if (chdir(&tmp_directory[0]) == -1)
   {
-    char getcwd_buffer[1024];
-    char *dir= getcwd(getcwd_buffer, sizeof(getcwd_buffer));
+    libtest::vchar_t getcwd_buffer;
+    getcwd_buffer.resize(1024);
+    char *dir= getcwd(&getcwd_buffer[0], getcwd_buffer.size());
 
-    Error << "Unable to chdir() from " << dir << " to " << buffer << " errno:" << strerror(errno);
+    Error << "Unable to chdir() from " << dir << " to " << &tmp_directory[0] << " errno:" << strerror(errno);
     return EXIT_FAILURE;
   }
 
@@ -240,7 +297,7 @@ int main(int argc, char *argv[])
         return EXIT_FAILURE;
       }
 
-      std::auto_ptr<Framework> frame(new Framework(signal, collection_to_run, wildcard));
+      std::auto_ptr<libtest::Framework> frame(new libtest::Framework(signal, binary_name, collection_to_run, wildcard));
 
       // Run create(), bail on error.
       {
@@ -250,10 +307,11 @@ int main(int argc, char *argv[])
           break;
 
         case TEST_SKIPPED:
-          Out << "SKIP " << argv[0];
-          return EXIT_SKIP;
+          SKIP("SKIP was returned from framework create()");
+          break;
 
         case TEST_FAILURE:
+          std::cerr << "Could not call frame->create()" << std::endl;
           return EXIT_FAILURE;
         }
       }
@@ -282,27 +340,50 @@ int main(int argc, char *argv[])
       }
       else if (frame->success() and (frame->failed() == 0))
       {
+        Out;
         Out << "All tests completed successfully.";
       }
 
       stats_print(frame.get());
 
+      std::ofstream xml_file;
+      std::string file_name;
+      file_name.append(&tmp_directory[0]);
+      file_name.append(frame->name());
+      file_name.append(".xml");
+      xml_file.open(file_name.c_str(), std::ios::trunc);
+      libtest::Formatter::xml(*frame, xml_file);
+
       Outn(); // Generate a blank to break up the messages if make check/test has been run
     } while (exit_code == EXIT_SUCCESS and --opt_repeat);
   }
-  catch (libtest::fatal& e)
+  catch (const libtest::__skipped& e)
   {
-    std::cerr << e.what() << std::endl;
+    return EXIT_SKIP;
+  }
+  catch (const libtest::__failure& e)
+  {
+    libtest::stream::make_cout(e.file(), e.line(), e.func()) << e.what();
     exit_code= EXIT_FAILURE;
   }
-  catch (libtest::disconnected& e)
+  catch (const libtest::fatal& e)
+  {
+    std::cerr << "FATAL:" << e.what() << std::endl;
+    exit_code= EXIT_FAILURE;
+  }
+  catch (const libtest::disconnected& e)
   {
     std::cerr << "Unhandled disconnection occurred:" << e.what() << std::endl;
     exit_code= EXIT_FAILURE;
   }
-  catch (std::exception& e)
+  catch (const std::exception& e)
   {
-    std::cerr << e.what() << std::endl;
+    std::cerr << "std::exception:" << e.what() << std::endl;
+    exit_code= EXIT_FAILURE;
+  }
+  catch (char const* s)
+  {
+    std::cerr << "Exception:" << s << std::endl;
     exit_code= EXIT_FAILURE;
   }
   catch (...)

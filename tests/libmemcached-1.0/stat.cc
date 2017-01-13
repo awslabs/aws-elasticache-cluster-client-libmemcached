@@ -34,7 +34,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <cstdlib>
 #include <climits>
@@ -42,13 +42,13 @@
 #include <libtest/test.hpp>
 
 #include <libmemcached-1.0/memcached.h>
-#include <libmemcached/util.h>
+#include <libmemcachedutil-1.0/util.h>
 
 using namespace libtest;
 
 #include "tests/libmemcached-1.0/stat.h"
 
-static memcached_return_t item_counter(memcached_server_instance_st ,
+static memcached_return_t item_counter(const memcached_instance_st * ,
                                        const char *key, size_t key_length,
                                        const char *value, size_t, // value_length,
                                        void *context)
@@ -57,10 +57,7 @@ static memcached_return_t item_counter(memcached_server_instance_st ,
   {
     uint64_t* counter= (uint64_t*)context;
     unsigned long number_value= strtoul(value, (char **)NULL, 10);
-    if (number_value == ULONG_MAX)
-    {
-      return MEMCACHED_FAILURE;
-    }
+    ASSERT_NEQ(number_value, ULONG_MAX);
     *counter= *counter +number_value;
   }
 
@@ -70,9 +67,8 @@ static memcached_return_t item_counter(memcached_server_instance_st ,
 test_return_t memcached_stat_TEST(memcached_st *memc)
 {
   uint64_t counter= 0;
-  test_compare_got(MEMCACHED_INVALID_ARGUMENTS,
-                   memcached_stat_execute(memc, "BAD_ARG_VALUE", item_counter, &counter),
-                   memcached_last_error_message(memc));
+  test_compare(MEMCACHED_INVALID_ARGUMENTS,
+               memcached_stat_execute(memc, "BAD_ARG_VALUE", item_counter, &counter));
 
   return TEST_SUCCESS;
 }
@@ -86,24 +82,21 @@ test_return_t memcached_stat_TEST2(memcached_st *memc)
   for (uint32_t x= 0; x < memcached_dump_TEST2_COUNT; x++)
   {
     char key[1024];
-
     int length= snprintf(key, sizeof(key), "%s%u", __func__, x);
 
-    test_true(length > 0);
+    ASSERT_TRUE(length > 0);
 
-    test_compare_hint(MEMCACHED_SUCCESS,
-                      memcached_set(memc, key, length,
-                                    NULL, 0, // Zero length values
-                                    time_t(0), uint32_t(0)),
-                      memcached_last_error_message(memc));
+    test_compare(MEMCACHED_SUCCESS,
+                 memcached_set(memc, key, length,
+                               NULL, 0, // Zero length values
+                               time_t(0), uint32_t(0)));
   }
   memcached_quit(memc);
 
   uint64_t counter= 0;
-  test_compare_got(MEMCACHED_SUCCESS,
-                   memcached_stat_execute(memc, NULL, item_counter, &counter),
-                   memcached_last_error_message(memc));
-  test_true_got(counter > 0, counter);
+  ASSERT_EQ(MEMCACHED_SUCCESS,
+            memcached_stat_execute(memc, NULL, item_counter, &counter));
+  ASSERT_TRUE(counter);
 
   return TEST_SUCCESS;
 }

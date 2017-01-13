@@ -54,7 +54,6 @@ private:
   std::string server_list;
   bool _socket;
   bool _sasl;
-  uint32_t _count;
   std::string _username;
   std::string _password;
 
@@ -68,11 +67,12 @@ public:
 
   bool validate();
 
-  bool start_socket_server(const std::string& server_type, const in_port_t try_port, int argc, const char *argv[]);
+  bool start_socket_server(const std::string& server_type, const in_port_t try_port, const char *argv[]);
+  bool start_server(const std::string& server_type, const in_port_t try_port, const char *argv[]);
 
   uint32_t count() const
   {
-    return servers.size();
+    return uint32_t(servers.size());
   }
 
   void restart();
@@ -125,7 +125,10 @@ public:
   bool check() const;
 
   void push_server(Server *);
+  Server* last();
   Server *pop_server();
+
+  Server* create(const std::string& server_type, in_port_t try_port, const bool is_socket);
 
   unsigned long int servers_to_run() const
   {
@@ -138,9 +141,15 @@ public:
   }
 
 private:
+  bool _start_server(const bool is_socket,
+                     const std::string& server_type,
+                     const in_port_t try_port,
+                     const char *argv[]);
+
+private:
   unsigned long int _servers_to_run;
 };
 
-bool server_startup(server_startup_st&, const std::string&, in_port_t try_port, int argc, const char *argv[], const bool opt_startup_message= true);
+bool server_startup(server_startup_st&, const std::string&, in_port_t try_port, const char *argv[]);
 
 } // namespace libtest

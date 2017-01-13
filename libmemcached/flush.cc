@@ -47,13 +47,12 @@
 
 #include <libmemcached/common.h>
 
-static memcached_return_t memcached_flush_binary(memcached_st *ptr, 
+static memcached_return_t memcached_flush_binary(Memcached *ptr, 
                                                  time_t expiration,
                                                  const bool reply)
 {
   protocol_binary_request_flush request= {};
 
-  request.message.header.request.magic= (uint8_t)PROTOCOL_BINARY_REQ;
   request.message.header.request.opcode= PROTOCOL_BINARY_CMD_FLUSH;
   request.message.header.request.extlen= 4;
   request.message.header.request.datatype= PROTOCOL_BINARY_RAW_BYTES;
@@ -64,7 +63,8 @@ static memcached_return_t memcached_flush_binary(memcached_st *ptr,
 
   for (uint32_t x= 0; x < memcached_server_count(ptr); x++)
   {
-    memcached_server_write_instance_st instance= memcached_server_instance_fetch(ptr, x);
+    memcached_instance_st* instance= memcached_instance_fetch(ptr, x);
+    initialize_binary_request(instance, request.message.header);
 
     if (reply)
     {
@@ -95,9 +95,9 @@ static memcached_return_t memcached_flush_binary(memcached_st *ptr,
 
   for (uint32_t x= 0; x < memcached_server_count(ptr); x++)
   {
-    memcached_server_write_instance_st instance= memcached_server_instance_fetch(ptr, x);
+    memcached_instance_st* instance= memcached_instance_fetch(ptr, x);
 
-    if (memcached_server_response_count(instance) > 0)
+    if (instance->response_count() > 0)
     {
       (void)memcached_response(instance, NULL, 0, NULL);
     }
@@ -106,7 +106,7 @@ static memcached_return_t memcached_flush_binary(memcached_st *ptr,
   return rc;
 }
 
-static memcached_return_t memcached_flush_textual(memcached_st *ptr, 
+static memcached_return_t memcached_flush_textual(Memcached *ptr, 
                                                   time_t expiration,
                                                   const bool reply)
 {
@@ -126,13 +126,13 @@ static memcached_return_t memcached_flush_textual(memcached_st *ptr,
   memcached_return_t rc= MEMCACHED_SUCCESS;
   for (uint32_t x= 0; x < memcached_server_count(ptr); x++)
   {
-    memcached_server_write_instance_st instance= memcached_server_instance_fetch(ptr, x);
+    memcached_instance_st* instance= memcached_instance_fetch(ptr, x);
 
     libmemcached_io_vector_st vector[]=
     {
       { NULL, 0 },
       { memcached_literal_param("flush_all ") },
-      { buffer, send_length },
+      { buffer, size_t(send_length) },
       { " noreply", reply ? 0 : memcached_literal_param_size(" noreply") },
       { memcached_literal_param("\r\n") }
     };
@@ -158,8 +158,9 @@ static memcached_return_t memcached_flush_textual(memcached_st *ptr,
   return rc;
 }
 
-memcached_return_t memcached_flush(memcached_st *ptr, time_t expiration)
+memcached_return_t memcached_flush(memcached_st *shell, time_t expiration)
 {
+  Memcached* ptr= memcached2Memcached(shell);
   memcached_return_t rc;
   if (memcached_failed(rc= initialize_query(ptr, true)))
   {

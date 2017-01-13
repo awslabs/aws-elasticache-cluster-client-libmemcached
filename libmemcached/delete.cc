@@ -38,13 +38,13 @@
 #include <libmemcached/common.h>
 #include <libmemcached/memcached/protocol_binary.h>
 
-memcached_return_t memcached_delete(memcached_st *memc, const char *key, size_t key_length,
+memcached_return_t memcached_delete(memcached_st *shell, const char *key, size_t key_length,
                                     time_t expiration)
 {
-  return memcached_delete_by_key(memc, key, key_length, key, key_length, expiration);
+  return memcached_delete_by_key(shell, key, key_length, key, key_length, expiration);
 }
 
-static inline memcached_return_t ascii_delete(memcached_server_write_instance_st instance,
+static inline memcached_return_t ascii_delete(memcached_instance_st* instance,
                                               uint32_t ,
                                               const char *key,
                                               const size_t key_length,
@@ -65,7 +65,7 @@ static inline memcached_return_t ascii_delete(memcached_server_write_instance_st
   return memcached_vdo(instance, vector, 6, is_buffering ? false : true);
 }
 
-static inline memcached_return_t binary_delete(memcached_server_write_instance_st instance,
+static inline memcached_return_t binary_delete(memcached_instance_st* instance,
                                                uint32_t server_key,
                                                const char *key,
                                                const size_t key_length,
@@ -76,7 +76,8 @@ static inline memcached_return_t binary_delete(memcached_server_write_instance_s
 
   bool should_flush= is_buffering ? false : true;
 
-  request.message.header.request.magic= PROTOCOL_BINARY_REQ;
+  initialize_binary_request(instance, request.message.header);
+
   if (reply)
   {
     request.message.header.request.opcode= PROTOCOL_BINARY_CMD_DELETE;
@@ -100,6 +101,7 @@ static inline memcached_return_t binary_delete(memcached_server_write_instance_s
   memcached_return_t rc;
   if (memcached_fatal(rc= memcached_vdo(instance, vector,  4, should_flush)))
   {
+    assert(memcached_last_error(instance->root) != MEMCACHED_SUCCESS);
     memcached_io_reset(instance);
   }
 
@@ -116,10 +118,11 @@ static inline memcached_return_t binary_delete(memcached_server_write_instance_s
         server_key= 0;
       }
 
-      memcached_server_write_instance_st replica= memcached_server_instance_fetch(instance->root, server_key);
+      memcached_instance_st* replica= memcached_instance_fetch(instance->root, server_key);
 
       if (memcached_fatal(memcached_vdo(replica, vector, 4, should_flush)))
       {
+        assert(memcached_last_error(instance->root) != MEMCACHED_SUCCESS);
         memcached_io_reset(replica);
       }
       else
@@ -132,11 +135,12 @@ static inline memcached_return_t binary_delete(memcached_server_write_instance_s
   return rc;
 }
 
-memcached_return_t memcached_delete_by_key(memcached_st *memc,
+memcached_return_t memcached_delete_by_key(memcached_st *shell,
                                            const char *group_key, size_t group_key_length,
                                            const char *key, size_t key_length,
                                            time_t expiration)
 {
+  Memcached* memc= memcached2Memcached(shell);
   LIBMEMCACHED_MEMCACHED_DELETE_START();
 
   memcached_return_t rc;
@@ -157,7 +161,7 @@ memcached_return_t memcached_delete_by_key(memcached_st *memc,
   }
 
   uint32_t server_key= memcached_generate_hash_with_redistribution(memc, group_key, group_key_length);
-  memcached_server_write_instance_st instance= memcached_server_instance_fetch(memc, server_key);
+  memcached_instance_st* instance= memcached_instance_fetch(memc, server_key);
   
   bool is_buffering= memcached_is_buffering(instance->root);
   bool is_replying= memcached_is_replying(instance->root);

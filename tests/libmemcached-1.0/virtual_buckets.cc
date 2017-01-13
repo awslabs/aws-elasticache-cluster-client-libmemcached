@@ -35,14 +35,14 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 using namespace libtest;
 
 #include <tests/virtual_buckets.h>
 
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
 
 #include <cstring>
 
@@ -136,7 +136,7 @@ test_return_t virtual_back_map(memcached_st *)
 
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "%.*s:%lu Got/Expected %u == %u", (int)ptr->key.size, ptr->key.c_str, (unsigned long)ptr->key.size, server_idx, ptr->server_id);
-    test_true_got(server_idx == ptr->server_id, buffer);
+    test_compare(server_idx, ptr->server_id);
   }
 
   memcached_server_list_free(server_pool);

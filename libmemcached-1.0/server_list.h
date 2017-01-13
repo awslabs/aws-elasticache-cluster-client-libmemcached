@@ -58,7 +58,7 @@ LIBMEMCACHED_API
   void memcached_server_list_free(memcached_server_list_st ptr);
 
 LIBMEMCACHED_API
-  void reresolve_servers_in_client(memcached_server_list_st *server_list, uint32_t server_count);
+  void reresolve_servers_in_client(memcached_instance_st **server_list, uint32_t server_count);
 
 LIBMEMCACHED_API
   memcached_return_t memcached_server_push(memcached_st *ptr, const memcached_server_list_st list);

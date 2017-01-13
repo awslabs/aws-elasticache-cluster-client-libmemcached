@@ -36,15 +36,9 @@
 
 #pragma once
 
+#include <cstdlib>
 #include <ctime>
-#include <ostream>
-
-#ifdef __MACH__
-#  include <mach/clock.h>
-#  include <mach/mach.h>
-#else
-#  include <sys/time.h>
-#endif
+#include <iostream>
 
 
 namespace libtest {
@@ -52,56 +46,22 @@ namespace libtest {
 class Timer {
 public:
 
-  Timer()
-  {
-    _begin.tv_sec= 0;
-    _begin.tv_nsec= 0;
-    _end.tv_sec= 0;
-    _end.tv_nsec= 0;
-  }
+  Timer();
 
-  void reset()
-  {
-    _end.tv_sec= 0;
-    _end.tv_nsec= 0;
-    _time(_begin);
-  }
+  void reset();
 
-  void sample()
-  {
-    _time(_end);
-  }
+  void sample();
 
-  void difference(struct timespec& arg) const
-  {
-    if ((_end.tv_nsec -_begin.tv_nsec) < 0)
-    {
-      arg.tv_sec= _end.tv_sec -_begin.tv_sec-1;
-      arg.tv_nsec= 1000000000 +_end.tv_nsec -_begin.tv_nsec;
+  void offset(int64_t minutes_arg, int64_t seconds_arg, int64_t nanoseconds);
 
-    }
-    else
-    {
-      arg.tv_sec= _end.tv_sec -_begin.tv_sec;
-      arg.tv_nsec= _end.tv_nsec -_begin.tv_nsec;
-    }
-  }
+  int64_t minutes();
+
+  uint64_t elapsed_milliseconds() const;
+
+  void difference(struct timespec& arg) const;
 
 private:
-  void _time(struct timespec& ts)
-  {
-#ifdef __MACH__ // OSX lacks clock_gettime()
-    clock_serv_t _clock_serv;
-    mach_timespec_t _mach_timespec;
-    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &_clock_serv);
-    clock_get_time(_clock_serv, &_mach_timespec);
-    mach_port_deallocate(mach_task_self(), _clock_serv);
-    ts.tv_sec= _mach_timespec.tv_sec;
-    ts.tv_nsec= _mach_timespec.tv_nsec;
-#else
-    clock_gettime(CLOCK_REALTIME, &ts);
-#endif
-  }
+  void _time(struct timespec& ts);
 
 private:
   struct timespec _begin;

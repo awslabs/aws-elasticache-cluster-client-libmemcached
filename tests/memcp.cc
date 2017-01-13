@@ -39,10 +39,12 @@
   Test that we are cycling the servers we are creating during testing.
 */
 
-#include <config.h>
+#include <mem_config.h>
 
 #include <libtest/test.hpp>
-#include <libmemcached/memcached.h>
+#include <libmemcached-1.0/memcached.h>
+
+#include <sys/stat.h>
 
 using namespace libtest;
 
@@ -61,20 +63,33 @@ static test_return_t help_test(void *)
   return TEST_SUCCESS;
 }
 
+#if 0
 static test_return_t server_test(void *)
 {
+  int fd;
+  std::string tmp_file= create_tmpfile("memcp", fd);
+  ASSERT_TRUE(tmp_file.c_str());
+  struct stat buf;
+  ASSERT_EQ(fstat(fd, &buf), 0);
+  ASSERT_EQ(buf.st_size, 0);
+
   char buffer[1024];
   snprintf(buffer, sizeof(buffer), "--servers=localhost:%d", int(default_port()));
-  const char *args[]= { buffer, 0 };
+  const char *args[]= { buffer, tmp_file.c_str(), 0 };
 
   test_compare(EXIT_SUCCESS, exec_cmdline(executable, args, true));
+  close(fd);
+  unlink(tmp_file.c_str());
 
   return TEST_SUCCESS;
 }
+#endif
 
 test_st memcp_tests[] ={
   {"--help", true, help_test },
+#if 0
   {"--server_test", true, server_test },
+#endif
   {0, 0, 0}
 };
 
@@ -85,13 +100,13 @@ collection_st collection[] ={
 
 static void *world_create(server_startup_st& servers, test_return_t& error)
 {
-  if (HAVE_MEMCACHED_BINARY == 0)
+  if (libtest::has_memcached() == false)
   {
     error= TEST_SKIPPED;
     return NULL;
   }
 
-  if (server_startup(servers, "memcached", libtest::default_port(), 0, NULL) == false)
+  if (server_startup(servers, "memcached", libtest::default_port(), NULL) == false)
   {
     error= TEST_FAILURE;
   }
@@ -100,7 +115,7 @@ static void *world_create(server_startup_st& servers, test_return_t& error)
 }
 
 
-void get_world(Framework *world)
+void get_world(libtest::Framework* world)
 {
   world->collections(collection);
   world->create(world_create);

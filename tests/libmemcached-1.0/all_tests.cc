@@ -35,7 +35,7 @@
  *
  */
 
-#include <config.h>
+#include <mem_config.h>
 #include <libtest/test.hpp>
 
 #include "tests/basic.h"
@@ -69,7 +69,9 @@
 
 #include "tests/libmemcached_world.h"
 
-void get_world(Framework *world)
+#include <algorithm>
+
+void get_world(libtest::Framework* world)
 {
   if (getenv("LIBMEMCACHED_SERVER_NUMBER"))
   {
@@ -79,7 +81,9 @@ void get_world(Framework *world)
   }
   else
   {
-    world->servers().set_servers_to_run(8);
+    // Assume a minimum of 3, and a maximum of 8
+    world->servers().set_servers_to_run((libtest::number_of_cpus() > 3) ? 
+                                        std::min(libtest::number_of_cpus(), size_t(8)) : 3);
   }
 
   world->collections(collection);

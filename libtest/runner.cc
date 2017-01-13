@@ -34,13 +34,125 @@
  *
  */
 
-#include <config.h>
+#include "libtest/yatlcon.h"
 #include <libtest/common.h>
 
 namespace libtest {
 
-Runner::Runner()
+Runner::Runner() :
+  _servers(NULL)
 {
+}
+
+test_return_t Runner::main(test_callback_fn* func, void *object)
+{
+  test_return_t ret;
+  try {
+    ret= run(func, object);
+  }
+  catch (const libtest::__skipped& e)
+  {
+    ret= TEST_SKIPPED;
+  }
+  catch (const libtest::__failure& e)
+  {
+    libtest::stream::make_cerr(e.file(), e.line(), e.func()) << e.what();
+    ret= TEST_FAILURE;
+  }
+  catch (const libtest::__success&)
+  {
+    ret= TEST_SUCCESS;
+  }
+  catch (const libtest::fatal&)
+  {
+    throw;
+  }
+  catch (const std::exception& e)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << e.what();
+    throw;
+  }
+  catch (...)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << "Unknown exception thrown";
+    throw;
+  }
+
+  return ret;
+}
+
+test_return_t Runner::setup(test_callback_fn* func, void *object)
+{
+  test_return_t ret;
+  try {
+    ret= pre(func, object);
+  }
+  catch (const libtest::__skipped& e)
+  {
+    ret= TEST_SKIPPED;
+  }
+  catch (const libtest::__failure& e)
+  {
+    libtest::stream::make_cout(e.file(), e.line(), e.func()) << e.what();
+    ret= TEST_FAILURE;
+  }
+  catch (const libtest::__success&)
+  {
+    ret= TEST_SUCCESS;
+  }
+  catch (const libtest::fatal& e)
+  {
+    throw;
+  }
+  catch (const std::exception& e)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << e.what();
+    throw;
+  }
+  catch (...)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << "Unknown exception thrown";
+    throw;
+  }
+
+  return ret;
+}
+
+test_return_t Runner::teardown(test_callback_fn* func, void *object)
+{
+  test_return_t ret;
+  try {
+    ret= post(func, object);
+  }
+  catch (const libtest::__skipped& e)
+  {
+    ret= TEST_SKIPPED;
+  }
+  catch (const libtest::__failure& e)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << e.what();
+    ret= TEST_FAILURE;
+  }
+  catch (const libtest::__success&)
+  {
+    ret= TEST_SUCCESS;
+  }
+  catch (const libtest::fatal& e)
+  {
+    throw;
+  }
+  catch (const std::exception& e)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << e.what();
+    throw;
+  }
+  catch (...)
+  {
+    libtest::stream::make_cerr(LIBYATL_DEFAULT_PARAM) << "Unknown exception thrown";
+    throw;
+  }
+
+  return ret;
 }
 
 test_return_t Runner::flush(void*)
@@ -76,6 +188,16 @@ test_return_t Runner::post(test_callback_fn* func, void *object)
   }
 
   return TEST_SUCCESS;
+}
+
+void Runner::set_servers(libtest::server_startup_st& arg)
+{
+  _servers= &arg;
+}
+
+bool Runner::check()
+{
+  return _servers ? _servers->check() : true;
 }
 
 } // namespace libtest
