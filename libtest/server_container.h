@@ -54,6 +54,7 @@ private:
   std::string server_list;
   bool _socket;
   bool _sasl;
+  memcached_client_mode _client_mode; 
   uint32_t _count;
   std::string _username;
   std::string _password;
@@ -115,6 +116,14 @@ public:
     _password= password_arg;
   }
 
+  memcached_client_mode get_client_mode()
+  {
+    return _client_mode;
+  }
+
+  void set_client_mode(memcached_client_mode client_mode) {
+    _client_mode = client_mode;
+  }
 
   // Just remove everything after shutdown
   void clear();

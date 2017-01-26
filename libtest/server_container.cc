@@ -418,7 +418,6 @@ std::string server_startup_st::option_string() const
   return temp;
 }
 
-/*
 void server_startup_st::set_config_for_dynamic_mode()
 {
   std::string buffer;
@@ -447,5 +446,5 @@ void server_startup_st::set_config_for_dynamic_mode()
   }
 
 }
-*/
+
 } // namespace libtest

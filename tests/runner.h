@@ -41,6 +41,7 @@
 #include "tests/libmemcached-1.0/generate.h"
 #include "tests/memc.h"
 #include "tests/print.h"
+#include "libtest/dynamic_mode.h"
 
 class LibmemcachedRunner : public libtest::Runner {
 public:
@@ -116,6 +117,35 @@ private:
 #if 0
       test_compare(MEMCACHED_SUCCESS, memcached_version(container->parent()));
 #endif
+
+      if (container->construct.get_client_mode() == DYNAMIC_MODE)
+      {
+        if(!libtest::server_supports_dynamic_mode(container->parent()->servers[0].port))
+        {
+          container->reset();
+          libtest::Error << "Can not run collection because memcached server that is installed locally does not support dynamic mode.";
+          return TEST_FAILURE;
+        }
+        // send set config commands to all locally running memcached server instances 
+        container->construct.set_config_for_dynamic_mode(); 
+
+        // use client initialized through options string above to re-initialize a client in dynamic mode from scratch
+        memcached_st* src_memc = container->parent();
+        memcached_st* new_memc = memcached_create(NULL);
+        if(memcached_failed(
+          memcached_behavior_set(new_memc, MEMCACHED_BEHAVIOR_CLIENT_MODE, DYNAMIC_MODE)))
+        {
+          container->reset();
+          return TEST_FAILURE;
+        }
+        if(memcached_failed(
+          memcached_server_push(new_memc, src_memc->servers)))
+        {
+          container->reset();
+          return TEST_FAILURE;
+        }
+        container->parent(new_memc); // last because parent() cleans up existing client
+      }
 
       if (container->construct.sasl())
       {

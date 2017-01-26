@@ -79,7 +79,6 @@ using namespace libtest;
 #include "tests/hash_results.h"
 
 #include "tests/libmemcached-1.0/callback_counter.h"
-#include "tests/libmemcached-1.0/dynamic_mode_test.h"
 #include "tests/libmemcached-1.0/fetch_all_results.h"
 #include "tests/libmemcached-1.0/mem_functions.h"
 #include "tests/libmemcached-1.0/setup_and_teardowns.h"

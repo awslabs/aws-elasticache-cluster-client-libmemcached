@@ -218,7 +218,7 @@ noinst_PROGRAMS = libtest/unittest$(EXEEXT) libtest/skiptest$(EXEEXT) \
 	tests/libmemcached-1.0/testapp$(EXEEXT) \
 	tests/libmemcached-1.0/testsocket$(EXEEXT) \
 	tests/libmemcached-1.0/sasl$(EXEEXT) \
-	tests/atomsmasher$(EXEEXT) tests/testudp$(EXEEXT) \
+	tests/atomsmasher$(EXEEXT) tests/dynamic_mode_test$(EXEEXT) tests/testudp$(EXEEXT) \
 	tests/testplus$(EXEEXT) tests/parser$(EXEEXT) \
 	tests/failure$(EXEEXT) tests/testhashkit$(EXEEXT) \
 	tests/hash_plus$(EXEEXT) tests/memcapable$(EXEEXT) \
@@ -811,6 +811,7 @@ am_libtest_libtest_la_OBJECTS =  \
 	libtest/libtest_libtest_la-cpu.lo \
 	libtest/libtest_libtest_la-dream.lo \
 	libtest/libtest_libtest_la-fatal.lo \
+	libtest/libtest_libtest_la-dynamic_mode.lo \
 	libtest/libtest_libtest_la-framework.lo \
 	libtest/libtest_libtest_la-has.lo \
 	libtest/libtest_libtest_la-drizzled.lo \
@@ -971,6 +972,15 @@ am_tests_atomsmasher_OBJECTS = clients/execute.$(OBJEXT) \
 	tests/libmemcached-1.0/generate.$(OBJEXT) \
 	tests/libmemcached-1.0/print.$(OBJEXT)
 tests_atomsmasher_OBJECTS = $(am_tests_atomsmasher_OBJECTS)
+am_tests_dynamic_mode_test_OBJECTS = clients/execute.$(OBJEXT) \
+	clients/generator.$(OBJEXT) \
+	tests/libmemcached-1.0/dynamic_mode_test.$(OBJEXT) \
+	tests/libmemcached-1.0/callback_counter.$(OBJEXT) \
+	tests/libmemcached-1.0/debug.$(OBJEXT) \
+	tests/libmemcached-1.0/fetch_all_results.$(OBJEXT) \
+	tests/libmemcached-1.0/generate.$(OBJEXT) \
+	tests/libmemcached-1.0/print.$(OBJEXT)
+tests_dynamic_mode_test_OBJECTS = $(am_tests_dynamic_mode_test_OBJECTS)
 am_tests_cycle_OBJECTS = tests/tests_cycle-cycle.$(OBJEXT)
 tests_cycle_OBJECTS = $(am_tests_cycle_OBJECTS)
 tests_cycle_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) \
@@ -1250,7 +1260,7 @@ SOURCES = $(clients_libutilities_la_SOURCES) \
 	$(libmemcached_1_0_t_cc_test_SOURCES) $(libtest_abort_SOURCES) \
 	$(libtest_skiptest_SOURCES) $(libtest_unittest_SOURCES) \
 	$(libtest_wait_SOURCES) $(memcached_memcached_SOURCES) \
-	$(tests_atomsmasher_SOURCES) $(tests_cycle_SOURCES) \
+	$(tests_atomsmasher_SOURCES) $(tests_dynamic_mode_test_SOURCES) $(tests_cycle_SOURCES) \
 	$(tests_failure_SOURCES) $(tests_hash_plus_SOURCES) \
 	$(tests_libmemcached_1_0_internals_SOURCES) \
 	$(tests_libmemcached_1_0_sasl_SOURCES) \
@@ -1287,7 +1297,7 @@ DIST_SOURCES = $(clients_libutilities_la_SOURCES) \
 	$(libmemcached_1_0_t_cc_test_SOURCES) $(libtest_abort_SOURCES) \
 	$(libtest_skiptest_SOURCES) $(libtest_unittest_SOURCES) \
 	$(libtest_wait_SOURCES) $(memcached_memcached_SOURCES) \
-	$(tests_atomsmasher_SOURCES) $(tests_cycle_SOURCES) \
+	$(tests_atomsmasher_SOURCES) $(tests_dynamic_mode_test_SOURCES) $(tests_cycle_SOURCES) \
 	$(tests_failure_SOURCES) $(tests_hash_plus_SOURCES) \
 	$(tests_libmemcached_1_0_internals_SOURCES) \
 	$(tests_libmemcached_1_0_sasl_SOURCES) \
@@ -2133,6 +2143,15 @@ tests_atomsmasher_SOURCES = clients/execute.cc clients/generator.cc \
 	tests/libmemcached-1.0/print.cc
 tests_atomsmasher_DEPENDENCIES = $(TESTS_LDADDS)
 tests_atomsmasher_LDADD = $(tests_atomsmasher_DEPENDENCIES)
+tests_dynamic_mode_test_SOURCES = clients/execute.cc clients/generator.cc \
+	tests/libmemcached-1.0/dynamic_mode_test.cc \
+	tests/libmemcached-1.0/callback_counter.cc \
+	tests/libmemcached-1.0/debug.cc \
+	tests/libmemcached-1.0/fetch_all_results.cc \
+	tests/libmemcached-1.0/generate.cc \
+	tests/libmemcached-1.0/print.cc
+tests_dynamic_mode_test_DEPENDENCIES = $(TESTS_LDADDS)
+tests_dynamic_mode_test_LDADD = $(tests_dynamic_mode_test_DEPENDENCIES)
 tests_testudp_CFLAGS = $(AM_CFLAGS) $(NO_CONVERSION) \
 	$(NO_STRICT_ALIASING)
 tests_testudp_SOURCES = clients/execute.cc clients/generator.cc \
@@ -3003,6 +3022,8 @@ libtest/libtest_libtest_la-dream.lo: libtest/$(am__dirstamp) \
 	libtest/$(DEPDIR)/$(am__dirstamp)
 libtest/libtest_libtest_la-fatal.lo: libtest/$(am__dirstamp) \
 	libtest/$(DEPDIR)/$(am__dirstamp)
+libtest/libtest_libtest_la-dynamic_mode.lo: libtest/$(am__dirstamp) \
+	libtest/$(DEPDIR)/$(am__dirstamp)
 libtest/libtest_libtest_la-framework.lo: libtest/$(am__dirstamp) \
 	libtest/$(DEPDIR)/$(am__dirstamp)
 libtest/libtest_libtest_la-has.lo: libtest/$(am__dirstamp) \
@@ -3337,6 +3358,9 @@ memcached/memcached$(EXEEXT): $(memcached_memcached_OBJECTS) $(memcached_memcach
 tests/libmemcached-1.0/atomsmasher.$(OBJEXT):  \
 	tests/libmemcached-1.0/$(am__dirstamp) \
 	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/dynamic_mode_test.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
 tests/libmemcached-1.0/callback_counter.$(OBJEXT):  \
 	tests/libmemcached-1.0/$(am__dirstamp) \
 	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
@@ -3358,6 +3382,9 @@ tests/$(am__dirstamp):
 tests/atomsmasher$(EXEEXT): $(tests_atomsmasher_OBJECTS) $(tests_atomsmasher_DEPENDENCIES) tests/$(am__dirstamp)
 	@rm -f tests/atomsmasher$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(tests_atomsmasher_OBJECTS) $(tests_atomsmasher_LDADD) $(LIBS)
+tests/dynamic_mode_test$(EXEEXT): $(tests_dynamic_mode_test_OBJECTS) $(tests_dynamic_mode_test_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/dynamic_mode_test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(tests_dynamic_mode_test_OBJECTS) $(tests_dynamic_mode_test_LDADD) $(LIBS)
 tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/$(DEPDIR)
 	@: > tests/$(DEPDIR)/$(am__dirstamp)
@@ -4186,6 +4213,7 @@ mostlyclean-compile:
 	-rm -f libtest/libtest_libtest_la-drizzled.lo
 	-rm -f libtest/libtest_libtest_la-fatal.$(OBJEXT)
 	-rm -f libtest/libtest_libtest_la-fatal.lo
+	-rm -f libtest/libtest_libtest_la-dynamic_mode.lo
 	-rm -f libtest/libtest_libtest_la-framework.$(OBJEXT)
 	-rm -f libtest/libtest_libtest_la-framework.lo
 	-rm -f libtest/libtest_libtest_la-gearmand.$(OBJEXT)
@@ -4243,6 +4271,7 @@ mostlyclean-compile:
 	-rm -f poll/libmemcachedinternal_libmemcachedinternal_la-poll.lo
 	-rm -f tests/hashkit_functions.$(OBJEXT)
 	-rm -f tests/libmemcached-1.0/atomsmasher.$(OBJEXT)
+	-rm -f tests/libmemcached-1.0/dynamic_mode_test.$(OBJEXT)
 	-rm -f tests/libmemcached-1.0/callback_counter.$(OBJEXT)
 	-rm -f tests/libmemcached-1.0/debug.$(OBJEXT)
 	-rm -f tests/libmemcached-1.0/example_t_memcached_light-memcached_get.$(OBJEXT)
@@ -4664,6 +4693,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_memtouch-memtouch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_parser-parser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/atomsmasher.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/dynamic_mode_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/callback_counter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/debug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/example_t_memcached_light-memcached_get.Po@am__quote@
@@ -6472,6 +6502,14 @@ libtest/libtest_libtest_la-fatal.lo: libtest/fatal.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='libtest/fatal.cc' object='libtest/libtest_libtest_la-fatal.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -c -o libtest/libtest_libtest_la-fatal.lo `test -f 'libtest/fatal.cc' || echo '$(srcdir)/'`libtest/fatal.cc
+
+libtest/libtest_libtest_la-dynamic_mode.lo: libtest/dynamic_mode.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -MT libtest/libtest_libtest_la-dynamic_mode.lo -MD -MP -MF libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Tpo -c -o libtest/libtest_libtest_la-dynamic_mode.lo `test -f 'libtest/dynamic_mode.cc' || echo '$(srcdir)/'`libtest/dynamic_mode.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Tpo libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Plo
+@am__fastdepCXX_FALSE@	$(AM_V_CXX) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='libtest/dynamic_mode.cc' object='libtest/libtest_libtest_la-dynamic_mode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -c -o libtest/libtest_libtest_la-dynamic_mode.lo `test -f 'libtest/dynamic_mode.cc' || echo '$(srcdir)/'`libtest/dynamic_mode.cc
 
 libtest/libtest_libtest_la-framework.lo: libtest/framework.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -MT libtest/libtest_libtest_la-framework.lo -MD -MP -MF libtest/$(DEPDIR)/libtest_libtest_la-framework.Tpo -c -o libtest/libtest_libtest_la-framework.lo `test -f 'libtest/framework.cc' || echo '$(srcdir)/'`libtest/framework.cc
@@ -9384,6 +9422,9 @@ test-sasl: tests/sasl
 test-atom: tests/atomsmasher
 	@tests/atomsmasher
 
+test-atom: tests/dynamic_mode_test
+	@tests/dynamic_mode_test
+
 test-plus: tests/testplus
 	@tests/testplus
 
@@ -9407,6 +9448,9 @@ gdb-sasl: tests/sasl
 
 gdb-atom: tests/atomsmasher
 	@$(DEBUG_COMMAND) tests/atomsmasher
+
+gdb-atom: tests/dynamic_mode_test
+	@$(DEBUG_COMMAND) tests/dynamic_mode_test
 
 gdb-plus: tests/testplus
 	$(DEBUG_COMMAND) tests/testplus
@@ -9432,6 +9476,9 @@ valgrind-failure: tests/failure
 valgrind-atom: tests/atomsmasher
 	$(VALGRIND_COMMAND) tests/atomsmasher
 
+valgrind-atom: tests/dynamic_mode_test
+	$(VALGRIND_COMMAND) tests/dynamic_mode_test
+
 valgrind-plus: tests/testplus
 	@$(VALGRIND_COMMAND) tests/testplus
 
@@ -9452,6 +9499,9 @@ helgrind-mem: tests/libmemcached-1.0/testapp
 
 helgrind-atom: tests/atomsmasher
 	@$(HELGRIND_COMMAND) tests/atomsmasher
+
+helgrind-atom: tests/dynamic_mode_test
+	@$(HELGRIND_COMMAND) tests/dynamic_mode_test
 
 helgrind-plus: tests/testplus
 	@$(HELGRIND_COMMAND) tests/testplus

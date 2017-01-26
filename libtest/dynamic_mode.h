@@ -17,6 +17,12 @@
 
 namespace libtest {
 
+  /*
+   * Check if the local memcached server process running on a specified port supports
+   * Elasticache Auto Discovery -related comands.    
+   */ 
+  bool server_supports_dynamic_mode(uint16_t port);
+
   void set_config(const char *config, uint16_t port, char *version);
 
   test_return_t  check_bad_config_with_no_newline(void *);

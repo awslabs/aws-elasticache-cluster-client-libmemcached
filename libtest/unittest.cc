@@ -915,7 +915,7 @@ test_st http_tests[] ={
   {0, 0, 0}
 };
 
-/*
+
 test_st dynamic_mode_tests[] = {
   {"check_bad_config_with_no_newline", 0, check_bad_config_with_no_newline },
   {"check_bad_config_with_missing_pipe", 0, check_bad_config_with_missing_pipe },
@@ -934,7 +934,7 @@ test_st dynamic_mode_tests[] = {
   {"check_get_ipaddress", 0, check_get_ipaddress},
   {0, 0, 0}
 };
-*/
+
 collection_st collection[] ={
   {"environment", 0, 0, environment_tests},
   {"return values", 0, 0, tests_log},
@@ -953,7 +953,7 @@ collection_st collection[] ={
   {"fatal", disable_fatal_exception, enable_fatal_exception, fatal_message_TESTS },
   {"number_of_cpus()", 0, 0, number_of_cpus_TESTS },
   {"create_tmpfile()", 0, 0, create_tmpfile_TESTS },
-  // {"dynamic_mode_unit_tests", 0, 0, dynamic_mode_tests},
+  {"dynamic_mode", 0, 0, dynamic_mode_tests},
   {0, 0, 0, 0}
 };
 
