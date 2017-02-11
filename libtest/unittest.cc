@@ -1185,7 +1185,7 @@ test_st http_tests[] ={
   {0, 0, 0}
 };
 
-/*
+
 test_st dynamic_mode_tests[] = {
   {"check_bad_config_with_no_newline", 0, check_bad_config_with_no_newline },
   {"check_bad_config_with_missing_pipe", 0, check_bad_config_with_missing_pipe },
@@ -1204,7 +1204,7 @@ test_st dynamic_mode_tests[] = {
   {"check_get_ipaddress", 0, check_get_ipaddress},
   {0, 0, 0}
 };
-*/
+
 collection_st collection[] ={
   {"environment", 0, 0, environment_tests},
   {"return values", 0, 0, tests_log},
@@ -1225,7 +1225,7 @@ collection_st collection[] ={
   {"create_tmpfile()", 0, 0, create_tmpfile_TESTS },
   {"dns", check_for_VALGRIND, 0, dns_TESTS },
   {"libtest::Timer", 0, 0, timer_TESTS },
-  // {"dynamic_mode_unit_tests", 0, 0, dynamic_mode_tests},
+  {"dynamic_mode", 0, 0, dynamic_mode_tests},
   {0, 0, 0, 0}
 };
 

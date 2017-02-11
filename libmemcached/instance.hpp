@@ -218,6 +218,7 @@ memcached_instance_st* __instance_create_with(memcached_st *memc,
                                               uint32_t weight, 
                                               const memcached_connection_t type);
 
+LIBMEMCACHED_LOCAL
 memcached_return_t memcached_instance_push(memcached_st *ptr, const memcached_instance_st*, uint32_t);
 
 void __instance_free(memcached_instance_st *);

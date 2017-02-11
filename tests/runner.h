@@ -41,6 +41,8 @@
 #include "tests/libmemcached-1.0/generate.h"
 #include "tests/memc.hpp"
 #include "tests/print.h"
+#include "libtest/dynamic_mode.h"
+#include <libmemcached/instance.hpp>
 
 class LibmemcachedRunner : public libtest::Runner {
 public:
@@ -108,6 +110,44 @@ private:
 #if 0
       test_compare(MEMCACHED_SUCCESS, memcached_version(container->parent()));
 #endif
+
+      if (container->construct.get_client_mode() == DYNAMIC_MODE)
+      {
+        // Check preconditions to run dynamic mode tests
+        if(!libtest::server_supports_dynamic_mode(memcached_server_instance_by_position(container->parent(), 0)->port()))
+        {
+          container->reset();
+          libtest::Error << "Can not run collection because memcached server that is installed locally does not support dynamic mode.";
+          return TEST_FAILURE;
+        }
+        // Issue set config commands to all locally running memcached server instances 
+        container->construct.set_config_for_dynamic_mode(); 
+
+        // Use client initialized through options string above to re-initialize a client in dynamic mode from scratch
+        //
+        // This is necessary because instead of passing this client object directly into the test code it will be later on
+        // cloned in _runner_default() through constructing a test::Memc instance from it. , while memcahed_clone() will simply
+        // call memcached_instance_push() on with the source's config server skipping the resolved server list to let
+        // the cloned object re-resolve servers again. Problem is that it happens that client objects initialized through
+        // '--server' options string (as done above using contruct.option_string) don't have their configserver set.
+        memcached_st* src_memc = container->parent();
+        memcached_st* new_memc = memcached_create(NULL);
+        if(memcached_failed(
+          memcached_behavior_set(new_memc, MEMCACHED_BEHAVIOR_CLIENT_MODE, DYNAMIC_MODE)))
+        {
+          container->reset();
+          return TEST_FAILURE;
+        }
+
+        if (memcached_failed(
+          memcached_instance_push(new_memc, src_memc->servers, src_memc->number_of_hosts)))
+        { 
+          container->reset();
+          return TEST_FAILURE;
+        }
+
+        container->parent(new_memc); // last because parent() cleans up existing client
+      }
 
       if (container->construct.sasl())
       {

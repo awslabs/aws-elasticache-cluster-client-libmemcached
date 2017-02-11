@@ -12,11 +12,36 @@
  */
 
 
-#include <config.h>
+#include <mem_config.h>
 #include<string.h>
 #include <libtest/common.h>
 
 namespace libtest {
+
+  /*
+   * This is the only available option to implement this because as of now both 'version' command
+   * of HTTP API and '-V' command-line option return only X.Y.Z version without any information as
+   * to whether it is plain open source or AWS Elasticache flavor of the engine.
+   */
+  bool server_supports_dynamic_mode(uint16_t port) {
+    char cmd[100];
+    FILE *fp;
+    sprintf(cmd, "echo -n -e \"config get cluster\\r\\n\" | nc localhost %d", port);
+    if ((fp = popen(cmd, "r")) == NULL) {
+      // likely memcached (server) binary not present on the system
+      return false;
+    }
+    char buf[100];
+    bool result = true;
+    if (fgets(buf, 100, fp) == NULL || strcmp(buf, "ERROR\r\n") == 0) {
+      	result = false;
+    }
+    if(pclose(fp)) {
+      fprintf(stderr, "pclose() exited with error");
+    }
+    return result;
+  }
+
 
   void set_config(const char *config, uint16_t port, char *version)
   {
@@ -25,7 +50,7 @@ namespace libtest {
     sprintf(buffer, "\"config set cluster 0 %d\\r\\n%s\\r\\n%s\\r\\n\"", length, version, config);
     // To run for memcached 1.4.5, switch to this: sprintf(buffer, "\"set AmazonElastiCache:cluster 0 0 %d\\r\\n%s\\r\\n%s\\r\\n\"", length, version, config);
     char cmd[2500];
-    sprintf(cmd, "echo -n -e %s | nc localhost %d", buffer, port);
+    sprintf(cmd, "echo -n -e %s | nc localhost %d >/dev/null", buffer, port);
     system(cmd);
   }
 
@@ -166,7 +191,7 @@ namespace libtest {
     memcached_server_st *server = NULL;
     memcached_return rc;
     server= memcached_server_list_append_with_ipaddress(server, "localhost", "10.61.120.162", 11211, &rc);
-    test_true(strcmp(memcached_server_ipaddress(server), "10.61.120.162") == 0);
+    test_true(strcmp(server->ipaddress, "10.61.120.162") == 0);
     free(server);
     return TEST_SUCCESS;
   }

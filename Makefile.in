@@ -15,8 +15,6 @@
 @SET_MAKE@
 
 # vim:ft=automake
-
-# vim:ft=automake
 # included from Top Level Makefile.am
 # All paths should be given relative to the root
 #
@@ -519,10 +517,10 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_FALSE@	libtest/cmdline.h libtest/collection.h \
 @BUILD_WIN32_FALSE@	libtest/common.h libtest/comparison.hpp \
 @BUILD_WIN32_FALSE@	libtest/core.h libtest/dream.h \
+@BUILD_WIN32_FALSE@	libtest/dynamic_mode.h \
 @BUILD_WIN32_FALSE@	libtest/error.h libtest/exception.hpp \
 @BUILD_WIN32_FALSE@	libtest/exception/disconnected.hpp \
 @BUILD_WIN32_FALSE@	libtest/exception/fatal.hpp \
-@BUILD_WIN32_FALSE@ libtest/dynamic_mode.h \
 @BUILD_WIN32_FALSE@	libtest/framework.h libtest/gearmand.h \
 @BUILD_WIN32_FALSE@	libtest/drizzled.h libtest/get.h \
 @BUILD_WIN32_FALSE@	libtest/has.hpp libtest/http.hpp \
@@ -903,6 +901,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testsocket \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl \
 @BUILD_WIN32_FALSE@	tests/atomsmasher tests/testudp \
+@BUILD_WIN32_FALSE@	tests/dynamic_mode_test \
 @BUILD_WIN32_FALSE@	tests/testplus tests/parser tests/failure \
 @BUILD_WIN32_FALSE@	tests/testhashkit tests/hash_plus \
 @BUILD_WIN32_FALSE@	tests/memcapable tests/memstat tests/memcp \
@@ -1662,6 +1661,7 @@ am__libtest_libtest_la_SOURCES_DIST = libtest/alarm.cc \
 	libtest/binaries.cc libtest/cmdline.cc libtest/collection.cc \
 	libtest/comparison.cc libtest/core.cc libtest/cpu.cc \
 	libtest/dns.cc libtest/dream.cc libtest/drizzled.cc \
+	libtest/dynamic_mode.cc \
 	libtest/exception.cc libtest/exception/fatal.cc \
 	libtest/formatter.cc libtest/client.cc libtest/framework.cc \
 	libtest/has.cc libtest/http.cc libtest/is_local.cc \
@@ -1680,6 +1680,7 @@ am__libtest_libtest_la_SOURCES_DIST = libtest/alarm.cc \
 @BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-collection.lo \
 @BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-comparison.lo \
 @BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-core.lo \
+@BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-dynamic_mode.lo \
 @BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-cpu.lo \
 @BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-dns.lo \
 @BUILD_WIN32_FALSE@	libtest/libtest_libtest_la-dream.lo \
@@ -1775,6 +1776,7 @@ libtest_libtest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testsocket$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/atomsmasher$(EXEEXT) \
+@BUILD_WIN32_FALSE@	tests/dynamic_mode_test$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/testudp$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/testplus$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/parser$(EXEEXT) \
@@ -1986,6 +1988,24 @@ am__tests_atomsmasher_SOURCES_DIST = clients/execute.cc \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/print.$(OBJEXT)
 tests_atomsmasher_OBJECTS = $(am_tests_atomsmasher_OBJECTS)
 @BUILD_WIN32_FALSE@tests_atomsmasher_DEPENDENCIES = $(TESTS_LDADDS)
+am__tests_dynamic_mode_test_SOURCES_DIST = clients/execute.cc \
+	clients/generator.cc tests/libmemcached-1.0/dynamic_mode_test.cc \
+	tests/libmemcached-1.0/callback_counter.cc \
+	tests/libmemcached-1.0/debug.cc \
+	tests/libmemcached-1.0/fetch_all_results.cc \
+	tests/libmemcached-1.0/generate.cc \
+	tests/libmemcached-1.0/print.cc
+@BUILD_WIN32_FALSE@am_tests_dynamic_mode_test_OBJECTS =  \
+@BUILD_WIN32_FALSE@	clients/execute.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	clients/generator.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/dynamic_mode_test.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/callback_counter.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/debug.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/fetch_all_results.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/generate.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/print.$(OBJEXT)
+tests_dynamic_mode_test_OBJECTS = $(am_tests_dynamic_mode_test_OBJECTS)
+@BUILD_WIN32_FALSE@tests_dynamic_mode_test_DEPENDENCIES = $(TESTS_LDADDS)
 am__tests_cycle_SOURCES_DIST = tests/cycle.cc
 @BUILD_WIN32_FALSE@am_tests_cycle_OBJECTS =  \
 @BUILD_WIN32_FALSE@	tests/tests_cycle-cycle.$(OBJEXT)
@@ -2451,6 +2471,7 @@ SOURCES = $(clients_libutilities_la_SOURCES) \
 	$(libtest_backtrace_SOURCES) $(libtest_core_count_SOURCES) \
 	$(libtest_skiptest_SOURCES) $(libtest_unittest_SOURCES) \
 	$(libtest_wait_SOURCES) $(tests_atomsmasher_SOURCES) \
+	$(tests_dynamic_mode_test_SOURCES) \
 	$(tests_cycle_SOURCES) $(tests_failure_SOURCES) \
 	$(tests_hash_plus_SOURCES) \
 	$(tests_libmemcached_1_0_internals_SOURCES) \
@@ -2499,6 +2520,7 @@ DIST_SOURCES = $(am__clients_libutilities_la_SOURCES_DIST) \
 	$(am__libtest_unittest_SOURCES_DIST) \
 	$(am__libtest_wait_SOURCES_DIST) \
 	$(am__tests_atomsmasher_SOURCES_DIST) \
+	$(am__tests_dynamic_mode_test_SOURCES_DIST) \
 	$(am__tests_cycle_SOURCES_DIST) \
 	$(am__tests_failure_SOURCES_DIST) \
 	$(am__tests_hash_plus_SOURCES_DIST) \
@@ -2617,6 +2639,7 @@ am__noinst_HEADERS_DIST = libhashkit/aes.h libhashkit/algorithm.h \
 	libtest/callbacks.h libtest/dns.hpp libtest/cmdline.h \
 	libtest/collection.h libtest/common.h libtest/comparison.hpp \
 	libtest/core.h libtest/dream.h libtest/error.h \
+	libtest/dynamic_mode.h \
 	libtest/exception.hpp libtest/exception/disconnected.hpp \
 	libtest/exception/fatal.hpp libtest/dynamic_mode.h libtest/framework.h \
 	libtest/gearmand.h libtest/drizzled.h libtest/get.h \
@@ -3301,7 +3324,11 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@EXTRA_libtest_libtest_la_DEPENDENCIES =  \
 @BUILD_WIN32_FALSE@	libtest_tmp_dir libtest/abort libtest/wait
 @BUILD_WIN32_FALSE@libtest_libtest_la_LIBADD = @PTHREAD_LIBS@ \
-@BUILD_WIN32_FALSE@	$(CURL_LIBS) @RT_LIB@ $(am__append_30)
+@BUILD_WIN32_FALSE@	$(CURL_LIBS) @RT_LIB@ $(am__append_30) \
+@BUILD_WIN32_FALSE@	@LIBUUID_LIB@ \
+@BUILD_WIN32_FALSE@	libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
+@BUILD_WIN32_FALSE@	libhashkit/libhashkit.la
 
 # We are either building in tree, or with
 @BUILD_WIN32_FALSE@libtest_libtest_la_SOURCES = libtest/alarm.cc \
@@ -3309,10 +3336,10 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@	libtest/collection.cc libtest/comparison.cc \
 @BUILD_WIN32_FALSE@	libtest/core.cc libtest/cpu.cc \
 @BUILD_WIN32_FALSE@	libtest/dns.cc libtest/dream.cc \
+@BUILD_WIN32_FALSE@	libtest/dynamic_mode.cc \
 @BUILD_WIN32_FALSE@	libtest/drizzled.cc libtest/exception.cc \
 @BUILD_WIN32_FALSE@	libtest/exception/fatal.cc \
 @BUILD_WIN32_FALSE@	libtest/formatter.cc libtest/client.cc \
-@BUILD_WIN32_FALSE@ libtest/dynamic_mode.cc \
 @BUILD_WIN32_FALSE@	libtest/framework.cc libtest/has.cc \
 @BUILD_WIN32_FALSE@	libtest/http.cc libtest/is_local.cc \
 @BUILD_WIN32_FALSE@	libtest/killpid.cc libtest/libtool.cc \
@@ -3481,7 +3508,7 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@BUILD_RPM_DIR = $(RPM_BUILDDIR)/BUILD/@PACKAGE@-@VERSION@
 @BUILD_WIN32_FALSE@pkgconfigdir = $(libdir)/pkgconfig
 @BUILD_WIN32_FALSE@pkgconfig_DATA = support/libmemcached.pc
-@BUILD_WIN32_FALSE@TESTS_LDADDS = libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@TESTS_LDADDS = libmemcachedinternal/libmemcachedinternal.la \
 @BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
 @BUILD_WIN32_FALSE@	libtest/libtest.la
 
@@ -3538,7 +3565,7 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/virtual_buckets.cc
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_testapp_LDADD =  \
 @BUILD_WIN32_FALSE@	@LIBUUID_LIB@ @PTHREAD_LIBS@ \
-@BUILD_WIN32_FALSE@	libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedinternal.la \
 @BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
 @BUILD_WIN32_FALSE@	libtest/libtest.la libhashkit/libhashkit.la
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_testsocket_CXXFLAGS =  \
@@ -3576,7 +3603,7 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/virtual_buckets.cc
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_testsocket_LDADD =  \
 @BUILD_WIN32_FALSE@	@LIBUUID_LIB@ @PTHREAD_LIBS@ \
-@BUILD_WIN32_FALSE@	libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedinternal.la \
 @BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
 @BUILD_WIN32_FALSE@	libtest/libtest.la libhashkit/libhashkit.la
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_sasl_SOURCES =  \
@@ -3597,7 +3624,7 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/fetch_all_results.cc \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/generate.cc
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_sasl_LDADD = @PTHREAD_LIBS@ \
-@BUILD_WIN32_FALSE@	libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedinternal.la \
 @BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
 @BUILD_WIN32_FALSE@	libtest/libtest.la libhashkit/libhashkit.la
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_sasl_CXXFLAGS =  \
@@ -3613,6 +3640,16 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/generate.cc \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/print.cc
 @BUILD_WIN32_FALSE@tests_atomsmasher_LDADD = $(TESTS_LDADDS)
+@BUILD_WIN32_FALSE@tests_dynamic_mode_test_SOURCES = clients/execute.cc \
+@BUILD_WIN32_FALSE@	clients/generator.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/dynamic_mode_test.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/callback_counter.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/debug.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/fetch_all_results.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/generate.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/print.cc
+@BUILD_WIN32_FALSE@tests_dynamic_mode_test_LDADD = $(TESTS_LDADDS) \
+@BUILD_WIN32_FALSE@     libmemcachedinternal/libmemcachedinternal.la
 @BUILD_WIN32_FALSE@tests_testudp_CFLAGS = $(AM_CFLAGS) \
 @BUILD_WIN32_FALSE@	$(NO_CONVERSION) $(NO_STRICT_ALIASING)
 @BUILD_WIN32_FALSE@tests_testudp_SOURCES = clients/execute.cc \
@@ -4551,6 +4588,8 @@ libtest/libtest_libtest_la-comparison.lo: libtest/$(am__dirstamp) \
 	libtest/$(DEPDIR)/$(am__dirstamp)
 libtest/libtest_libtest_la-core.lo: libtest/$(am__dirstamp) \
 	libtest/$(DEPDIR)/$(am__dirstamp)
+libtest/libtest_libtest_la-dynamic_mode.lo: libtest/$(am__dirstamp) \
+	libtest/$(DEPDIR)/$(am__dirstamp)
 libtest/libtest_libtest_la-cpu.lo: libtest/$(am__dirstamp) \
 	libtest/$(DEPDIR)/$(am__dirstamp)
 libtest/libtest_libtest_la-dns.lo: libtest/$(am__dirstamp) \
@@ -4901,6 +4940,9 @@ tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp):
 tests/libmemcached-1.0/atomsmasher.$(OBJEXT):  \
 	tests/libmemcached-1.0/$(am__dirstamp) \
 	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/dynamic_mode_test.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
 tests/libmemcached-1.0/callback_counter.$(OBJEXT):  \
 	tests/libmemcached-1.0/$(am__dirstamp) \
 	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
@@ -4923,6 +4965,9 @@ tests/$(am__dirstamp):
 tests/atomsmasher$(EXEEXT): $(tests_atomsmasher_OBJECTS) $(tests_atomsmasher_DEPENDENCIES) $(EXTRA_tests_atomsmasher_DEPENDENCIES) tests/$(am__dirstamp)
 	@rm -f tests/atomsmasher$(EXEEXT)
 	$(AM_V_CXXLD)$(CXXLINK) $(tests_atomsmasher_OBJECTS) $(tests_atomsmasher_LDADD) $(LIBS)
+tests/dynamic_mode_test$(EXEEXT): $(tests_dynamic_mode_test_OBJECTS) $(tests_dynamic_mode_test_DEPENDENCIES) $(EXTRA_tests_dynamic_mode_test_DEPENDENCIES) tests/$(am__dirstamp)
+	@rm -f tests/dynamic_mode_test$(EXEEXT)
+	$(AM_V_CXXLD)$(CXXLINK) $(tests_dynamic_mode_test_OBJECTS) $(tests_dynamic_mode_test_LDADD) $(LIBS)
 tests/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tests/$(DEPDIR)
 	@: > tests/$(DEPDIR)/$(am__dirstamp)
@@ -5612,6 +5657,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-dns.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-dream.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-drizzled.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-exception.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-formatter.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libtest/$(DEPDIR)/libtest_libtest_la-framework.Plo@am__quote@
@@ -5657,6 +5703,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_memtouch-memtouch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/$(DEPDIR)/tests_parser-parser.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/atomsmasher.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/dynamic_mode_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/callback_counter.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/debug.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/fetch_all_results.Po@am__quote@
@@ -7330,6 +7377,13 @@ libtest/libtest_libtest_la-core.lo: libtest/core.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='libtest/core.cc' object='libtest/libtest_libtest_la-core.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -c -o libtest/libtest_libtest_la-core.lo `test -f 'libtest/core.cc' || echo '$(srcdir)/'`libtest/core.cc
+
+libtest/libtest_libtest_la-dynamic_mode.lo: libtest/dynamic_mode.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -MT libtest/libtest_libtest_la-dynamic_mode.lo -MD -MP -MF libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Tpo -c -o libtest/libtest_libtest_la-dynamic_mode.lo `test -f 'libtest/dynamic_mode.cc' || echo '$(srcdir)/'`libtest/dynamic_mode.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Tpo libtest/$(DEPDIR)/libtest_libtest_la-dynamic_mode.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='libtest/dynamic_mode.cc' object='libtest/libtest_libtest_la-dynamic_mode.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -c -o libtest/libtest_libtest_la-dynamic_mode.lo `test -f 'libtest/dynamic_mode.cc' || echo '$(srcdir)/'`libtest/dynamic_mode.cc
 
 libtest/libtest_libtest_la-cpu.lo: libtest/cpu.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_libtest_la_CXXFLAGS) $(CXXFLAGS) -MT libtest/libtest_libtest_la-cpu.lo -MD -MP -MF libtest/$(DEPDIR)/libtest_libtest_la-cpu.Tpo -c -o libtest/libtest_libtest_la-cpu.lo `test -f 'libtest/cpu.cc' || echo '$(srcdir)/'`libtest/cpu.cc
@@ -10504,6 +10558,9 @@ uninstall-man: uninstall-man1 uninstall-man3
 @BUILD_WIN32_FALSE@test-atom: tests/atomsmasher
 @BUILD_WIN32_FALSE@	@tests/atomsmasher
 
+@BUILD_WIN32_FALSE@test-dynamic_mode_test: tests/dynamic_mode_test
+@BUILD_WIN32_FALSE@	@tests/dynamic_mode_test
+
 @BUILD_WIN32_FALSE@test-hashplus: tests/hash_plus
 @BUILD_WIN32_FALSE@	@tests/hash_plus
 
@@ -10528,6 +10585,9 @@ uninstall-man: uninstall-man1 uninstall-man3
 @BUILD_WIN32_FALSE@gdb-atom: tests/atomsmasher
 @BUILD_WIN32_FALSE@	@$(GDB_COMMAND) tests/atomsmasher
 
+@BUILD_WIN32_FALSE@gdb-dynamic_mode_test: tests/dynamic_mode_test
+@BUILD_WIN32_FALSE@	@$(GDB_COMMAND) tests/dynamic_mode_test
+
 @BUILD_WIN32_FALSE@gdb-hash: tests/testhashkit
 @BUILD_WIN32_FALSE@	@$(GDB_COMMAND) tests/testhashkit
 
@@ -10549,6 +10609,9 @@ uninstall-man: uninstall-man1 uninstall-man3
 @BUILD_WIN32_FALSE@valgrind-atom: tests/atomsmasher
 @BUILD_WIN32_FALSE@	$(VALGRIND_COMMAND) tests/atomsmasher
 
+@BUILD_WIN32_FALSE@valgrind-dynamic_mode_test: tests/dynamic_mode_test
+@BUILD_WIN32_FALSE@	$(VALGRIND_COMMAND) tests/dynamic_mode_test
+
 @BUILD_WIN32_FALSE@valgrind-sasl: tests/sasl
 @BUILD_WIN32_FALSE@	@$(VALGRIND_COMMAND) tests/sasl
 
@@ -10566,6 +10629,9 @@ uninstall-man: uninstall-man1 uninstall-man3
 
 @BUILD_WIN32_FALSE@helgrind-atom: tests/atomsmasher
 @BUILD_WIN32_FALSE@	@$(HELGRIND_COMMAND) tests/atomsmasher
+
+@BUILD_WIN32_FALSE@helgrind-dynamic_mode_test: tests/dynamic_mode_test
+@BUILD_WIN32_FALSE@	@$(HELGRIND_COMMAND) tests/dynamic_mode_test
 
 @BUILD_WIN32_FALSE@helgrind-hash: tests/testhashkit
 @BUILD_WIN32_FALSE@	@$(HELGRIND_COMMAND) tests/testhashkit

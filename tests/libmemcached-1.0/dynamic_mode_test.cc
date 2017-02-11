@@ -1,30 +1,107 @@
 
-#include <config.h>
+#include "mem_config.h"
 
 #include <cstdlib>
 #include <climits>
 
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netinet/in.h> 
+#include <arpa/inet.h>
+
 #include <libtest/test.hpp>
+#include <libtest/dynamic_mode.h>
 
 #include <libmemcached-1.0/memcached.h>
 #include <libmemcached/util.h>
+#include "libmemcached/instance.hpp"
 
+#include "tests/libmemcached-1.0/dynamic_mode_test.h"
 
 using namespace libtest;
 
-#include "tests/libmemcached-1.0/dynamic_mode_test.h"
-#define LOCAL_IP "10.61.120.162"
+/**
+ * Integration-style tests for dynamic client mode (aka Auto Discovery, see:
+ * http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/AutoDiscovery.html)
+ *
+ * This test suite is not configured to run as part of 'make test' target because it depends on 
+ * modified memcached server version, the kind that is run on AWS ElastiCache nodes, to be present
+ * installed on the system. If this required binary is missing the tests that need it will be skipped.
+ *
+ * To run:
+ *
+ *   ./configure
+ *   make
+ *   ./tests/dynamic_mode_test
+ */
 
-static char * build_server_list(memcached_server_st *servers, uint32_t count)
+static char* _get_addr_by_ifa_name_for_ipv(const char* ifa_name_str, bool ipv6)
+{
+  char *res = NULL;
+  struct ifaddrs * ifa=NULL;
+  getifaddrs(&ifa);
+  for (struct ifaddrs * cur_ifa = ifa; cur_ifa != NULL; cur_ifa = cur_ifa->ifa_next) 
+  {
+    if (cur_ifa->ifa_addr == NULL) 
+    {
+      continue;
+    }
+    if (ifa_name_str != NULL &&
+        strcmp(ifa_name_str, cur_ifa->ifa_name) == 0 &&
+        cur_ifa->ifa_addr->sa_family == (ipv6 ? AF_INET6 : AF_INET)) 
+    {
+      void *sin_addr;
+      if (ipv6) 
+      {
+        sin_addr = &((struct sockaddr_in6 *)cur_ifa->ifa_addr)->sin6_addr;
+      } else
+      {
+	sin_addr = &((struct sockaddr_in *)cur_ifa->ifa_addr)->sin_addr;
+      }
+      int addr_len = ipv6 ? INET6_ADDRSTRLEN : INET_ADDRSTRLEN;
+      res = (char*) malloc(addr_len * sizeof(char));
+      inet_ntop(ipv6 ? AF_INET6 : AF_INET, sin_addr, res, addr_len);
+      break;
+    }
+  }
+  if (ifa != NULL)
+  {
+    freeifaddrs(ifa);
+  }
+  return res;
+}
+
+/*
+ * Get a null-terminated string representing the IP address (e.g. "172.31.22.18")
+ * assigned to a local network interface with a given name (e.g. "eth0"). 
+ * If an IPv4 address exists for the interface it will be returned, otherwise falls 
+ * back to IPv6.
+ */
+static char* _get_private_ip_of_local_netw_interface() {
+  char *res[4] = {
+	_get_addr_by_ifa_name_for_ipv("eth0", false),
+	_get_addr_by_ifa_name_for_ipv("wlan0", false),
+	_get_addr_by_ifa_name_for_ipv("eth0", true),
+	_get_addr_by_ifa_name_for_ipv("wlan0", true)
+  };
+  for (int i = 0; i < 4; i++) {
+    if (res[i] != NULL) {
+      return res[i];
+    }
+  }
+  return NULL;
+}
+
+static char * build_server_list(memcached_instance_st *servers, uint32_t count)
 {
   char *buffer = (char *)malloc(2000);
   buffer[0] = '\0';
   for(uint32_t i=0; i<count; i++)
   {
-    memcached_server_st m_server = servers[i];
+    memcached_instance_st m_server = servers[i];
     strcat(buffer, "localhost|127.0.0.1|");
-    char port[6];
-    sprintf(port,"%d ", m_server.port);
+    char port[7];
+    sprintf(port,"%d ", m_server.port());
     strcat(buffer, port);
   }
 
@@ -37,13 +114,14 @@ test_return_t config_get_test(memcached_st *ptr)
   uint32_t flags;
   size_t value_length;
   memcached_return rc;
-  char *server_list = build_server_list(ptr->servers, memcached_server_list_count(ptr->servers));
-  set_config(server_list, ptr->servers[0].port, "1");
+  char *server_list = build_server_list(ptr->servers, ptr->number_of_hosts);
+  set_config(server_list, ptr->servers[0].port(), "1");
   char expected_config[2000];
   sprintf(expected_config, "1\r\n%s", server_list);
   char *val = memcached_config_get(ptr->servers, ptr, &value_length, &flags, &rc);
 
-  if(strcmp(val, expected_config)){
+  if (val == NULL || strcmp(val, expected_config)) 
+  {
     return TEST_FAILURE;
   }
 
@@ -56,12 +134,7 @@ test_return_t config_get_test(memcached_st *ptr)
 
 test_return_t remove_node_test(memcached_st *ptr)
 {
-  if(ptr->flags.client_mode != DYNAMIC_MODE)
-  {
-    return TEST_SKIPPED;
-  }
-
-  char *original_server_list = build_server_list(ptr->servers, memcached_server_list_count(ptr->servers));
+  char *original_server_list = build_server_list(ptr->servers, ptr->number_of_hosts);
 
   memcached_server_st *servers = NULL;
   memcached_st *memc;
@@ -74,7 +147,7 @@ test_return_t remove_node_test(memcached_st *ptr)
   memc= memcached_create(NULL);
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_CLIENT_MODE, DYNAMIC_MODE);
 
-  rc= memcached_server_push(memc, ptr->configserver);
+  rc= memcached_instance_push(memc, ptr->configserver, 1);
 
   if (rc != MEMCACHED_SUCCESS)
   {
@@ -92,7 +165,7 @@ test_return_t remove_node_test(memcached_st *ptr)
     return TEST_FAILURE;
   }
   free(result);
-  servers= memcached_server_list_append(servers, "localhost", 11221, &rc);
+  servers= memcached_server_list_append(servers, ptr->servers[0]._hostname, ptr->servers[0].port(), &rc);
   notify_server_list_update(memc, servers);
 
   rc= memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0);
@@ -108,7 +181,7 @@ test_return_t remove_node_test(memcached_st *ptr)
   free(result);
   memcached_server_free(servers);
   memcached_free(memc);
-  set_config(original_server_list, ptr->servers[0].port, "1");
+  set_config(original_server_list, ptr->servers[0].port(), "1");
   free(original_server_list);
 
   return TEST_SUCCESS;
@@ -116,12 +189,7 @@ test_return_t remove_node_test(memcached_st *ptr)
 
 test_return_t add_node_test(memcached_st *ptr)
 {
-  if(ptr->flags.client_mode != DYNAMIC_MODE)
-  {
-    return TEST_SKIPPED;
-  }
-
-  char *original_server_list = build_server_list(ptr->servers, memcached_server_list_count(ptr->servers));
+  char *original_server_list = build_server_list(ptr->servers, ptr->number_of_hosts);
 
   memcached_server_st *servers = NULL;
   memcached_st *memc;
@@ -135,10 +203,13 @@ test_return_t add_node_test(memcached_st *ptr)
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_CLIENT_MODE, DYNAMIC_MODE);
 
   char *config = build_server_list(ptr->servers, 1);
-  set_config(config, ptr->servers[0].port, "1");
+  set_config(config, ptr->servers[0].port(), "1");
   free(config);
 
-  rc= memcached_server_push(memc, ptr->configserver);
+  rc= memcached_instance_push(memc, ptr->configserver, 1);
+  
+  servers= memcached_server_list_append(servers, ptr->servers[0]._hostname, ptr->servers[0].port(), &rc);
+  notify_server_list_update(memc, servers);
 
   if (rc != MEMCACHED_SUCCESS)
   {
@@ -156,8 +227,8 @@ test_return_t add_node_test(memcached_st *ptr)
     return TEST_FAILURE;
   }
   free(result);
-  servers= memcached_server_list_append(servers, "localhost", 11221, &rc);
-  servers= memcached_server_list_append(servers, "localhost", 11222, &rc);
+  servers= memcached_server_list_append(servers, ptr->servers[0]._hostname, ptr->servers[0].port(), &rc);
+  servers= memcached_server_list_append(servers, ptr->servers[1]._hostname, ptr->servers[1].port(), &rc);
   notify_server_list_update(memc, servers);
 
   rc= memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0);
@@ -173,7 +244,7 @@ test_return_t add_node_test(memcached_st *ptr)
   free(result);
   memcached_server_free(servers);
   memcached_free(memc);
-  set_config(original_server_list, ptr->servers[0].port, "1");
+  set_config(original_server_list, ptr->servers[0].port(), "1");
   free(original_server_list);
 
   return TEST_SUCCESS;
@@ -181,11 +252,7 @@ test_return_t add_node_test(memcached_st *ptr)
 
 test_return_t replace_node_test(memcached_st *ptr)
 {
-  if(ptr->flags.client_mode != DYNAMIC_MODE){
-    return TEST_SKIPPED;
-  }
-
-  char *original_server_list = build_server_list(ptr->servers, memcached_server_list_count(ptr->servers));
+  char *original_server_list = build_server_list(ptr->servers, ptr->number_of_hosts);
 
   memcached_server_st *servers = NULL;
   memcached_st *memc;
@@ -199,10 +266,10 @@ test_return_t replace_node_test(memcached_st *ptr)
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_CLIENT_MODE, DYNAMIC_MODE);
 
   char *config = build_server_list(ptr->servers, 1);
-  set_config(config, ptr->servers[0].port, "1");
+  set_config(config, ptr->servers[0].port(), "1");
   free(config);
 
-  rc= memcached_server_push(memc, ptr->configserver);
+  rc= memcached_instance_push(memc, ptr->configserver, 1);
 
   if (rc != MEMCACHED_SUCCESS)
   {
@@ -220,7 +287,12 @@ test_return_t replace_node_test(memcached_st *ptr)
     return TEST_FAILURE;
   }
   free(result);
-  servers= memcached_server_list_append_with_ipaddress(servers, "localhost", LOCAL_IP, 11221, &rc);
+  const char* local_ip = _get_private_ip_of_local_netw_interface();
+  if (local_ip == NULL) 
+  {
+    return TEST_SKIPPED;
+  }
+  servers= memcached_server_list_append_with_ipaddress(servers, "localhost", local_ip, ptr->servers[0].port(), &rc);
   notify_server_list_update(memc, servers);
 
   rc= memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0);
@@ -236,7 +308,7 @@ test_return_t replace_node_test(memcached_st *ptr)
   free(result);
   memcached_server_free(servers);
   memcached_free(memc);
-  set_config(original_server_list, ptr->servers[0].port, "1");
+  set_config(original_server_list, ptr->servers[0].port(), "1");
 
   free(original_server_list);
 
@@ -248,12 +320,7 @@ test_return_t replace_node_test(memcached_st *ptr)
  */
 test_return_t polling_test(memcached_st *ptr)
 {
-  if(ptr->flags.client_mode != DYNAMIC_MODE)
-  {
-    return TEST_SKIPPED;
-  }
-
-  char *original_server_list = build_server_list(ptr->servers, memcached_server_list_count(ptr->servers));
+  char *original_server_list = build_server_list(ptr->servers, ptr->number_of_hosts);
 
   memcached_server_st *servers = NULL;
   memcached_st *memc;
@@ -269,10 +336,10 @@ test_return_t polling_test(memcached_st *ptr)
   uint32_t config_version = 1;
   char config_version_str[5];
   sprintf(config_version_str, "%d", config_version);
-  set_config(config, ptr->servers[0].port, config_version_str);
+  set_config(config, ptr->servers[0].port(), config_version_str);
   free(config);
 
-  rc= memcached_server_push(memc, ptr->configserver);
+  rc= memcached_instance_push(memc, ptr->configserver, 1);
 
   if (rc != MEMCACHED_SUCCESS)
   {
@@ -313,7 +380,7 @@ test_return_t polling_test(memcached_st *ptr)
       config = build_server_list(ptr->servers, 1);
       config_version++;
       sprintf(config_version_str, "%d", config_version);
-      set_config(config, ptr->servers[0].port, config_version_str);
+      set_config(config, ptr->servers[0].port(), config_version_str);
       free(config);
     }
     
@@ -328,8 +395,56 @@ test_return_t polling_test(memcached_st *ptr)
   // CLEANUP
   memcached_server_free(servers);
   memcached_free(memc);
-  set_config(original_server_list, ptr->servers[0].port, "1");
+  set_config(original_server_list, ptr->servers[0].port(), "1");
   free(original_server_list);
 
   return TEST_SUCCESS;
+}
+
+
+
+#include <libtest/test.hpp>
+
+#include "tests/basic.h"
+#include "tests/debug.h"
+#include "tests/deprecated.h"
+#include "tests/error_conditions.h"
+#include "tests/exist.h"
+#include "tests/ketama.h"
+#include "tests/namespace.h"
+#include "tests/libmemcached-1.0/dump.h"
+#include "tests/libmemcached-1.0/dynamic_mode_test.h"
+#include "tests/libmemcached-1.0/generate.h"
+#include "tests/libmemcached-1.0/haldenbrand.h"
+#include "tests/libmemcached-1.0/parser.h"
+#include "tests/libmemcached-1.0/stat.h"
+#include "tests/touch.h"
+#include "tests/callbacks.h"
+#include "tests/pool.h"
+#include "tests/print.h"
+#include "tests/replication.h"
+#include "tests/server_add.h"
+#include "tests/virtual_buckets.h"
+
+#include "tests/libmemcached-1.0/setup_and_teardowns.h"
+
+
+#include "tests/libmemcached-1.0/mem_functions.h"
+#include "tests/libmemcached-1.0/encoding_key.h"
+
+#include "tests/libmemcached_world.h"
+
+#include "tests/libmemcached-1.0/dynamic_mode_test.h"
+
+void get_world(libtest::Framework *world)
+{
+  world->servers().set_servers_to_run(2);
+  world->collections(collection);
+
+  world->create((test_callback_create_fn*)world_create);
+  world->destroy((test_callback_destroy_fn*)world_destroy);
+
+  world->set_runner(new LibmemcachedRunner);
+
+  world->servers().set_client_mode(DYNAMIC_MODE);
 }

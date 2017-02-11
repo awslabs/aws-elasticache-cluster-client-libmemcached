@@ -391,7 +391,6 @@ std::string server_startup_st::option_string() const
   return temp;
 }
 
-/*
 void server_startup_st::set_config_for_dynamic_mode()
 {
   std::string buffer;
@@ -406,7 +405,7 @@ void server_startup_st::set_config_for_dynamic_mode()
   {
     Server *server = servers[i];
     buffer+= "localhost|127.0.0.1|";
-    char port[6];
+    char port[7]; // 5 digits (up to 65535) + 1 space + 1 null-terminator
     sprintf(port,"%d ", server->port());
     buffer += port;
   }
@@ -420,5 +419,5 @@ void server_startup_st::set_config_for_dynamic_mode()
   }
 
 }
-*/
+
 } // namespace libtest
