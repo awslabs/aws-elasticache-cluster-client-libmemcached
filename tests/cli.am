@@ -95,7 +95,7 @@ gdb-memslap: tests/memslap
 tests_memdump_SOURCES= tests/memdump.cc
 tests_memdump_CXXFLAGS= $(AM_CXXFLAGS) $(NO_EFF_CXX)
 EXTRA_tests_memdump_DEPENDENCIES= clients/memdump
-tests_memdump_LDADD=  libtest/libtest.la $(TESTS_LDADDS)
+tests_memdump_LDADD=  libtest/libtest.la $(TESTS_LDADDS) $(libmemcached_libmemcached_la_OBJECTS)
 check_PROGRAMS+= tests/memdump
 noinst_PROGRAMS+= tests/memdump
 
