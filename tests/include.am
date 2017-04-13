@@ -49,6 +49,8 @@ tests_failure_SOURCES+= tests/libmemcached-1.0/print.cc
 
 tests_failure_CXXFLAGS = $(AM_CXXFLAGS)
 tests_failure_LDADD= $(TESTS_LDADDS)
+tests_failure_LDADD+= $(libmemcached_libmemcached_la_OBJECTS)
+
 check_PROGRAMS+= tests/failure
 noinst_PROGRAMS+= tests/failure
 

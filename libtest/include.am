@@ -159,6 +159,7 @@ libtest_libtest_la_CXXFLAGS+= $(CURL_CFLAGS)
 libtest_libtest_la_LIBADD+= @PTHREAD_LIBS@
 libtest_libtest_la_LIBADD+= $(CURL_LIBS)
 libtest_libtest_la_LIBADD+= @RT_LIB@
+libtest_libtest_la_LIBADD+= libmemcached/libmemcached.la
 
 EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest_tmp_dir
 EXTRA_libtest_libtest_la_DEPENDENCIES+= libtest/abort
@@ -192,6 +193,7 @@ $(TMP_DIR):
 	@$(mkdir_p) $(TMP_DIR)
 
 libtest_unittest_LDADD+= libtest/libtest.la
+libtest_unittest_LDADD+= $(libmemcached_libmemcached_la_OBJECTS)
 libtest_unittest_SOURCES= libtest/unittest.cc
 check_PROGRAMS+= libtest/unittest
 noinst_PROGRAMS+= libtest/unittest
