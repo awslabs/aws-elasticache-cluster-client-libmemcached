@@ -71,7 +71,7 @@
 
 void get_world(libtest::Framework* world)
 {
-  world->collections(collection);
+  world->collections(collections);
 
   world->create((test_callback_create_fn*)world_create);
   world->destroy((test_callback_destroy_fn*)world_destroy);

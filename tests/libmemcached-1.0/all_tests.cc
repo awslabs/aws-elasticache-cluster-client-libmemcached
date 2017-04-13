@@ -71,7 +71,7 @@
 
 #include <algorithm>
 
-void get_world(libtest::Framework* world)
+void get_world_all(libtest::Framework* world)
 {
   if (getenv("LIBMEMCACHED_SERVER_NUMBER"))
   {
@@ -86,7 +86,7 @@ void get_world(libtest::Framework* world)
                                         std::min(libtest::number_of_cpus(), size_t(8)) : 3);
   }
 
-  world->collections(collection);
+  world->collections(collections);
 
   world->create((test_callback_create_fn*)world_create);
   world->destroy((test_callback_destroy_fn*)world_destroy);

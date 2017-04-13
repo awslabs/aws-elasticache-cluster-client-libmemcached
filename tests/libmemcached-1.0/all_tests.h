@@ -443,7 +443,7 @@ test_st namespace_tests[] ={
   {0, 0, (test_callback_fn*)0}
 };
 
-collection_st collection[] ={
+collection_st collections[] ={
 #if 0
   {"hash_sanity", 0, 0, hash_sanity},
 #endif

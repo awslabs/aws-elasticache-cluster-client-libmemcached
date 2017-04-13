@@ -9,6 +9,5 @@ nobase_include_HEADERS+= libmemcached-1.0/struct/memcached.h
 nobase_include_HEADERS+= libmemcached-1.0/struct/result.h 
 nobase_include_HEADERS+= libmemcached-1.0/struct/sasl.h 
 nobase_include_HEADERS+= libmemcached-1.0/struct/server.h
-nobase_include_HEADERS+= libmemcached-1.0/struct/configuration_server.h
 nobase_include_HEADERS+= libmemcached-1.0/struct/stat.h 
 nobase_include_HEADERS+= libmemcached-1.0/struct/string.h
