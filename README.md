@@ -40,9 +40,9 @@ Note: if you want to run the ElastiCache memcached PHP client on AMIs other than
 
 # Resources
 ---------
- * [Github link] (https://github.com/awslabs/aws-elasticache-cluster-client-libmemcached)
+ * [Github link](https://github.com/awslabs/aws-elasticache-cluster-client-libmemcached)
  * [AmazonElastiCache Auto Discovery](http://docs.amazonwebservices.com/AmazonElastiCache/latest/UserGuide/AutoDiscovery.html)
- * [php-memcached] (https://github.com/php-memcached-dev/php-memcached)
+ * [php-memcached](https://github.com/php-memcached-dev/php-memcached)
  * [libmemcached](http://libmemcached.org/libMemcached.html)
  * [memcached](http://www.danga.com/memcached/)
  * [igbinary](https://github.com/phadej/igbinary/)
