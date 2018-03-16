@@ -54,7 +54,7 @@ using namespace libtest;
 #include <unistd.h>
 
 #ifndef __USE_GNU
-static char **environ= NULL;
+char **environ= NULL;
 #endif
 
 extern "C" {
