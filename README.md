@@ -24,6 +24,8 @@ b) On Ubuntu 14.04 AMI
 
 > cd aws-elasticache-cluster-client-libmemcached
 
+> touch configure.ac aclocal.m4 configure Makefile.am Makefile.in
+
 > mkdir BUILD
 
 > cd BUILD
