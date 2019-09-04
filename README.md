@@ -30,7 +30,7 @@ b) On Ubuntu 14.04 AMI
 
 > cd BUILD
 
-> ../configure --prefix=\<libmemcached-install-directory\> --with-pic
+> ../configure --prefix=\<libmemcached-install-directory\> --with-pic --disable-sasl
 
 > make
 
