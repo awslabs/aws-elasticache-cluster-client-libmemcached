@@ -241,3 +241,5 @@ static inline void memcached_server_response_increment(memcached_instance_st* in
 bool memcached_purge(memcached_instance_st*);
 memcached_instance_st* memcached_instance_by_position(const memcached_st *ptr, uint32_t server_key);
 #endif
+
+#include <openssl/ssl.h>

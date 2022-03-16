@@ -92,6 +92,36 @@ AC_DEFUN([LIBMEMCACHED_PROTOCOL],
          ])
 LIBMEMCACHED_PROTOCOL
 
+# TLS support is optional.
+AC_ARG_ENABLE([tls],
+  [AS_HELP_STRING([--disable-tls], [Disable TLS/SSL support @<:@default=on@:>@])],
+  [enable_tls="$enableval"],
+  [enable_tls="yes"])
+
+AS_IF([test "x$enable_tls" != "xno"], [
+       AC_DEFINE([USE_TLS],
+                 [1],
+                 [define to enable TLS/SSL support])
+       PKG_CHECK_MODULES([LIBEVENT_OPENSSL],
+                         [libevent_openssl >= 2.0.10],
+                         AC_SUBST(LIBEVENT_OPENSSL_CFLAGS) AC_SUBST(LIBEVENT_OPENSSL_LIBS))
+       PKG_CHECK_MODULES([LIBSSL],
+                         [libssl],
+                         AC_SUBST(LIBSSL_CFLAGS) AC_SUBST(LIBSSL_LIBS))
+       PKG_CHECK_MODULES([LIBCRYPTO],
+                         [libcrypto],
+                         AC_SUBST(LIBCRYPTO_CFLAGS) AC_SUBST(LIBCRYPTO_LIBS))
+       ], [])
+
+       #### Find OpenSSL
+
+       AX_CHECK_OPENSSL
+
+       AC_CHECK_LIB([crypto],[CRYPTO_new_ex_data], [], [AC_MSG_ERROR([OpenSSL libraries required])])
+
+       AC_CHECK_HEADERS([openssl/crypto.h openssl/x509.h openssl/pem.h openssl/ssl.h openssl/err.h],[],[AC_MSG_ERROR([OpenSSL headers required])])
+
+
 # Adding support for libtest
 m4_include([libtest/yatl.m4])
 
@@ -359,6 +389,7 @@ echo "   * Debug enabled:             $ax_enable_debug"
 echo "   * Shared:                    $enable_shared"
 echo "   * Warnings as failure:       $ac_cv_warnings_as_errors"
 echo "   * SASL support:              $ac_enable_sasl"
+echo "   * TLS support:               $enable_tls"
 echo "   * make -j:                   $enable_jobserver"
 echo "   * VCS checkout:              $ac_cv_vcs_checkout"
 echo ""
