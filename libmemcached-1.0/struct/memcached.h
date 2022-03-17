@@ -89,6 +89,7 @@ struct memcached_st {
     bool is_fetching_version:1;
     bool not_used:1;
     bool use_config_protocol:1;
+    bool use_tls:1;
     enum memcached_client_mode client_mode;
   } flags;
 

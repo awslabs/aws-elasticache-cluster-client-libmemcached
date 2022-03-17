@@ -242,4 +242,10 @@ bool memcached_purge(memcached_instance_st*);
 memcached_instance_st* memcached_instance_by_position(const memcached_st *ptr, uint32_t server_key);
 #endif
 
+#if defined(USE_TLS) && USE_TLS
+#include <openssl/err.h>
+#include <openssl/bio.h>
+#include <openssl/pem.h>
 #include <openssl/ssl.h>
+#include <openssl/opensslv.h>
+#endif

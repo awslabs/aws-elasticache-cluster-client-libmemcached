@@ -75,7 +75,7 @@ static inline bool _memcached_init(Memcached *self)
   self->flags.tcp_keepalive= false;
   self->flags.is_aes= false;
   self->flags.is_fetching_version= false;
-
+  self->flags.use_tls = false;
   self->virtual_bucket= NULL;
 
   self->distribution= MEMCACHED_DISTRIBUTION_MODULA;

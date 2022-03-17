@@ -58,6 +58,13 @@
 
 #include "libmemcached/string.hpp"
 
+typedef struct context_funcs {
+    void (*free_privctx)(void *);
+    ssize_t (*read)(memcached_instance_st*, char*, size_t, int, memcached_return_t&);
+    ssize_t (*write)(memcached_instance_st*, char*, size_t, int, memcached_return_t&);
+} context_funcs;
+
+
 // @todo Complete class transformation
 struct memcached_instance_st {
   in_port_t port() const
@@ -154,7 +161,10 @@ struct memcached_instance_st {
 
   void events(short);
   void revents(short);
-
+  const context_funcs *io_funcs;   /* IO Functions table */
+  /* Internal context pointer presently used by hiredis to manage
+  * SSL connections. */
+  void *privctx;
   uint32_t cursor_active_;
   in_port_t port_;
   memcached_socket_t fd;

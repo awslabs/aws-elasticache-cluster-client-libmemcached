@@ -528,6 +528,53 @@ static memcached_return_t unix_socket_connect(memcached_instance_st* server)
 #endif
 }
 
+#if defined(USE_TLS) && USE_TLS
+// Init SSL context
+SSL_CTX* init_ssl_context(void)
+{
+    const SSL_METHOD *method;
+    SSL_CTX *ctx;
+
+    OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
+    SSL_load_error_strings();   /* Bring in and register error messages */
+
+    method = TLS_client_method();
+    ctx = SSL_CTX_new(method);   /* Create new context */
+    if ( ctx == NULL )
+    {
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+    return ctx;
+}
+
+// Load SSL certificates
+void load_certificates(SSL_CTX* ctx, char* CertFile, char* KeyFile, char* password)
+{
+    /* set the local certificate from CertFile */
+    if ( SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM) <= 0 )
+    {
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+
+    /* set the private key from KeyFile (may be the same as CertFile) */
+    SSL_CTX_set_default_passwd_cb_userdata(ctx, password);
+    if ( SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM) <= 0 )
+    {
+        ERR_print_errors_fp(stderr);
+        abort();
+    }
+
+    /* verify private key */
+    if ( !SSL_CTX_check_private_key(ctx) )
+    {
+        fprintf(stderr, "Private key does not match the public certificate\n");
+        abort();
+    }
+}
+#endif
+
 static memcached_return_t network_connect(memcached_instance_st* server)
 {
   bool timeout_error_occured= false;
@@ -592,6 +639,14 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     /* connect to server */
     if ((connect(server->fd, server->address_info_next->ai_addr, server->address_info_next->ai_addrlen) != SOCKET_ERROR))
     {
+        if (instance->root->flags.use_tls) {
+            ctx = init_ssl_context();
+            LoadCertificates(ctx, CertFile, KeyFile, "12345678");
+            ssl = SSL_new(ctx);      /* create new SSL connection state */
+            SSL_set_fd(ssl, server->fd);    /* attach the socket descriptor */
+            if ( SSL_connect(ssl) == FAIL )   /* perform the connection */
+                ERR_print_errors(stderr);   /*  print the OpenSSL error strings */
+        }
       server->state= MEMCACHED_SERVER_STATE_CONNECTED;
       return MEMCACHED_SUCCESS;
     }

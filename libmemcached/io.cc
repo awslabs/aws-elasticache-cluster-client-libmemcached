@@ -352,6 +352,28 @@ static bool io_flush(memcached_instance_st* instance,
       flags= MSG_NOSIGNAL|MSG_MORE;
     }
 
+    ssize_t sent_length = instance->io_funcs->write(instance, local_write_ptr, write_length, flags, error);
+    if (sent_length < 0) {
+        return false;
+    } else if (sent_length == 0) {
+        continue;
+    }
+    else {
+        instance->io_bytes_sent += uint32_t(sent_length);
+
+        local_write_ptr += sent_length;
+        write_length -= uint32_t(sent_length);
+    }
+  }
+
+  WATCHPOINT_ASSERT(write_length == 0);
+  instance->write_buffer_offset= 0;
+
+  return true;
+}
+
+ssize_t memcached_io_send(memcached_instance_st* instance, char* local_write_ptr, size_t write_length, int flags, memcached_return_t& error)
+{
     ssize_t sent_length= ::send(instance->fd, local_write_ptr, write_length, flags);
     int local_errno= get_socket_errno(); // We cache in case memcached_quit_server() modifies errno
 
@@ -361,61 +383,52 @@ static bool io_flush(memcached_instance_st* instance,
       WATCHPOINT_ERRNO(get_socket_errno());
       WATCHPOINT_NUMBER(get_socket_errno());
 #endif
-      switch (get_socket_errno())
-      {
-      case ENOBUFS:
-        continue;
+        switch (get_socket_errno())
+        {
+            case ENOBUFS:
+                return 0;
 
 #if EWOULDBLOCK != EAGAIN
-      case EWOULDBLOCK:
+            case EWOULDBLOCK:
 #endif
-      case EAGAIN:
-        {
-          /*
-           * We may be blocked on write because the input buffer
-           * is full. Let's check if we have room in our input
-           * buffer for more data and retry the write before
-           * waiting..
-         */
-          if (repack_input_buffer(instance) or process_input_buffer(instance))
-          {
-            continue;
-          }
+            case EAGAIN:
+            {
+                /*
+                 * We may be blocked on write because the input buffer
+                 * is full. Let's check if we have room in our input
+                 * buffer for more data and retry the write before
+                 * waiting..
+               */
+                if (repack_input_buffer(instance) or process_input_buffer(instance))
+                {
+                    return 0;
+                }
 
-          memcached_return_t rc= io_wait(instance, POLLOUT);
-          if (memcached_success(rc))
-          {
-            continue;
-          }
-          else if (rc == MEMCACHED_TIMEOUT)
-          {
-            return false;
-          }
+                memcached_return_t rc= io_wait(instance, POLLOUT);
+                if (memcached_success(rc))
+                {
+                    return 0;
+                }
+                else if (rc == MEMCACHED_TIMEOUT)
+                {
+                    return -1;
+                }
 
-          memcached_quit_server(instance, true);
-          error= memcached_set_errno(*instance, local_errno, MEMCACHED_AT);
-          return false;
+                memcached_quit_server(instance, true);
+                error= memcached_set_errno(*instance, local_errno, MEMCACHED_AT);
+                return -1;
+            }
+            case ENOTCONN:
+            case EPIPE:
+            default:
+                memcached_quit_server(instance, true);
+                error= memcached_set_errno(*instance, local_errno, MEMCACHED_AT);
+                WATCHPOINT_ASSERT(instance->fd == INVALID_SOCKET);
+                return -1;
         }
-      case ENOTCONN:
-      case EPIPE:
-      default:
-        memcached_quit_server(instance, true);
-        error= memcached_set_errno(*instance, local_errno, MEMCACHED_AT);
-        WATCHPOINT_ASSERT(instance->fd == INVALID_SOCKET);
-        return false;
-      }
     }
 
-    instance->io_bytes_sent+= uint32_t(sent_length);
-
-    local_write_ptr+= sent_length;
-    write_length-= uint32_t(sent_length);
-  }
-
-  WATCHPOINT_ASSERT(write_length == 0);
-  instance->write_buffer_offset= 0;
-
-  return true;
+    return sent_length;
 }
 
 memcached_return_t memcached_io_wait_for_write(memcached_instance_st* instance)

@@ -71,3 +71,15 @@ memcached_return_t memcached_safe_read(memcached_instance_st* ptr,
 memcached_instance_st* memcached_io_get_readable_server(memcached_st *memc, memcached_return_t&);
 
 memcached_return_t memcached_io_slurp(memcached_instance_st* ptr);
+
+ssize_t memcached_io_send(memcached_instance_st* instance,
+             char* local_write_ptr,
+             size_t write_length,
+             int flags,
+             memcached_return_t& error);
+
+ssize_t memcached_io_recv(memcached_instance_st* instance,
+             char* local_write_ptr,
+             size_t write_length,
+             int flags,
+             memcached_return_t& error);
