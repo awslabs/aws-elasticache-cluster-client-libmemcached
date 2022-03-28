@@ -75,11 +75,9 @@ memcached_return_t memcached_io_slurp(memcached_instance_st* ptr);
 ssize_t memcached_io_send(memcached_instance_st* instance,
              char* local_write_ptr,
              size_t write_length,
-             int flags,
-             memcached_return_t& error);
+             int flags);
 
 ssize_t memcached_io_recv(memcached_instance_st* instance,
-             char* local_write_ptr,
-             size_t write_length,
-             int flags,
-             memcached_return_t& error);
+             char* input_buf,
+             size_t buffer_length,
+             int flags);

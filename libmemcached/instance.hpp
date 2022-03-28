@@ -60,8 +60,8 @@
 
 typedef struct context_funcs {
     void (*free_privctx)(void *);
-    ssize_t (*read)(memcached_instance_st*, char*, size_t, int, memcached_return_t&);
-    ssize_t (*write)(memcached_instance_st*, char*, size_t, int, memcached_return_t&);
+    ssize_t (*read)(memcached_instance_st*, char*, size_t, int);
+    ssize_t (*write)(memcached_instance_st*, char*, size_t, int);
 } context_funcs;
 
 

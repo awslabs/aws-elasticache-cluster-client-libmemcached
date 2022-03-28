@@ -75,6 +75,10 @@
 # define TCP_KEEPIDLE 0
 #endif
 
+#if defined(USE_TLS) && USE_TLS
+#include "tls.c"
+#endif
+
 static memcached_return_t connect_poll(memcached_instance_st* server, const int connection_error)
 {
   struct pollfd fds[1];
@@ -515,65 +519,32 @@ static memcached_return_t unix_socket_connect(memcached_instance_st* server)
         server->reset_socket();
         return memcached_set_errno(*server, errno, MEMCACHED_AT);
       }
+    } else if  (server->root->flags.use_tls) {
+        // Initiate SSL connection if TLS use is enabled
+        return memc_initiate_ssl(server);
     }
+            /*
+            memcached_return_t tls_rc = memc_initiate_ssl(server);
+            if (tls_rc != MEMCACHED_TLS_CONNECTION_ERROR) {
+                return tls_rc;
+            } else {
+                WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
+                server->reset_socket();
+                server->address_info_next= server->address_info_next->ai_next;
+                continue;
+            }*/
   } while (0);
-  server->state= MEMCACHED_SERVER_STATE_CONNECTED;
 
   WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
 
+
+  server->state= MEMCACHED_SERVER_STATE_CONNECTED;
   return MEMCACHED_SUCCESS;
 #else
   (void)server;
   return MEMCACHED_NOT_SUPPORTED;
 #endif
 }
-
-#if defined(USE_TLS) && USE_TLS
-// Init SSL context
-SSL_CTX* init_ssl_context(void)
-{
-    const SSL_METHOD *method;
-    SSL_CTX *ctx;
-
-    OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
-    SSL_load_error_strings();   /* Bring in and register error messages */
-
-    method = TLS_client_method();
-    ctx = SSL_CTX_new(method);   /* Create new context */
-    if ( ctx == NULL )
-    {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-    return ctx;
-}
-
-// Load SSL certificates
-void load_certificates(SSL_CTX* ctx, char* CertFile, char* KeyFile, char* password)
-{
-    /* set the local certificate from CertFile */
-    if ( SSL_CTX_use_certificate_file(ctx, CertFile, SSL_FILETYPE_PEM) <= 0 )
-    {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    /* set the private key from KeyFile (may be the same as CertFile) */
-    SSL_CTX_set_default_passwd_cb_userdata(ctx, password);
-    if ( SSL_CTX_use_PrivateKey_file(ctx, KeyFile, SSL_FILETYPE_PEM) <= 0 )
-    {
-        ERR_print_errors_fp(stderr);
-        abort();
-    }
-
-    /* verify private key */
-    if ( !SSL_CTX_check_private_key(ctx) )
-    {
-        fprintf(stderr, "Private key does not match the public certificate\n");
-        abort();
-    }
-}
-#endif
 
 static memcached_return_t network_connect(memcached_instance_st* server)
 {
@@ -604,7 +575,7 @@ static memcached_return_t network_connect(memcached_instance_st* server)
   while (server->address_info_next and server->fd == INVALID_SOCKET)
   {
     /* Memcache server does not support IPV6 in udp mode, so skip if not ipv4 */
-    if (memcached_is_udp(server->root) and server->address_info_next->ai_family != AF_INET)
+    if ((memcached_is_udp(server->root)) and server->address_info_next->ai_family != AF_INET)
     {
       server->address_info_next= server->address_info_next->ai_next;
       continue;
@@ -616,7 +587,8 @@ static memcached_return_t network_connect(memcached_instance_st* server)
       type|= SOCK_CLOEXEC;
     }
 
-    if (SOCK_NONBLOCK)
+    if (SOCK_NONBLOCK && !memcached_is_tls(server->root))
+    // For TLS connection we will set the socket to a non-blocking mode only after the TLS connection is established
     {
       type|= SOCK_NONBLOCK;
     }
@@ -624,6 +596,7 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     server->fd= socket(server->address_info_next->ai_family,
                        type,
                        server->address_info_next->ai_protocol);
+
 
     if (int(server->fd) == SOCKET_ERROR)
     {
@@ -639,14 +612,20 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     /* connect to server */
     if ((connect(server->fd, server->address_info_next->ai_addr, server->address_info_next->ai_addrlen) != SOCKET_ERROR))
     {
-        if (instance->root->flags.use_tls) {
-            ctx = init_ssl_context();
-            LoadCertificates(ctx, CertFile, KeyFile, "12345678");
-            ssl = SSL_new(ctx);      /* create new SSL connection state */
-            SSL_set_fd(ssl, server->fd);    /* attach the socket descriptor */
-            if ( SSL_connect(ssl) == FAIL )   /* perform the connection */
-                ERR_print_errors(stderr);   /*  print the OpenSSL error strings */
+        if (server->root->flags.use_tls) {
+            return memc_initiate_ssl(server);
         }
+            /*
+            memcached_return_t tls_rc = memc_initiate_ssl(server);
+            if (tls_rc != MEMCACHED_TLS_CONNECTION_ERROR) {
+                return tls_rc;
+            } else {
+                WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
+                server->reset_socket();
+                server->address_info_next= server->address_info_next->ai_next;
+                continue;
+            }*/
+
       server->state= MEMCACHED_SERVER_STATE_CONNECTED;
       return MEMCACHED_SUCCESS;
     }
@@ -672,8 +651,21 @@ static memcached_return_t network_connect(memcached_instance_st* server)
 
         if (memcached_success(rc))
         {
-          server->state= MEMCACHED_SERVER_STATE_CONNECTED;
-          return MEMCACHED_SUCCESS;
+            if (server->root->flags.use_tls) {
+                return memc_initiate_ssl(server);
+                /*
+                memcached_return_t tls_rc = memc_initiate_ssl(server);
+                if (tls_rc != MEMCACHED_TLS_CONNECTION_ERROR) {
+                    return tls_rc;
+                } else {
+                    WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
+                    server->reset_socket();
+                    server->address_info_next= server->address_info_next->ai_next;
+                    continue;
+                }*/
+            }
+            server->state= MEMCACHED_SERVER_STATE_CONNECTED;
+            return MEMCACHED_SUCCESS;
         }
 
         // A timeout here is treated as an error, we will not retry

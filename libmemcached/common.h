@@ -202,10 +202,12 @@ memcached_instance_st* memcached_config_server_fetch(memcached_st *ptr);
 #define MEMCACHED_DEFAULT_COMMAND_SIZE 350
 #define SMALL_STRING_LEN 1024
 #define HUGE_STRING_LEN 8196
+#define UNUSED(V) ((void) V)
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 
 memcached_return_t run_distribution(memcached_st *ptr);
 
@@ -240,12 +242,4 @@ static inline void memcached_server_response_increment(memcached_instance_st* in
 #ifdef __cplusplus
 bool memcached_purge(memcached_instance_st*);
 memcached_instance_st* memcached_instance_by_position(const memcached_st *ptr, uint32_t server_key);
-#endif
-
-#if defined(USE_TLS) && USE_TLS
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/opensslv.h>
 #endif

@@ -95,6 +95,7 @@ static inline void _server_init(memcached_instance_st* self, Memcached *root,
   self->hostname(hostname);
   self->ipaddress(ipaddress);
   self->io_funcs = &context_default_io_funcs;
+  self->privctx= NULL;
 
 }
 

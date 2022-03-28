@@ -148,6 +148,8 @@ static inline bool _memcached_init(Memcached *self)
   self->polling.current_config_version = 0;
   self->polling.current_config = NULL;
 
+  self->ssl_ctx = NULL;
+
   return true;
 }
 

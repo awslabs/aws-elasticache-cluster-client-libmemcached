@@ -50,9 +50,3 @@
 
 memcached_return_t memcached_connect(memcached_instance_st*);
 memcached_return_t memcached_connect_new_ipaddress(memcached_instance_st*);
-
-#if defined(USE_TLS) && USE_TLS
-#include <openssl/ssl.h>
-void load_certificates(SSL_CTX* ctx, char* CertFile, char* KeyFile, char* password);
-SSL_CTX* init_ssl_context(void);
-#endif

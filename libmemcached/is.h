@@ -60,6 +60,7 @@
 
 #define memcached_is_aes(__object) ((__object)->flags.is_aes)
 #define memcached_is_udp(__object) ((__object)->flags.use_udp)
+#define memcached_is_tls(__object) ((__object)->flags.use_tls)
 #define memcached_is_verify_key(__object) ((__object)->flags.verify_key)
 #define memcached_is_binary(__object) ((__object)->flags.binary_protocol)
 #define memcached_is_fetching_version(__object) ((__object)->flags.is_fetching_version)

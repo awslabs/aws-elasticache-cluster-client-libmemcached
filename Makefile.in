@@ -372,6 +372,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/struct/server.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/struct/stat.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/struct/string.h \
+@BUILD_WIN32_TRUE@	libmemcached-1.0/struct/tls.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/types/behavior.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/types/callback.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/types/connection.h \
@@ -415,6 +416,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/stats.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/storage.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/strerror.h \
+@BUILD_WIN32_TRUE@	libmemcached-1.0/tls.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/touch.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/triggers.h \
 @BUILD_WIN32_TRUE@	libmemcached-1.0/types.h \
@@ -579,6 +581,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/struct/server.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/struct/stat.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/struct/string.h \
+@BUILD_WIN32_FALSE@	libmemcached-1.0/struct/tls.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/types/behavior.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/types/callback.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/types/connection.h \
@@ -622,6 +625,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/stats.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/storage.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/strerror.h \
+@BUILD_WIN32_FALSE@	libmemcached-1.0/tls.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/touch.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/triggers.h \
 @BUILD_WIN32_FALSE@	libmemcached-1.0/types.h \
@@ -2574,6 +2578,7 @@ am__nobase_include_HEADERS_DIST = libhashkit-1.0/algorithm.h \
 	libmemcached-1.0/struct/server.h \
 	libmemcached-1.0/struct/stat.h \
 	libmemcached-1.0/struct/string.h \
+	libmemcached-1.0/struct/tls.h \
 	libmemcached-1.0/types/behavior.h \
 	libmemcached-1.0/types/callback.h \
 	libmemcached-1.0/types/connection.h \
@@ -2597,6 +2602,7 @@ am__nobase_include_HEADERS_DIST = libhashkit-1.0/algorithm.h \
 	libmemcached-1.0/return.h libmemcached-1.0/sasl.h \
 	libmemcached-1.0/server.h libmemcached-1.0/server_list.h \
 	libmemcached-1.0/stats.h libmemcached-1.0/storage.h \
+    libmemcached-1.0/tls.h \
 	libmemcached-1.0/strerror.h libmemcached-1.0/touch.h \
 	libmemcached-1.0/triggers.h libmemcached-1.0/types.h \
 	libmemcached-1.0/verbosity.h libmemcached-1.0/version.h \

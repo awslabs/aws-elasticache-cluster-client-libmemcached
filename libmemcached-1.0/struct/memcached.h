@@ -165,5 +165,5 @@ struct memcached_st {
     char *current_config;
     uint32_t threshold_secs;
   } polling;
-
+    void *ssl_ctx;
 };
