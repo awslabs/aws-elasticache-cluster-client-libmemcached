@@ -64,6 +64,8 @@ class Memcached : public libtest::Server
 {
   std::string _username;
   std::string _password;
+  std::string _ssl_cert;
+  std::string _ssl_key;
 
 public:
   Memcached(const std::string& host_arg,
@@ -76,6 +78,21 @@ public:
     _username(username_arg),
     _password(password_arg)
   { }
+
+    Memcached(const std::string& host_arg,
+              const in_port_t port_arg,
+              const bool is_socket_arg,
+              const std::string& username_arg,
+              const std::string& password_arg,
+              const std::string ssl_cert,
+              const std::string ssl_key) :
+    libtest::Server(host_arg, port_arg,
+            memcached_binary(), false, is_socket_arg),
+    _username(username_arg),
+    _password(password_arg),
+    _ssl_cert(ssl_cert),
+    _ssl_key(ssl_key)
+    { }
 
   Memcached(const std::string& host_arg, const in_port_t port_arg, const bool is_socket_arg) :
     libtest::Server(host_arg, port_arg,
@@ -97,6 +114,16 @@ public:
   const std::string& username() const
   {
     return _username;
+  }
+
+  const std::string& ssl_cert() const
+  {
+    return _ssl_cert;
+  }
+
+  const std::string& ssl_key() const
+  {
+    return _ssl_key;
   }
 
   bool wait_for_pidfile() const
@@ -214,6 +241,13 @@ bool Memcached::build()
     add_option(sasl());
   }
 
+  if (!(ssl_cert().empty()))
+  {
+    std::stringstream certs_buf;
+    certs_buf << "ssl_chain_cert=" << ssl_cert() << ",ssl_key=" << ssl_key();
+    add_option("-Z");
+    add_option("-o", certs_buf.str());
+  }
   return true;
 }
 

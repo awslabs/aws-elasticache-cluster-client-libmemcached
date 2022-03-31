@@ -54,9 +54,12 @@ private:
   std::string server_list;
   bool _socket;
   bool _sasl;
-  memcached_client_mode _client_mode; 
+  bool _ssl;
+  memcached_client_mode _client_mode;
   std::string _username;
   std::string _password;
+  std::string _ssl_cert;
+  std::string _ssl_key;
 
 public:
 
@@ -104,6 +107,11 @@ public:
     return _sasl;
   }
 
+  bool ssl()
+  {
+    return _ssl;
+  }
+
   void set_socket()
   {
     _socket= true;
@@ -114,6 +122,13 @@ public:
     _sasl= true;
     _username= username_arg;
     _password= password_arg;
+  }
+
+  void set_ssl_certs(const std::string& cert_file, const std::string& private_key_file)
+  {
+    _ssl= true;
+    _ssl_cert= cert_file;
+    _ssl_key= private_key_file;
   }
 
   memcached_client_mode get_client_mode()

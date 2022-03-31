@@ -60,6 +60,15 @@ bool has_libmemcached(void)
   return false;
 }
 
+bool has_libmemcached_ssl(void)
+{
+#if defined(USE_TLS) && USE_TLS
+    return true;
+#endif
+
+  return false;
+}
+
 bool has_libdrizzle(void)
 {
 #if defined(HAVE_LIBDRIZZLE) && HAVE_LIBDRIZZLE

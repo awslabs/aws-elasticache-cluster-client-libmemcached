@@ -28,14 +28,15 @@ extern "C" {
     memcached_st *memc;
     memcached_return rc;
     memc_ssl_context_error error;
-    memcached_ssl_context_config *config;
     memc = memcached_create(NULL);
 
     // Set SSL configurations
-    config->cert_file = "/path/to/cert";
-    config->key_file = "/path/to/key";
+    memcached_ssl_context_config config = {
+        config.cert_file = "/path/to/cert",
+        config.key_file "/path/to/key"
+    };
 
-    memc_SSL_CTX *ssl_ctx = memcached_create_ssl_context(memc, config , &error);
+    memc_SSL_CTX *ssl_ctx = memcached_create_ssl_context(memc, &config , &error);
     if (ssl_ctx == NULL) {
         fprintf(stderr,memcached_ssl_context_get_error(error));
     }
@@ -68,9 +69,11 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error);
 
 
 
-
+/**
+ * Free the ssl_ctx memory
+ */
 LIBMEMCACHED_API
-void memc_free_SSL_ctx(memc_SSL_CTX *ssl_ctx);
+void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx);
 
 
 /**
@@ -90,14 +93,15 @@ LIBMEMCACHED_API
 memc_SSL_CTX *memcached_create_ssl_context(const memcached_st *ptr, memcached_ssl_context_config *ctx_config, memc_ssl_context_error *error);
 
 /**
- * Free a memcached_ssl_st object.
+ * Get the server's SSL certificates
  */
 LIBMEMCACHED_API
-void memcached_ssl_free(void *privctx);
+memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char * output);
 
-memcached_return_t memc_initiate_ssl(memcached_instance_st *server);
-
-memcached_return_t memcached_ssl_connect(memcached_instance_st *server, SSL *ssl);
+/**
+ * Initialize SSL connection
+ */
+memcached_return_t memcached_ssl_connect(memcached_instance_st *server);
 
 /**
  * Set the SSL context to the passed Memcached instance.
@@ -106,22 +110,32 @@ memcached_return_t memcached_ssl_connect(memcached_instance_st *server, SSL *ssl
 LIBMEMCACHED_API
 memcached_return_t memcached_set_ssl_context(memcached_st *ptr, memc_SSL_CTX *ssl_ctx);
 
-LIBMEMCACHED_API
+
+/**
+ * SSL read function to be used with context_funcs.write
+ */
 ssize_t memcached_ssl_write(memcached_instance_st* instance,
              char* local_write_ptr,
              size_t write_length,
              int flags);
 
-LIBMEMCACHED_API
+/**
+ * SSL read function to be used with context_funcs.read
+ */
 ssize_t memcached_ssl_read(memcached_instance_st* instance,
              char* input_buf,
              size_t buffer_length,
              int flags);
 
+/**
+ * Initiate a new SSL context
+ */
 SSL_CTX* init_ctx(void);
 
-LIBMEMCACHED_API
-memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char * output);
+/**
+ * Free a memcached_ssl_st object.
+ */
+void memcached_ssl_free(void *privctx);
 
 #ifdef __cplusplus
 } // extern "C"

@@ -521,18 +521,8 @@ static memcached_return_t unix_socket_connect(memcached_instance_st* server)
       }
     } else if  (server->root->flags.use_tls) {
         // Initiate SSL connection if TLS use is enabled
-        return memc_initiate_ssl(server);
+        return memcached_ssl_connect(server);
     }
-            /*
-            memcached_return_t tls_rc = memc_initiate_ssl(server);
-            if (tls_rc != MEMCACHED_TLS_CONNECTION_ERROR) {
-                return tls_rc;
-            } else {
-                WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
-                server->reset_socket();
-                server->address_info_next= server->address_info_next->ai_next;
-                continue;
-            }*/
   } while (0);
 
   WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
@@ -613,18 +603,8 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     if ((connect(server->fd, server->address_info_next->ai_addr, server->address_info_next->ai_addrlen) != SOCKET_ERROR))
     {
         if (server->root->flags.use_tls) {
-            return memc_initiate_ssl(server);
+            return memcached_ssl_connect(server);
         }
-            /*
-            memcached_return_t tls_rc = memc_initiate_ssl(server);
-            if (tls_rc != MEMCACHED_TLS_CONNECTION_ERROR) {
-                return tls_rc;
-            } else {
-                WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
-                server->reset_socket();
-                server->address_info_next= server->address_info_next->ai_next;
-                continue;
-            }*/
 
       server->state= MEMCACHED_SERVER_STATE_CONNECTED;
       return MEMCACHED_SUCCESS;
@@ -652,17 +632,7 @@ static memcached_return_t network_connect(memcached_instance_st* server)
         if (memcached_success(rc))
         {
             if (server->root->flags.use_tls) {
-                return memc_initiate_ssl(server);
-                /*
-                memcached_return_t tls_rc = memc_initiate_ssl(server);
-                if (tls_rc != MEMCACHED_TLS_CONNECTION_ERROR) {
-                    return tls_rc;
-                } else {
-                    WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
-                    server->reset_socket();
-                    server->address_info_next= server->address_info_next->ai_next;
-                    continue;
-                }*/
+                return memcached_ssl_connect(server);
             }
             server->state= MEMCACHED_SERVER_STATE_CONNECTED;
             return MEMCACHED_SUCCESS;

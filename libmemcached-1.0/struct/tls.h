@@ -17,29 +17,18 @@ struct memc_SSL_CTX {
     char *server_name;
 };
 
-/* The SSL connection context is attached to TLS connections as a privdata. */
-typedef struct memcached_ssl {
+/* A wrapper for the openssl's SSL object. */
+typedef struct memcached_SSL {
     /**
      * OpenSSL SSL object.
      */
     SSL *ssl;
 
-    /**
-     * SSL_write() requires to be called again with the same arguments it was
-     * previously called with in the event of an SSL_read/SSL_write situation
-     */
-    size_t last_len;
+} memcached_SSL;
 
-    /** Whether the SSL layer requires read (possibly before a write) */
-    int want_read;
-
-    /**
-     * Whether a write was requested prior to a read. If set, the write()
-     * should resume whenever a read takes place, if possible
-     */
-    int pending_write;
-} memcached_ssl;
-
+/**
+ * SSL context configurations
+ */
 typedef struct memcached_ssl_context_config {
     char *cert_file;                /* Cert file name */
     char *key_file;                 /* Private key filename for cert_file */

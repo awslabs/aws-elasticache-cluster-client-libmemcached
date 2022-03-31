@@ -157,6 +157,11 @@ static unsigned int opt_concurrency= 0;
 static int opt_displayflag= 0;
 static char *opt_servers= NULL;
 static bool opt_udp_io= false;
+static bool opt_tls= false;
+static char *opt_cert_file= NULL;
+static char *opt_private_key_file= NULL;
+static char *opt_ca_file= NULL;
+static bool opt_skip_verify= false;
 test_t opt_test= SET_TEST;
 
 extern "C" {
@@ -273,6 +278,17 @@ void scheduler(memcached_server_st *servers, conclusions_st *conclusion)
       exit(EXIT_FAILURE);
     }
   }
+
+#if defined(USE_TLS) && USE_TLS
+  if(opt_tls || getenv("USE_TLS")) {
+      memc_SSL_CTX *ssl_ctx;
+      if (!initialize_tls(memc, opt_cert_file, opt_private_key_file, opt_ca_file, opt_skip_verify, ssl_ctx)) {
+          std::cerr << "Failed to set TLS." << std::endl;
+          memcached_free(memc);
+          exit(EXIT_FAILURE);
+      }
+  }
+#endif
 
   memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_BINARY_PROTOCOL,
                          (uint64_t)opt_binary);
@@ -398,6 +414,11 @@ void options_parse(int argc, char *argv[])
       {(OPTIONSTRING)"version", no_argument, NULL, OPT_VERSION},
       {(OPTIONSTRING)"binary", no_argument, NULL, OPT_BINARY},
       {(OPTIONSTRING)"udp", no_argument, NULL, OPT_UDP},
+      {(OPTIONSTRING)"tls", no_argument, NULL, OPT_TLS},
+      {(OPTIONSTRING)"cert", required_argument, NULL, OPT_TLS_CERT},
+      {(OPTIONSTRING)"key", required_argument, NULL, OPT_TLS_KEY},
+      {(OPTIONSTRING)"ca", required_argument, NULL, OPT_TLS_CA},
+      {(OPTIONSTRING)"skip-verify", no_argument, NULL, OPT_TLS_SKIP_VERIFY},
       {0, 0, 0, 0},
     };
 
@@ -423,6 +444,26 @@ void options_parse(int argc, char *argv[])
         exit(1);
       }
       opt_udp_io= true;
+      break;
+
+    case OPT_TLS:
+      opt_tls= true;
+      break;
+
+    case OPT_TLS_CERT:
+      opt_cert_file= strdup(optarg);
+      break;
+
+    case OPT_TLS_KEY:
+      opt_private_key_file= strdup(optarg);
+      break;
+
+    case OPT_TLS_CA:
+      opt_ca_file= strdup(optarg);
+      break;
+
+    case OPT_TLS_SKIP_VERIFY:
+      opt_skip_verify= true;
       break;
 
     case OPT_BINARY:

@@ -57,6 +57,18 @@ static void *world_create(libtest::server_startup_st& servers, test_return_t& er
     }
   }
 
+    if (servers.ssl())
+    {
+        SKIP_UNLESS(libtest::has_libmemcached_ssl());
+
+        // Assume we are running under valgrind, and bail
+        if (getenv("LOG_COMPILER"))
+        {
+            error= TEST_SKIPPED;
+            return NULL;
+        }
+    }
+
   for (uint32_t x= 0; x < servers.servers_to_run(); x++)
   {
     in_port_t port= libtest::get_free_port();
@@ -68,14 +80,23 @@ static void *world_create(libtest::server_startup_st& servers, test_return_t& er
         error= TEST_SKIPPED;
         return NULL;
       }
+    } else if (servers.ssl()) {
+        std::stringstream cert_file; ;
+        std::stringstream private_key_file;
+        char *tls_folder = "/tls";
+        char *ssl_path = getenv("PWD");
+        cert_file << "ssl_chain_cert=" << ssl_path << tls_folder << "/memc.crt";
+        private_key_file << "ssl_key=" << ssl_path << tls_folder << "/memc.key";
+        const char *argv[] = {"-Z", "-o", cert_file.str().c_str(), "-o", private_key_file.str().c_str()};
+        if (server_startup(servers, "memcached", port, argv) == false)
+        {
+            error= TEST_SKIPPED;
+            return NULL;
+        }
     }
     else
     {
-      if (server_startup(servers, "memcached", port, NULL) == false)
-      {
-        error= TEST_SKIPPED;
-        return NULL;
-      }
+
     }
   }
 

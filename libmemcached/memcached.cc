@@ -197,6 +197,10 @@ static void __memcached_free(Memcached *ptr, bool release_st)
   {
     libmemcached_free(ptr, ptr);
   }
+
+#if defined(USE_TLS) && USE_TLS
+  memcached_free_SSL_ctx((memc_SSL_CTX*)ptr->ssl_ctx);
+#endif
 }
 
 memcached_st *memcached_create(memcached_st *shell)
@@ -397,6 +401,7 @@ memcached_st *memcached_clone(memcached_st *clone, const memcached_st *source)
   new_clone->io_key_prefetch= source->io_key_prefetch;
   new_clone->number_of_replicas= source->number_of_replicas;
   new_clone->tcp_keepidle= source->tcp_keepidle;
+  new_clone->ssl_ctx= source->ssl_ctx;
 
   if (memcached_server_count(source))
   {

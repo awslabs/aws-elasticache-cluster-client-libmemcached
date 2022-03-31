@@ -44,6 +44,7 @@ static void options_parse(int argc, char *argv[]);
 
 static bool opt_binary= false;
 static bool opt_udp= false;
+static bool opt_tls= false;
 static bool opt_buffer= false;
 static int opt_verbose= 0;
 static char *opt_servers= NULL;
@@ -314,6 +315,7 @@ static void options_parse(int argc, char *argv[])
       {(OPTIONSTRING)"help", no_argument, NULL, OPT_HELP},
       {(OPTIONSTRING)"quiet", no_argument, NULL, OPT_QUIET},
       {(OPTIONSTRING)"udp", no_argument, NULL, OPT_UDP},
+      {(OPTIONSTRING)"tls", no_argument, NULL, OPT_TLS},
       {(OPTIONSTRING)"buffer", no_argument, NULL, OPT_BUFFER},
       {(OPTIONSTRING)"verbose", no_argument, &opt_verbose, OPT_VERBOSE},
       {(OPTIONSTRING)"debug", no_argument, &opt_verbose, OPT_DEBUG},
@@ -424,6 +426,10 @@ static void options_parse(int argc, char *argv[])
 
     case OPT_UDP:
       opt_udp= true;
+      break;
+
+    case OPT_TLS:
+      opt_tls= true;
       break;
 
     case OPT_BUFFER:

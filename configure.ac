@@ -100,8 +100,8 @@ AC_ARG_ENABLE([tls],
 
 AS_IF([test "x$enable_tls" != "xno"], [
        AC_DEFINE([USE_TLS],
-                 [1],
-                 [define to enable TLS/SSL support])
+                [1],
+                [define to enable TLS/SSL support])
        PKG_CHECK_MODULES([LIBEVENT_OPENSSL],
                          [libevent_openssl >= 2.0.10],
                          AC_SUBST(LIBEVENT_OPENSSL_CFLAGS) AC_SUBST(LIBEVENT_OPENSSL_LIBS))

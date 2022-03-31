@@ -56,6 +56,8 @@ bool initialize_sasl(memcached_st *memc, char *user, char *password);
 void shutdown_sasl(void);
 void initialize_sockets(void);
 void close_stdio(void);
+bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *ca_file, bool skip_verify, memc_SSL_CTX *ssl_ctx);
+void shutdown_tls(void);
 
 #ifdef __cplusplus
 } // extern "C"

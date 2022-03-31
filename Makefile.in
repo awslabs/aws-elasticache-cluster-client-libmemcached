@@ -894,7 +894,8 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_FALSE@@HAVE_DTRACE_FALSE@am__append_67 = tests/libmemcached-1.0/internals
 @BUILD_WIN32_FALSE@am__append_68 = tests/libmemcached-1.0/testapp \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testsocket \
-@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl tests/testudp \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/ssl tests/testudp \
 @BUILD_WIN32_FALSE@	tests/testplus tests/parser tests/failure \
 @BUILD_WIN32_FALSE@	tests/testhashkit tests/hash_plus \
 @BUILD_WIN32_FALSE@	tests/memcapable tests/memstat tests/memcp \
@@ -904,6 +905,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_WIN32_FALSE@am__append_69 = tests/libmemcached-1.0/testapp \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testsocket \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/ssl \
 @BUILD_WIN32_FALSE@	tests/atomsmasher tests/testudp \
 @BUILD_WIN32_FALSE@	tests/dynamic_mode_test \
 @BUILD_WIN32_FALSE@	tests/testplus tests/parser tests/failure \
@@ -1749,6 +1751,7 @@ libtest_libtest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testapp$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testsocket$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl$(EXEEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/ssl$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/testudp$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/testplus$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/parser$(EXEEXT) \
@@ -1780,6 +1783,7 @@ libtest_libtest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testapp$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/testsocket$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/libmemcached-1.0/sasl$(EXEEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/ssl$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/atomsmasher$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/dynamic_mode_test$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/testudp$(EXEEXT) \
@@ -2105,6 +2109,52 @@ tests_libmemcached_1_0_sasl_OBJECTS =  \
 tests_libmemcached_1_0_sasl_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(tests_libmemcached_1_0_sasl_CXXFLAGS) $(CXXFLAGS) \
+	$(AM_LDFLAGS) $(LDFLAGS) -o $@
+am__tests_libmemcached_1_0_ssl_SOURCES_DIST =  \
+	tests/libmemcached-1.0/basic.cc \
+	tests/libmemcached-1.0/debug.cc \
+	tests/libmemcached-1.0/deprecated.cc \
+	tests/libmemcached-1.0/error_conditions.cc \
+	tests/libmemcached-1.0/ketama.cc \
+	tests/libmemcached-1.0/namespace.cc \
+	tests/libmemcached-1.0/parser.cc \
+	tests/libmemcached-1.0/pool.cc tests/libmemcached-1.0/print.cc \
+	tests/libmemcached-1.0/replication.cc \
+	tests/libmemcached-1.0/ssl.cc \
+	tests/libmemcached-1.0/virtual_buckets.cc clients/execute.cc \
+	clients/generator.cc \
+	tests/libmemcached-1.0/callback_counter.cc \
+	tests/libmemcached-1.0/fetch_all_results.cc \
+	tests/libmemcached-1.0/generate.cc
+@BUILD_WIN32_FALSE@am_tests_libmemcached_1_0_ssl_OBJECTS = tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	clients/tests_libmemcached_1_0_ssl-execute.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	clients/tests_libmemcached_1_0_ssl-generator.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.$(OBJEXT) \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.$(OBJEXT)
+tests_libmemcached_1_0_ssl_OBJECTS =  \
+	$(am_tests_libmemcached_1_0_ssl_OBJECTS)
+@BUILD_WIN32_FALSE@tests_libmemcached_1_0_ssl_DEPENDENCIES =  \
+@BUILD_WIN32_FALSE@	$(TESTS_LDADDS) \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedinternal.la \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedutilinternal.la \
+@BUILD_WIN32_FALSE@	libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
+@BUILD_WIN32_FALSE@	libtest/libtest.la libhashkit/libhashkit.la
+tests_libmemcached_1_0_ssl_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) \
 	$(AM_LDFLAGS) $(LDFLAGS) -o $@
 am__tests_libmemcached_1_0_testapp_SOURCES_DIST =  \
 	clients/generator.cc clients/execute.cc \
@@ -2481,6 +2531,7 @@ SOURCES = $(clients_libutilities_la_SOURCES) \
 	$(tests_hash_plus_SOURCES) \
 	$(tests_libmemcached_1_0_internals_SOURCES) \
 	$(tests_libmemcached_1_0_sasl_SOURCES) \
+	$(tests_libmemcached_1_0_ssl_SOURCES) \
 	$(tests_libmemcached_1_0_testapp_SOURCES) \
 	$(tests_libmemcached_1_0_testsocket_SOURCES) \
 	$(tests_memcapable_SOURCES) $(tests_memcat_SOURCES) \
@@ -2531,6 +2582,7 @@ DIST_SOURCES = $(am__clients_libutilities_la_SOURCES_DIST) \
 	$(am__tests_hash_plus_SOURCES_DIST) \
 	$(am__tests_libmemcached_1_0_internals_SOURCES_DIST) \
 	$(am__tests_libmemcached_1_0_sasl_SOURCES_DIST) \
+	$(am__tests_libmemcached_1_0_ssl_SOURCES_DIST) \
 	$(am__tests_libmemcached_1_0_testapp_SOURCES_DIST) \
 	$(am__tests_libmemcached_1_0_testsocket_SOURCES_DIST) \
 	$(am__tests_memcapable_SOURCES_DIST) \
@@ -2577,8 +2629,7 @@ am__nobase_include_HEADERS_DIST = libhashkit-1.0/algorithm.h \
 	libmemcached-1.0/struct/sasl.h \
 	libmemcached-1.0/struct/server.h \
 	libmemcached-1.0/struct/stat.h \
-	libmemcached-1.0/struct/string.h \
-	libmemcached-1.0/struct/tls.h \
+	libmemcached-1.0/struct/string.h libmemcached-1.0/struct/tls.h \
 	libmemcached-1.0/types/behavior.h \
 	libmemcached-1.0/types/callback.h \
 	libmemcached-1.0/types/connection.h \
@@ -2627,10 +2678,10 @@ am__noinst_HEADERS_DIST = libhashkit/aes.h libhashkit/algorithm.h \
 	libmemcached/connect.hpp libmemcached/continuum.hpp \
 	libmemcached/do.hpp libmemcached/encoding_key.h \
 	libmemcached/error.hpp libmemcached/flag.hpp \
-	libmemcached/initialize_query.h libmemcached/instance.hpp \
-	libmemcached/internal.h libmemcached/io.h libmemcached/io.hpp \
-	libmemcached/is.h libmemcached/key.hpp \
-	libmemcached/libmemcached_probes.h \
+	libmemcached/host.h libmemcached/initialize_query.h \
+	libmemcached/instance.hpp libmemcached/internal.h \
+	libmemcached/io.h libmemcached/io.hpp libmemcached/is.h \
+	libmemcached/key.hpp libmemcached/libmemcached_probes.h \
 	libmemcached/memcached/protocol_binary.h \
 	libmemcached/memcached/vbucket.h libmemcached/memory.h \
 	libmemcached/namespace.h libmemcached/options.hpp \
@@ -3649,6 +3700,34 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_sasl_CXXFLAGS =  \
 @BUILD_WIN32_FALSE@	$(AM_CXXFLAGS) @PTHREAD_CFLAGS@
 @BUILD_WIN32_FALSE@tests_libmemcached_1_0_sasl_CFLAGS = $(AM_CFLAGS) \
+@BUILD_WIN32_FALSE@	$(NO_CONVERSION) $(NO_STRICT_ALIASING)
+@BUILD_WIN32_FALSE@tests_libmemcached_1_0_ssl_SOURCES =  \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/basic.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/debug.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/deprecated.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/error_conditions.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/ketama.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/namespace.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/parser.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/pool.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/print.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/replication.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/ssl.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/virtual_buckets.cc \
+@BUILD_WIN32_FALSE@	clients/execute.cc clients/generator.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/callback_counter.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/fetch_all_results.cc \
+@BUILD_WIN32_FALSE@	tests/libmemcached-1.0/generate.cc
+@BUILD_WIN32_FALSE@tests_libmemcached_1_0_ssl_LDADD = @PTHREAD_LIBS@ \
+@BUILD_WIN32_FALSE@	$(TESTS_LDADDS) \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedinternal.la \
+@BUILD_WIN32_FALSE@	libmemcachedinternal/libmemcachedutilinternal.la \
+@BUILD_WIN32_FALSE@	libmemcached/libmemcached.la \
+@BUILD_WIN32_FALSE@	libmemcached/libmemcachedutil.la \
+@BUILD_WIN32_FALSE@	libtest/libtest.la libhashkit/libhashkit.la
+@BUILD_WIN32_FALSE@tests_libmemcached_1_0_ssl_CXXFLAGS =  \
+@BUILD_WIN32_FALSE@	$(AM_CXXFLAGS) @PTHREAD_CFLAGS@
+@BUILD_WIN32_FALSE@tests_libmemcached_1_0_ssl_CFLAGS = $(AM_CFLAGS) \
 @BUILD_WIN32_FALSE@	$(NO_CONVERSION) $(NO_STRICT_ALIASING)
 @BUILD_WIN32_FALSE@tests_atomsmasher_SOURCES = clients/execute.cc \
 @BUILD_WIN32_FALSE@	clients/generator.cc \
@@ -5087,6 +5166,59 @@ tests/libmemcached-1.0/tests_libmemcached_1_0_sasl-generate.$(OBJEXT):  \
 tests/libmemcached-1.0/sasl$(EXEEXT): $(tests_libmemcached_1_0_sasl_OBJECTS) $(tests_libmemcached_1_0_sasl_DEPENDENCIES) $(EXTRA_tests_libmemcached_1_0_sasl_DEPENDENCIES) tests/libmemcached-1.0/$(am__dirstamp)
 	@rm -f tests/libmemcached-1.0/sasl$(EXEEXT)
 	$(AM_V_CXXLD)$(tests_libmemcached_1_0_sasl_LINK) $(tests_libmemcached_1_0_sasl_OBJECTS) $(tests_libmemcached_1_0_sasl_LDADD) $(LIBS)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+clients/tests_libmemcached_1_0_ssl-execute.$(OBJEXT):  \
+	clients/$(am__dirstamp) clients/$(DEPDIR)/$(am__dirstamp)
+clients/tests_libmemcached_1_0_ssl-generator.$(OBJEXT):  \
+	clients/$(am__dirstamp) clients/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.$(OBJEXT):  \
+	tests/libmemcached-1.0/$(am__dirstamp) \
+	tests/libmemcached-1.0/$(DEPDIR)/$(am__dirstamp)
+
+tests/libmemcached-1.0/ssl$(EXEEXT): $(tests_libmemcached_1_0_ssl_OBJECTS) $(tests_libmemcached_1_0_ssl_DEPENDENCIES) $(EXTRA_tests_libmemcached_1_0_ssl_DEPENDENCIES) tests/libmemcached-1.0/$(am__dirstamp)
+	@rm -f tests/libmemcached-1.0/ssl$(EXEEXT)
+	$(AM_V_CXXLD)$(tests_libmemcached_1_0_ssl_LINK) $(tests_libmemcached_1_0_ssl_OBJECTS) $(tests_libmemcached_1_0_ssl_LDADD) $(LIBS)
 clients/tests_libmemcached_1_0_testapp-generator.$(OBJEXT):  \
 	clients/$(am__dirstamp) clients/$(DEPDIR)/$(am__dirstamp)
 clients/tests_libmemcached_1_0_testapp-execute.$(OBJEXT):  \
@@ -5428,6 +5560,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_failure-generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_sasl-execute.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_sasl-generator.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_testapp-execute.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_testapp-generator.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@clients/$(DEPDIR)/tests_libmemcached_1_0_testsocket-execute.Po@am__quote@
@@ -5749,6 +5883,21 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_sasl-replication.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_sasl-sasl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_sasl-virtual_buckets.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_testapp-all_tests.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_testapp-basic.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_testapp-callback_counter.Po@am__quote@
@@ -8083,6 +8232,244 @@ tests/libmemcached-1.0/tests_libmemcached_1_0_sasl-generate.obj: tests/libmemcac
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_sasl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_sasl-generate.obj `if test -f 'tests/libmemcached-1.0/generate.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/generate.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/generate.cc'; fi`
 
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.o: tests/libmemcached-1.0/basic.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.o `test -f 'tests/libmemcached-1.0/basic.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/basic.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/basic.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.o `test -f 'tests/libmemcached-1.0/basic.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/basic.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.obj: tests/libmemcached-1.0/basic.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.obj `if test -f 'tests/libmemcached-1.0/basic.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/basic.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/basic.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-basic.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/basic.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-basic.obj `if test -f 'tests/libmemcached-1.0/basic.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/basic.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/basic.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.o: tests/libmemcached-1.0/debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.o `test -f 'tests/libmemcached-1.0/debug.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/debug.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.o `test -f 'tests/libmemcached-1.0/debug.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/debug.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.obj: tests/libmemcached-1.0/debug.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.obj `if test -f 'tests/libmemcached-1.0/debug.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/debug.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/debug.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-debug.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/debug.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-debug.obj `if test -f 'tests/libmemcached-1.0/debug.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/debug.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/debug.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.o: tests/libmemcached-1.0/deprecated.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.o `test -f 'tests/libmemcached-1.0/deprecated.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/deprecated.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/deprecated.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.o `test -f 'tests/libmemcached-1.0/deprecated.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/deprecated.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.obj: tests/libmemcached-1.0/deprecated.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.obj `if test -f 'tests/libmemcached-1.0/deprecated.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/deprecated.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/deprecated.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-deprecated.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/deprecated.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-deprecated.obj `if test -f 'tests/libmemcached-1.0/deprecated.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/deprecated.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/deprecated.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.o: tests/libmemcached-1.0/error_conditions.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.o `test -f 'tests/libmemcached-1.0/error_conditions.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/error_conditions.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/error_conditions.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.o `test -f 'tests/libmemcached-1.0/error_conditions.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/error_conditions.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.obj: tests/libmemcached-1.0/error_conditions.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.obj `if test -f 'tests/libmemcached-1.0/error_conditions.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/error_conditions.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/error_conditions.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-error_conditions.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/error_conditions.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-error_conditions.obj `if test -f 'tests/libmemcached-1.0/error_conditions.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/error_conditions.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/error_conditions.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.o: tests/libmemcached-1.0/ketama.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.o `test -f 'tests/libmemcached-1.0/ketama.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/ketama.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/ketama.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.o `test -f 'tests/libmemcached-1.0/ketama.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/ketama.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.obj: tests/libmemcached-1.0/ketama.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.obj `if test -f 'tests/libmemcached-1.0/ketama.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/ketama.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/ketama.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ketama.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/ketama.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ketama.obj `if test -f 'tests/libmemcached-1.0/ketama.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/ketama.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/ketama.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.o: tests/libmemcached-1.0/namespace.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.o `test -f 'tests/libmemcached-1.0/namespace.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/namespace.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/namespace.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.o `test -f 'tests/libmemcached-1.0/namespace.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/namespace.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.obj: tests/libmemcached-1.0/namespace.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.obj `if test -f 'tests/libmemcached-1.0/namespace.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/namespace.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/namespace.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-namespace.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/namespace.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-namespace.obj `if test -f 'tests/libmemcached-1.0/namespace.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/namespace.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/namespace.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.o: tests/libmemcached-1.0/parser.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.o `test -f 'tests/libmemcached-1.0/parser.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/parser.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/parser.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.o `test -f 'tests/libmemcached-1.0/parser.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/parser.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.obj: tests/libmemcached-1.0/parser.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.obj `if test -f 'tests/libmemcached-1.0/parser.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/parser.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/parser.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-parser.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/parser.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-parser.obj `if test -f 'tests/libmemcached-1.0/parser.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/parser.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/parser.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.o: tests/libmemcached-1.0/pool.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.o `test -f 'tests/libmemcached-1.0/pool.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/pool.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/pool.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.o `test -f 'tests/libmemcached-1.0/pool.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/pool.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.obj: tests/libmemcached-1.0/pool.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.obj `if test -f 'tests/libmemcached-1.0/pool.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/pool.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/pool.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-pool.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/pool.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-pool.obj `if test -f 'tests/libmemcached-1.0/pool.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/pool.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/pool.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.o: tests/libmemcached-1.0/print.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.o `test -f 'tests/libmemcached-1.0/print.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/print.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/print.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.o `test -f 'tests/libmemcached-1.0/print.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/print.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.obj: tests/libmemcached-1.0/print.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.obj `if test -f 'tests/libmemcached-1.0/print.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/print.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/print.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-print.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/print.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-print.obj `if test -f 'tests/libmemcached-1.0/print.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/print.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/print.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.o: tests/libmemcached-1.0/replication.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.o `test -f 'tests/libmemcached-1.0/replication.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/replication.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/replication.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.o `test -f 'tests/libmemcached-1.0/replication.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/replication.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.obj: tests/libmemcached-1.0/replication.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.obj `if test -f 'tests/libmemcached-1.0/replication.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/replication.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/replication.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-replication.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/replication.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-replication.obj `if test -f 'tests/libmemcached-1.0/replication.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/replication.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/replication.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.o: tests/libmemcached-1.0/ssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.o `test -f 'tests/libmemcached-1.0/ssl.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/ssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/ssl.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.o `test -f 'tests/libmemcached-1.0/ssl.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/ssl.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.obj: tests/libmemcached-1.0/ssl.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.obj `if test -f 'tests/libmemcached-1.0/ssl.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/ssl.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/ssl.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-ssl.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/ssl.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-ssl.obj `if test -f 'tests/libmemcached-1.0/ssl.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/ssl.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/ssl.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.o: tests/libmemcached-1.0/virtual_buckets.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.o `test -f 'tests/libmemcached-1.0/virtual_buckets.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/virtual_buckets.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/virtual_buckets.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.o `test -f 'tests/libmemcached-1.0/virtual_buckets.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/virtual_buckets.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.obj: tests/libmemcached-1.0/virtual_buckets.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.obj `if test -f 'tests/libmemcached-1.0/virtual_buckets.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/virtual_buckets.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/virtual_buckets.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-virtual_buckets.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/virtual_buckets.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-virtual_buckets.obj `if test -f 'tests/libmemcached-1.0/virtual_buckets.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/virtual_buckets.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/virtual_buckets.cc'; fi`
+
+clients/tests_libmemcached_1_0_ssl-execute.o: clients/execute.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT clients/tests_libmemcached_1_0_ssl-execute.o -MD -MP -MF clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Tpo -c -o clients/tests_libmemcached_1_0_ssl-execute.o `test -f 'clients/execute.cc' || echo '$(srcdir)/'`clients/execute.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Tpo clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='clients/execute.cc' object='clients/tests_libmemcached_1_0_ssl-execute.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o clients/tests_libmemcached_1_0_ssl-execute.o `test -f 'clients/execute.cc' || echo '$(srcdir)/'`clients/execute.cc
+
+clients/tests_libmemcached_1_0_ssl-execute.obj: clients/execute.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT clients/tests_libmemcached_1_0_ssl-execute.obj -MD -MP -MF clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Tpo -c -o clients/tests_libmemcached_1_0_ssl-execute.obj `if test -f 'clients/execute.cc'; then $(CYGPATH_W) 'clients/execute.cc'; else $(CYGPATH_W) '$(srcdir)/clients/execute.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Tpo clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-execute.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='clients/execute.cc' object='clients/tests_libmemcached_1_0_ssl-execute.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o clients/tests_libmemcached_1_0_ssl-execute.obj `if test -f 'clients/execute.cc'; then $(CYGPATH_W) 'clients/execute.cc'; else $(CYGPATH_W) '$(srcdir)/clients/execute.cc'; fi`
+
+clients/tests_libmemcached_1_0_ssl-generator.o: clients/generator.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT clients/tests_libmemcached_1_0_ssl-generator.o -MD -MP -MF clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Tpo -c -o clients/tests_libmemcached_1_0_ssl-generator.o `test -f 'clients/generator.cc' || echo '$(srcdir)/'`clients/generator.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Tpo clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='clients/generator.cc' object='clients/tests_libmemcached_1_0_ssl-generator.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o clients/tests_libmemcached_1_0_ssl-generator.o `test -f 'clients/generator.cc' || echo '$(srcdir)/'`clients/generator.cc
+
+clients/tests_libmemcached_1_0_ssl-generator.obj: clients/generator.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT clients/tests_libmemcached_1_0_ssl-generator.obj -MD -MP -MF clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Tpo -c -o clients/tests_libmemcached_1_0_ssl-generator.obj `if test -f 'clients/generator.cc'; then $(CYGPATH_W) 'clients/generator.cc'; else $(CYGPATH_W) '$(srcdir)/clients/generator.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Tpo clients/$(DEPDIR)/tests_libmemcached_1_0_ssl-generator.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='clients/generator.cc' object='clients/tests_libmemcached_1_0_ssl-generator.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o clients/tests_libmemcached_1_0_ssl-generator.obj `if test -f 'clients/generator.cc'; then $(CYGPATH_W) 'clients/generator.cc'; else $(CYGPATH_W) '$(srcdir)/clients/generator.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.o: tests/libmemcached-1.0/callback_counter.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.o `test -f 'tests/libmemcached-1.0/callback_counter.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/callback_counter.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/callback_counter.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.o `test -f 'tests/libmemcached-1.0/callback_counter.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/callback_counter.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.obj: tests/libmemcached-1.0/callback_counter.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.obj `if test -f 'tests/libmemcached-1.0/callback_counter.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/callback_counter.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/callback_counter.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-callback_counter.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/callback_counter.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-callback_counter.obj `if test -f 'tests/libmemcached-1.0/callback_counter.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/callback_counter.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/callback_counter.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.o: tests/libmemcached-1.0/fetch_all_results.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.o `test -f 'tests/libmemcached-1.0/fetch_all_results.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/fetch_all_results.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/fetch_all_results.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.o `test -f 'tests/libmemcached-1.0/fetch_all_results.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/fetch_all_results.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.obj: tests/libmemcached-1.0/fetch_all_results.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.obj `if test -f 'tests/libmemcached-1.0/fetch_all_results.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/fetch_all_results.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/fetch_all_results.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-fetch_all_results.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/fetch_all_results.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-fetch_all_results.obj `if test -f 'tests/libmemcached-1.0/fetch_all_results.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/fetch_all_results.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/fetch_all_results.cc'; fi`
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.o: tests/libmemcached-1.0/generate.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.o -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.o `test -f 'tests/libmemcached-1.0/generate.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/generate.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/generate.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.o `test -f 'tests/libmemcached-1.0/generate.cc' || echo '$(srcdir)/'`tests/libmemcached-1.0/generate.cc
+
+tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.obj: tests/libmemcached-1.0/generate.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -MT tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.obj -MD -MP -MF tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Tpo -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.obj `if test -f 'tests/libmemcached-1.0/generate.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/generate.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/generate.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Tpo tests/libmemcached-1.0/$(DEPDIR)/tests_libmemcached_1_0_ssl-generate.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='tests/libmemcached-1.0/generate.cc' object='tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_ssl_CXXFLAGS) $(CXXFLAGS) -c -o tests/libmemcached-1.0/tests_libmemcached_1_0_ssl-generate.obj `if test -f 'tests/libmemcached-1.0/generate.cc'; then $(CYGPATH_W) 'tests/libmemcached-1.0/generate.cc'; else $(CYGPATH_W) '$(srcdir)/tests/libmemcached-1.0/generate.cc'; fi`
+
 clients/tests_libmemcached_1_0_testapp-generator.o: clients/generator.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(tests_libmemcached_1_0_testapp_CXXFLAGS) $(CXXFLAGS) -MT clients/tests_libmemcached_1_0_testapp-generator.o -MD -MP -MF clients/$(DEPDIR)/tests_libmemcached_1_0_testapp-generator.Tpo -c -o clients/tests_libmemcached_1_0_testapp-generator.o `test -f 'clients/generator.cc' || echo '$(srcdir)/'`clients/generator.cc
 @am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) clients/$(DEPDIR)/tests_libmemcached_1_0_testapp-generator.Tpo clients/$(DEPDIR)/tests_libmemcached_1_0_testapp-generator.Po
@@ -9734,6 +10121,13 @@ tests/libmemcached-1.0/sasl.log: tests/libmemcached-1.0/sasl$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
+tests/libmemcached-1.0/ssl.log: tests/libmemcached-1.0/ssl$(EXEEXT)
+	@p='tests/libmemcached-1.0/ssl$(EXEEXT)'; \
+	b='tests/libmemcached-1.0/ssl'; \
+	$(am__check_pre) $(LOG_DRIVER) --test-name "$$f" \
+	--log-file $$b.log --trs-file $$b.trs \
+	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
+	"$$tst" $(AM_TESTS_FD_REDIRECT)
 tests/testudp.log: tests/testudp$(EXEEXT)
 	@p='tests/testudp$(EXEEXT)'; \
 	b='tests/testudp'; \
@@ -10499,6 +10893,12 @@ uninstall-man: uninstall-man1 uninstall-man3
 
 @BUILD_WIN32_FALSE@gdb-sasl: tests/libmemcached-1.0/sasl
 @BUILD_WIN32_FALSE@	@$(GDB_COMMAND)  tests/libmemcached-1.0/sasl
+
+@BUILD_WIN32_FALSE@test-ssl: tests/libmemcached-1.0/ssl
+@BUILD_WIN32_FALSE@	@tests/libmemcached-1.0/ssl
+
+@BUILD_WIN32_FALSE@gdb-ssl: tests/libmemcached-1.0/ssl
+@BUILD_WIN32_FALSE@	@$(GDB_COMMAND)  tests/libmemcached-1.0/ssl
 
 @BUILD_WIN32_FALSE@test-udp: tests/testudp
 @BUILD_WIN32_FALSE@	@tests/testudp
