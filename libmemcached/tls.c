@@ -213,10 +213,10 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, SSL
 
     connection_success:
     // Check if we need to set the server's file descriptor to non-blocking mode
-
     if (SOCK_NONBLOCK && (fcntl(server->fd, F_SETFL, SOCK_NONBLOCK) == -1)) {
         return memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("Could not switch to non-blocking.\n"));
     }
+
     server->privctx = memc_ssl;
     return MEMCACHED_SUCCESS;
 }
@@ -368,7 +368,6 @@ SSL_CTX* init_ctx(void)
 	if ( ctx == NULL )
 	{
 		ERR_print_errors_fp(stderr);
-		abort();
 	}
 	return ctx;
 }

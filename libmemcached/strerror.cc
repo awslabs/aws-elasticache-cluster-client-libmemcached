@@ -203,7 +203,7 @@ const char *memcached_strerror(const memcached_st *, memcached_return_t rc)
     return "SERVER FAILED TO ALLOCATE OBJECT";
 
   case MEMCACHED_TLS_ERROR:
-      return "TLS/OpenSSL ERROR";
+      return "TLS ERROR";
 
   case MEMCACHED_TLS_CONNECTION_ERROR:
       return "TLS CONNECTION ERROR";

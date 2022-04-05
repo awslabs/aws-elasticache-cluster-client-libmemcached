@@ -161,10 +161,8 @@ struct memcached_instance_st {
 
   void events(short);
   void revents(short);
-  const context_funcs *io_funcs;   /* IO Functions table */
-  /* Internal context pointer presently used by hiredis to manage
-  * SSL connections. */
-  void *privctx;
+  const context_funcs *io_funcs; /* IO Functions table */
+  void *privctx; /* Internal context pointer to manage SSL connections. */
   uint32_t cursor_active_;
   in_port_t port_;
   memcached_socket_t fd;

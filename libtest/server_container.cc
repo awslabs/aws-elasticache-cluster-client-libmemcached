@@ -245,6 +245,18 @@ libtest::Server* server_startup_st::create(const std::string& server_type, in_po
       server= build_memcached("localhost", try_port);
     }
   }
+  else if (server_type.compare("memcached-ssl") == 0)
+  {
+    if (has_memcached())
+    {
+        if (_ssl_cert.empty() || _ssl_key.empty()) {
+            fprintf(stderr, "");
+            Error << "SSL key/cert haven't been set\n";
+            return NULL;
+        }
+      server= build_memcached_with_ssl("localhost", try_port, _ssl_cert, _ssl_key);
+    }
+  }
 
   return server;
 }
@@ -367,7 +379,6 @@ bool server_startup_st::_start_server(const bool is_socket,
   }
   catch (...)
   {
-    Error << "error occured while creating server: " << server_type;
     return false;
   }
 

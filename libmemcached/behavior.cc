@@ -205,6 +205,14 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
                                  memcached_literal_param("MEMCACHED_BEHAVIOR_USE_UDP cannot be enabled while MEMCACHED_BEHAVIOR_CLIENT_MODE is set to DYNAMIC_MODE."));
     }
 
+    // if trying to set the flag to enable UDP
+    // while TLS is enabled, then return NOT SUPPORTED
+    if(memcached_is_tls(ptr) && bool(data))
+    {
+      return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                 memcached_literal_param("MEMCACHED_BEHAVIOR_USE_UDP cannot be enabled while MEMCACHED_BEHAVIOR_USE_TLS is set to true"));
+    }
+
     ptr->flags.use_udp= bool(data);
     if (bool(data))
     {
@@ -348,9 +356,16 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
                                  memcached_literal_param("MEMCACHED_BEHAVIOR_LOAD_FROM_FILE can not be set with memcached_behavior_set()"));
 
   case MEMCACHED_BEHAVIOR_USE_TLS:
-          ptr->flags.use_tls= bool(data);
-          send_quit(ptr);
-          break;
+      // if trying to set the flag to enable UDP
+      // while TLS is enabled, then return NOT SUPPORTED
+      if(memcached_is_udp(ptr) && bool(data))
+      {
+          return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                     memcached_literal_param("MEMCACHED_BEHAVIOR_USE_TLS isn't supported with UDP connections"));
+      }
+      ptr->flags.use_tls= bool(data);
+      send_quit(ptr);
+      break;
 
   case MEMCACHED_BEHAVIOR_MAX:
   default:

@@ -1093,7 +1093,11 @@ memcached_return_t memcached_server_add_unix_socket_with_weight(memcached_st *sh
   Memcached* ptr= memcached2Memcached(shell);
   if (ptr)
   {
-  memcached_string_t _filename= { memcached_string_make_from_cstr(filename) };
+    if (memcached_is_tls(shell)) {
+        return memcached_set_error(*ptr, MEMCACHED_NOT_SUPPORTED, MEMCACHED_AT,
+                                   memcached_literal_param("Currently, TLS is not supported with unix sockets"));
+    }
+    memcached_string_t _filename= { memcached_string_make_from_cstr(filename) };
     if (memcached_is_valid_filename(_filename) == false)
   {
       return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT, memcached_literal_param("Invalid filename for socket provided"));

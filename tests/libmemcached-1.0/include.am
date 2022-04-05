@@ -234,6 +234,7 @@ tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/ssl.cc
 tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/virtual_buckets.cc
 tests_libmemcached_1_0_ssl_SOURCES+= clients/execute.cc
 tests_libmemcached_1_0_ssl_SOURCES+= clients/generator.cc
+tests_libmemcached_1_0_ssl_SOURCES+= clients/utilities.cc
 tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/callback_counter.cc
 tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/fetch_all_results.cc
 tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/generate.cc

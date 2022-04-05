@@ -750,6 +750,11 @@ void memcached_instance_st::reset_socket()
     (void)closesocket(fd);
     fd= INVALID_SOCKET;
   }
+
+  // Reset SSL connection if exists
+  if (io_funcs->free_privctx != NULL && privctx != NULL) {
+    io_funcs->free_privctx(privctx);
+  }
 }
 
 void memcached_instance_st::close_socket()

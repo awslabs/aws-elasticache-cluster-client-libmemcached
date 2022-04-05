@@ -519,9 +519,6 @@ static memcached_return_t unix_socket_connect(memcached_instance_st* server)
         server->reset_socket();
         return memcached_set_errno(*server, errno, MEMCACHED_AT);
       }
-    } else if  (server->root->flags.use_tls) {
-        // Initiate SSL connection if TLS use is enabled
-        return memcached_ssl_connect(server);
     }
   } while (0);
 
@@ -786,6 +783,11 @@ static memcached_return_t _memcached_connect(memcached_instance_st* server, cons
   if (LIBMEMCACHED_WITH_SASL_SUPPORT and server->root->sasl.callbacks and memcached_is_udp(server->root))
   {
     return memcached_set_error(*server, MEMCACHED_INVALID_HOST_PROTOCOL, MEMCACHED_AT, memcached_literal_param("SASL is not supported for UDP connections"));
+  }
+
+  if (memcached_is_tls(server->root) and memcached_is_udp(server->root))
+  {
+    return memcached_set_error(*server, MEMCACHED_INVALID_HOST_PROTOCOL, MEMCACHED_AT, memcached_literal_param("TLS is not supported for UDP connections"));
   }
 
   if (server->hostname()[0] == '/')
