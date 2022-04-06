@@ -174,7 +174,7 @@ static char * get_ssl_certs_dir(){
     char * temp;
     char * pwd;
     if ((temp = getenv("srcdir")) && (pwd = getenv("PWD"))) {
-        buf << pwd << "/" << temp << "/tests/libmemcached-1.0/tls";
+        buf << pwd << "/" << temp << "/tests/libmemcached-1.0/tls/certs";
         std::string s_path = buf.str();
         return get_realpath((char *)s_path.c_str());
     } else {
@@ -239,8 +239,8 @@ void get_world(libtest::Framework* world)
 
     world->set_runner(new LibmemcachedRunner);
 
-    cert_file = (char *)get_ssl_file("TLS_CERT_FILE", "memc.crt");
-    key_file = (char *)get_ssl_file("TLS_KEY_FILE", "memc.key");
+    cert_file = (char *)get_ssl_file("TLS_CERT_FILE", "memc-cert.pem");
+    key_file = (char *)get_ssl_file("TLS_KEY_FILE", "memc-key.pem");
 
     if (cert_file == NULL || key_file == NULL) {
         throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "Failed to get key/cert file variables!");
