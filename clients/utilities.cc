@@ -198,6 +198,7 @@ void initialize_sockets(void)
 }
 
 bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *ca_file, bool skip_verify, memc_SSL_CTX *ssl_ctx) {
+#if defined(USE_TLS) && USE_TLS
     memcached_return rc;
     memc_ssl_context_error error;
     memcached_ssl_context_config config = {};
@@ -232,6 +233,7 @@ bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *c
     } else {
         fprintf(stderr,"Set SSL context finished successfully\n");
     }
+#endif // USE_TLS
     return true;
 }
 

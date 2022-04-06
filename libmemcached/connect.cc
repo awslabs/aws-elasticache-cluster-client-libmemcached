@@ -599,9 +599,11 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     /* connect to server */
     if ((connect(server->fd, server->address_info_next->ai_addr, server->address_info_next->ai_addrlen) != SOCKET_ERROR))
     {
+#if defined(USE_TLS) && USE_TLS
         if (server->root->flags.use_tls) {
             return memcached_ssl_connect(server);
         }
+#endif //USE_TLS
 
       server->state= MEMCACHED_SERVER_STATE_CONNECTED;
       return MEMCACHED_SUCCESS;
@@ -628,9 +630,11 @@ static memcached_return_t network_connect(memcached_instance_st* server)
 
         if (memcached_success(rc))
         {
+#if defined(USE_TLS) && USE_TLS
             if (server->root->flags.use_tls) {
                 return memcached_ssl_connect(server);
             }
+#endif //USE_TLS
             server->state= MEMCACHED_SERVER_STATE_CONNECTED;
             return MEMCACHED_SUCCESS;
         }

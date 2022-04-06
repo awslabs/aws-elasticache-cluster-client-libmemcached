@@ -79,19 +79,17 @@ static test_return_t ssl_set_get_test(memcached_st *memc)
     char *res_value;
     uint32_t flags;
     test_compare(true, init_ssl(memc));
-
     test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
     res_value= memcached_get(memc, key, strlen(key), &string_length, &flags, &rc);
     test_compare(MEMCACHED_SUCCESS, rc);
     test_true(res_value);
     test_compare(strlen(value), string_length);
-    test_memcmp(res_value, value, string_length);
-    test_compare(MEMCACHED_SUCCESS, memcached_delete(memc, key, strlen(key), 0));
-    memcached_quit(memc);
-    if (res_value) {
-        free(res_value);
+    if(strcmp(value, res_value))
+    {
+        return TEST_FAILURE;
     }
-    memcached_quit(memc);
+    test_compare(MEMCACHED_SUCCESS, memcached_delete(memc, key, strlen(key), 0));
+    free(res_value);
     return TEST_SUCCESS;
 }
 
@@ -100,15 +98,17 @@ static test_return_t ssl_connection_failure_test(memcached_st *memc)
     // We expect to get connection failure without initializing TLS
     test_compare(MEMCACHED_CONNECTION_FAILURE,
                  memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
-    memcached_quit(memc);
     return TEST_SUCCESS;
 }
 
-static test_return_t ssl_fail_with_udp_connection_test(memcached_st *memc)
+static test_return_t ssl_fail_with_udp_connection_test()
 {
+    memcached_st *memc = memcached_create(NULL);
     test_compare(true, init_ssl(memc));
-    test_compare(MEMCACHED_INVALID_ARGUMENTS, memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_UDP, 1));
-    memcached_quit(memc);
+    // TLS + UDP -> INVALID_ARGS
+    memcached_return_t rc = memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_UDP, 1);
+    test_true(rc == MEMCACHED_INVALID_ARGUMENTS);
+    free(memc);
     return TEST_SUCCESS;
 }
 

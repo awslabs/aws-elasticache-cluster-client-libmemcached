@@ -94,14 +94,12 @@ LIBMEMCACHED_PROTOCOL
 
 # TLS support is optional.
 AC_ARG_ENABLE([tls],
-  [AS_HELP_STRING([--disable-tls], [Disable TLS/SSL support @<:@default=on@:>@])],
+  [AS_HELP_STRING([--disable-tls], [Disable TLS support @<:@default=on@:>@])],
   [enable_tls="$enableval"],
   [enable_tls="yes"])
 
 AS_IF([test "x$enable_tls" != "xno"], [
-       AC_DEFINE([USE_TLS],
-                [1],
-                [define to enable TLS/SSL support])
+       AC_DEFINE([USE_TLS],[1],[Define if TLS is enabled])
        PKG_CHECK_MODULES([LIBEVENT_OPENSSL],
                          [libevent_openssl >= 2.0.10],
                          AC_SUBST(LIBEVENT_OPENSSL_CFLAGS) AC_SUBST(LIBEVENT_OPENSSL_LIBS))
