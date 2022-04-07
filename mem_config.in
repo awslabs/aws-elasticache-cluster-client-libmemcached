@@ -185,9 +185,6 @@
 /* Define to 1 if LIBSASL is found */
 #undef HAVE_LIBSASL
 
-/* Define to 1 if LIBSSL is found */
-#undef HAVE_LIBSSL
-
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
@@ -533,7 +530,7 @@
 #endif
 
 
-/* define to enable TLS/SSL support */
+/* Define if TLS is enabled */
 #undef USE_TLS
 
 /* Define if the code was built from VCS. */
