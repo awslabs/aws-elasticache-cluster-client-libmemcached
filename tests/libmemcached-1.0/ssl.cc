@@ -46,6 +46,7 @@ using namespace libtest;
 char *cert_file = NULL;
 char *key_file = NULL;
 char *ssl_dir_full_path = NULL;
+static const char *TLS_CERT_DIR = "/tests/libmemcached-1.0/tls/certs";
 char *key = "foo";
 char *value = "bar";
 /*
@@ -166,7 +167,6 @@ static char *get_realpath(char *path) {
         free(resolved_path);
         return NULL;
     }
-    fprintf(stderr, "Resolved file path = %s\n", resolved_path);
     return resolved_path;
 }
 static char * get_ssl_certs_dir(){
@@ -174,7 +174,7 @@ static char * get_ssl_certs_dir(){
     char * temp;
     char * pwd;
     if ((temp = getenv("srcdir")) && (pwd = getenv("PWD"))) {
-        buf << pwd << "/" << temp << "/tests/libmemcached-1.0/tls/certs";
+        buf << pwd << "/" << temp << TLS_CERT_DIR;
         std::string s_path = buf.str();
         return get_realpath((char *)s_path.c_str());
     } else {
@@ -200,9 +200,16 @@ static const char* get_ssl_file(const char* env_var, const char* filename) {
         }
         path_buf << ssl_dir_full_path << "/" << filename;
         std::string s_path = path_buf.str();
-        ssl_file = (char *)malloc(s_path.length() + 1);
-        std::copy(s_path.c_str(), s_path.c_str() + s_path.length() + 1, ssl_file);
-        return ssl_file;
+        if(access(s_path.c_str(), F_OK) == 0) {
+            // file exists
+            ssl_file = (char *)malloc(s_path.length() + 1);
+            std::copy(s_path.c_str(), s_path.c_str() + s_path.length() + 1, ssl_file);
+            return ssl_file;
+        } else {
+            // file doesn't exist
+            return NULL;
+        }
+
     }
 }
 
@@ -243,7 +250,8 @@ void get_world(libtest::Framework* world)
     key_file = (char *)get_ssl_file("TLS_KEY_FILE", "memc-key.pem");
 
     if (cert_file == NULL || key_file == NULL) {
-        throw libtest::fatal(LIBYATL_DEFAULT_PARAM, "Failed to get key/cert file variables!");
+        Error << "Failed to get TLS key/cert file variables!\nSee tests/libmemcached-1.0/tls/README for more info";
+        exit(EXIT_SKIP);
     }
 
     world->set_ssl_certs(cert_file, key_file);
