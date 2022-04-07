@@ -650,7 +650,6 @@ DTRACEFLAGS
 DTRACE
 SHARED_ENABLED_FALSE
 SHARED_ENABLED_TRUE
-USE_TLS
 LIBMEMCACHED_WITH_SASL_SUPPORT
 HAVE_SASL_FALSE
 HAVE_SASL_TRUE
@@ -720,7 +719,8 @@ MYSQLD
 LIBTEST_VERSION
 OPENSSL_LDFLAGS
 OPENSSL_LIBS
-OPENSSL_INCLUDE
+OPENSSL_INCLUDES
+USE_TLS
 LIBCRYPTO_LIBS
 LIBCRYPTO_CFLAGS
 LIBSSL_LIBS
@@ -1582,7 +1582,7 @@ Optional Features:
                           --enable-debug (yes|no) [default=no]
   --enable-libmemcachedprotocol
                           Enable libmemcachedprotocol
-  --disable-tls           Disable TLS/SSL support [default=on]
+  --disable-tls           Disable TLS support [default=on]
   --enable-hsieh_hash     build with support for hsieh hashing. [default=off]
   --disable-murmur_hash   build with support for murmur hashing. [default=on]
   --disable-fnv64_hash    build with support for fnv64 hashing. [default=on]
@@ -17165,7 +17165,7 @@ fi
                 OPENSSL_LDFLAGS=`$PKG_CONFIG openssl --libs-only-L 2>/dev/null`
                 if test $? = 0; then
                     OPENSSL_LIBS=`$PKG_CONFIG openssl --libs-only-l 2>/dev/null`
-                    OPENSSL_INCLUDE=`$PKG_CONFIG openssl --cflags-only-I 2>/dev/null`
+                    OPENSSL_INCLUDES=`$PKG_CONFIG openssl --cflags-only-I 2>/dev/null`
                     found=true
                 fi
             fi
@@ -17178,18 +17178,23 @@ fi
 
 fi
 
+        if test "x$enable_tls" != "xno"; then :
+  USE_TLS="#define USE_TLS 1"
+else
+  USE_TLS="#define USE_TLS 0"
+fi
+
 
 
     # note that we #include <openssl/foo.h>, so the OpenSSL headers have to be in
     # an 'openssl' subdirectory
 
     if ! $found; then
-        OPENSSL_INCLUDE=
         for ssldir in $ssldirs; do
             { $as_echo "$as_me:${as_lineno-$LINENO}: checking for include/openssl/ssl.h in $ssldir" >&5
 $as_echo_n "checking for include/openssl/ssl.h in $ssldir... " >&6; }
             if test -f "$ssldir/include/openssl/ssl.h"; then
-                OPENSSL_INCLUDE="-I$ssldir/include"
+                OPENSSL_INCLUDES="-I$ssldir/include"
                 OPENSSL_LDFLAGS="-L$ssldir/lib"
                 OPENSSL_LIBS="-lssl -lcrypto"
                 found=true
@@ -17216,10 +17221,13 @@ $as_echo_n "checking whether compiling and linking against OpenSSL works... " >&
 
     save_LIBS="$LIBS"
     save_LDFLAGS="$LDFLAGS"
-    save_CPPFLAGS="$CPPFLAGS"
+    save_CXXFLAGS="$CXXFLAGS"
+    save_CFLAGS="$CFLAGS"
     LDFLAGS="$LDFLAGS $OPENSSL_LDFLAGS"
-    LIBS="$OPENSSL_LIBS $LIBS"
-    CPPFLAGS="$OPENSSL_INCLUDES $CPPFLAGS"
+    LIBS="$LIBS $OPENSSL_LIBS"
+    CXXFLAGS="$OPENSSL_INCLUDES $CXXFLAGS"
+    CFLAGS="$OPENSSL_INCLUDES $CFLAGS"
+    ax_ssl_option=yes
     cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 #include <openssl/ssl.h>
@@ -17233,23 +17241,25 @@ SSL_new(NULL)
 _ACEOF
 if ac_fn_c_try_link "$LINENO"; then :
 
+            ax_ssl_option=yes
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 
 
 else
 
+            ax_ssl_option=no
             { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
 $as_echo "no" >&6; }
 
+            CXXFLAGS="$save_CXXFLAGS"
+            CFLAGS="$save_CFLAGS"
+            LDFLAGS="$save_LDFLAGS"
+            LIBS="$save_LIBS"
 
 fi
 rm -f core conftest.err conftest.$ac_objext \
     conftest$ac_exeext conftest.$ac_ext
-    CPPFLAGS="$save_CPPFLAGS"
-    LDFLAGS="$save_LDFLAGS"
-    LIBS="$save_LIBS"
-
 
 
 
@@ -24393,12 +24403,7 @@ else
   LIBMEMCACHED_WITH_SASL_SUPPORT="#define LIBMEMCACHED_WITH_SASL_SUPPORT 0"
 fi
 
-         # Check whether --enable-tls was given.
-if test "${enable_tls+set}" = set; then :
-  USE_TLS="#define USE_TLS 1"
-else
-  USE_TLS="#define USE_TLS 0"
-fi
+
 
 # backtrace(), others require shared builds
 
