@@ -197,7 +197,7 @@ void initialize_sockets(void)
 #endif // #if defined(_WIN32)
 }
 
-bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *ca_file, bool skip_verify, memc_SSL_CTX *ssl_ctx) {
+bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *ca_file, bool skip_verify) {
 #if defined(USE_TLS) && USE_TLS
     memcached_return rc;
     memc_ssl_context_error error;
@@ -219,13 +219,22 @@ bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *c
     config.key_file = key_file;
     config.ca_cert_file = ca_file;
     config.skip_cert_verify = skip_verify;
-    ssl_ctx = memcached_create_ssl_context(memc, &config, &error);
-    if (ssl_ctx == NULL) {
+
+    rc = memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 1);
+    if (rc != MEMCACHED_SUCCESS) {
+        fprintf(stderr,"Failed to set MEMCACHED_BEHAVIOR_USE_TLS: %s\n", memcached_ssl_context_get_error(error));
+        return false;
+    }
+
+    error = memcached_create_and_set_ssl_context(memc, &config);
+    if (error != MEMCACHED_SSL_CTX_SUCCESS) {
         fprintf(stderr,memcached_ssl_context_get_error(error));
         return false;
     } else {
-        fprintf(stderr,"Created SSL context successfully\n");
+        fprintf(stderr,"Created and set SSL context successfully\n");
     }
+    /*
+    ssl_ctx = memcached_create_ssl_context(memc, &config, &error);
     rc = memcached_set_ssl_context(memc, ssl_ctx);
     if (rc != MEMCACHED_SUCCESS) {
         fprintf(stderr, memcached_strerror(NULL, rc));
@@ -233,6 +242,7 @@ bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *c
     } else {
         fprintf(stderr,"Set SSL context finished successfully\n");
     }
+    */
 #endif // USE_TLS
     return true;
 }

@@ -37,7 +37,7 @@
 
 #include <libmemcached/common.h>
 
-static context_funcs context_default_io_funcs = {
+context_funcs context_default_io_funcs = {
         .free_privctx = NULL,
         .read = memcached_io_recv,
         .write = memcached_io_send
@@ -204,7 +204,7 @@ void __instance_free(memcached_instance_st* self)
     self->options.is_initialized= false;
   }
   if (self->io_funcs->free_privctx != NULL) {
-      self->io_funcs->free_privctx(self->privctx);
+      self->io_funcs->free_privctx(self);
   }
 }
 

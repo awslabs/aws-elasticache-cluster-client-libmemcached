@@ -109,7 +109,8 @@ typedef enum memcached_return_t memcached_return_t;
 #endif
 
 enum memc_ssl_context_error {
-    MEMCACHED_SSL_CTX_NONE = 0,                     /* No Error */
+    MEMCACHED_SSL_CTX_SUCCESS = 0,                  /* No Error */
+    MEMCACHED_SSL_INVALID_ARGUMENTS,                /* Invalid function arguments */
     MEMCACHED_SSL_MEMORY_ALLOCATION_FAILURE,        /* Failed to allocate memory */
     MEMCACHED_SSL_CTX_CREATE_FAILED,                /* Failed to create OpenSSL SSL_CTX */
     MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED,            /* Client cert and key must both be specified */

@@ -281,8 +281,7 @@ void scheduler(memcached_server_st *servers, conclusions_st *conclusion)
 
 #if defined(USE_TLS) && USE_TLS
   if(opt_tls || getenv("USE_TLS")) {
-      memc_SSL_CTX *ssl_ctx;
-      if (!initialize_tls(memc, opt_cert_file, opt_private_key_file, opt_ca_file, opt_skip_verify, ssl_ctx)) {
+      if (!initialize_tls(memc, opt_cert_file, opt_private_key_file, opt_ca_file, opt_skip_verify)) {
           std::cerr << "Failed to set TLS." << std::endl;
           memcached_free(memc);
           exit(EXIT_FAILURE);

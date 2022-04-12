@@ -165,5 +165,7 @@ struct memcached_st {
     char *current_config;
     uint32_t threshold_secs;
   } polling;
+#if defined(USE_TLS) && USE_TLS
     void *ssl_ctx;
+#endif
 };

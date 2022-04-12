@@ -20,34 +20,8 @@ extern "C" {
 
 #include <libmemcached-1.0/types.h>
 #include <libmemcached-1.0/types/return.h>
-
 /**
- * To create a Memcached client instance with TLS follow the following steps:
-    #include <libmemcached/memcached.h>
-    memcached_server_st *servers = NULL;
-    memcached_st *memc;
-    memcached_return rc;
-    memc_ssl_context_error error;
-    memc = memcached_create(NULL);
-
-    // Set SSL configurations
-    memcached_ssl_context_config config = {
-        config.cert_file = "/path/to/cert",
-        config.key_file "/path/to/key"
-    };
-
-    memc_SSL_CTX *ssl_ctx = memcached_create_ssl_context(memc, &config , &error);
-    if (ssl_ctx == NULL) {
-        fprintf(stderr,memcached_ssl_context_get_error(error));
-    }
-
-    servers= memcached_server_list_append(servers, "localhost", 6379, &rc);
-    memcached_server_push(memc, servers);
-
-    rc = memcached_set_ssl_context(memc, ssl_ctx);
-    if (rc != MEMCACHED_SUCCESS) {
-        fprintf(stderr, memcached_strerror(NULL, rc));
-    }
+ * See example/tls_client.cc for usage example
  */
 
 
@@ -67,14 +41,11 @@ int memcached_init_OpenSSL(void);
 LIBMEMCACHED_API
 const char *memcached_ssl_context_get_error(memc_ssl_context_error error);
 
-
-
 /**
  * Free the ssl_ctx memory
  */
 LIBMEMCACHED_API
 void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx);
-
 
 /**
  * Create a memc_SSL_CTX with a base SSL_CTX (OpenSSL context) using the SSL configuration provided.
@@ -88,9 +59,28 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx);
  * This function DOESN'T set the SSL context to the passed memcached instance. To do so, call the
  * memcached_set_ssl_context() function.
  * */
-
 LIBMEMCACHED_API
 memc_SSL_CTX *memcached_create_ssl_context(const memcached_st *ptr, memcached_ssl_context_config *ctx_config, memc_ssl_context_error *error);
+
+/**
+ * Create a memc_SSL_CTX with a base SSL_CTX (OpenSSL context) using the SSL configuration provided.
+ * Sets the created memc_SSL_CTX to the memcached instance.
+ *
+ * The calloc function configured in the memcached instance will be used to allocate memory.
+ *
+ * Returns a memc_ssl_context_error. If SSL_CTX set and creation was successful, MEMCACHED_SSL_CTX_SUCCESS will be returned.
+ *
+ * */
+LIBMEMCACHED_API
+memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, memcached_ssl_context_config *config);
+
+/**
+ * Gets a copy of the memcached SSL context (memc_SSL_CTX) of the memcached instance.
+ * SSL_CTX reference count is increased by this function.
+ * NULL is returned if memc_SSL_CTX isn't set.
+ */
+LIBMEMCACHED_API
+memc_SSL_CTX *memcached_get_ssl_context_copy(const memcached_st *ptr);
 
 /**
  * Get the server's SSL certificates
@@ -135,7 +125,12 @@ SSL_CTX* init_ctx(void);
 /**
  * Free a memcached_ssl_st object.
  */
-void memcached_ssl_free(void *privctx);
+void memcached_ssl_free(void *instance);
+
+/**
+ * Free the ssl_ctx memory of the passed memcached object
+ */
+void memcached_free_memc_ssl_ctx(memcached_st* memc);
 
 #ifdef __cplusplus
 } // extern "C"

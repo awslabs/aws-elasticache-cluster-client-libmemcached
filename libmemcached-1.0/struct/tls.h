@@ -1,10 +1,7 @@
 //
 // Created by Shaul, Bar on 22/03/2022.
 //
-
-#ifndef AWS_ELASTICACHE_CLUSTER_CLIENT_LIBMEMCACHED_TLS_H
-#define AWS_ELASTICACHE_CLUSTER_CLIENT_LIBMEMCACHED_TLS_H
-
+#if defined(USE_TLS) && USE_TLS
 #include <openssl/ssl.h>
 
 #pragma once
@@ -19,11 +16,11 @@ struct memc_SSL_CTX {
 
 /* A wrapper for the openssl's SSL object. */
 typedef struct memcached_SSL {
-    /**
-     * OpenSSL SSL object.
-     */
+    /* OpenSSL SSL object. */
     SSL *ssl;
 
+    /* Store the default IO functions to switch back to in case TLS is disabled */
+    void *default_io_funcs;
 } memcached_SSL;
 
 /**
@@ -44,5 +41,4 @@ typedef struct memcached_ssl_context_config {
     int session_cache_timeout;
     bool skip_cert_verify;
 } memcached_ssl_context_config;
-
-#endif //AWS_ELASTICACHE_CLUSTER_CLIENT_LIBMEMCACHED_TLS_H
+#endif //USE_TLS

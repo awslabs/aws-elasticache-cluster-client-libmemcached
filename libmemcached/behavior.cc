@@ -355,6 +355,7 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
       return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
                                  memcached_literal_param("MEMCACHED_BEHAVIOR_LOAD_FROM_FILE can not be set with memcached_behavior_set()"));
 
+#if defined(USE_TLS) && USE_TLS
   case MEMCACHED_BEHAVIOR_USE_TLS:
       // if trying to set the flag to enable UDP
       // while TLS is enabled, then return NOT SUPPORTED
@@ -364,8 +365,12 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
                                      memcached_literal_param("MEMCACHED_BEHAVIOR_USE_TLS isn't supported with UDP connections"));
       }
       ptr->flags.use_tls= bool(data);
+      if (!(bool)data) {
+          memcached_free_memc_ssl_ctx(ptr);
+      }
       send_quit(ptr);
       break;
+#endif
 
   case MEMCACHED_BEHAVIOR_MAX:
   default:

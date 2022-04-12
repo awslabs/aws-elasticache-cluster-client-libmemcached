@@ -69,8 +69,7 @@ static test_return_t pre_ssl(memcached_st *)
  */
 
 static bool init_ssl(memcached_st *memc) {
-    memc_SSL_CTX *ssl_ctx = NULL;
-    return initialize_tls(memc, (char *)cert_file, (char *)key_file, NULL, true, ssl_ctx);
+    return initialize_tls(memc, (char *)cert_file, (char *)key_file, NULL, true);
 }
 
 static test_return_t ssl_set_get_test(memcached_st *memc)
@@ -91,6 +90,7 @@ static test_return_t ssl_set_get_test(memcached_st *memc)
     }
     test_compare(MEMCACHED_SUCCESS, memcached_delete(memc, key, strlen(key), 0));
     free(res_value);
+    memcached_quit(memc);
     return TEST_SUCCESS;
 }
 
@@ -110,6 +110,70 @@ static test_return_t ssl_fail_with_udp_connection_test()
     memcached_return_t rc = memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_UDP, 1);
     test_true(rc == MEMCACHED_INVALID_ARGUMENTS);
     free(memc);
+    return TEST_SUCCESS;
+}
+
+static test_return_t ssl_dynamic_tls_behavior_test(memcached_st *memc)
+{
+    // Enable TLS
+    test_compare(true, init_ssl(memc));
+    memc_SSL_CTX *ssl_ctx = memcached_get_ssl_context_copy(memc);
+    test_true(ssl_ctx != NULL);
+    test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
+
+    // Disable TLS
+    test_compare(MEMCACHED_SUCCESS, memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 0));
+    test_compare(MEMCACHED_CONNECTION_FAILURE, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));;
+
+    // Enable TLS with the previous SSL context
+    test_compare(MEMCACHED_SUCCESS, memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 1));
+    test_compare(MEMCACHED_SUCCESS, memcached_set_ssl_context(memc, ssl_ctx));
+    test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
+
+    test_compare(MEMCACHED_SUCCESS, memcached_delete(memc, key, strlen(key), 0));
+    memcached_quit(memc);
+    return TEST_SUCCESS;
+}
+
+static test_return_t shared_ssl_ctx_test(memcached_st *memc)
+{
+    // Enable TLS
+    test_compare(true, init_ssl(memc));
+    test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
+    memc_SSL_CTX *ssl_ctx_get = memcached_get_ssl_context_copy(memc);
+    test_true(ssl_ctx_get != NULL);
+
+    // Clone client
+    memcached_st *memc_clone= memcached_clone(NULL, memc);
+    test_true(memc_clone);
+    test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
+
+    // Test that both memcached instances are sharing the same SSL_CTX
+    memc_SSL_CTX *ssl_ctx = memcached_get_ssl_context_copy(memc);
+    memc_SSL_CTX *ssl_ctx_cloned = memcached_get_ssl_context_copy(memc_clone);
+    test_true((ssl_ctx != NULL) && (ssl_ctx->ctx != NULL));
+    test_true((ssl_ctx_cloned != NULL) && (ssl_ctx_cloned->ctx != NULL));
+    test_true(ssl_ctx->ctx == ssl_ctx_cloned->ctx);
+
+    // Test set with the cloned client
+    test_compare(MEMCACHED_SUCCESS, memcached_set(memc_clone, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
+
+    // Delete the key on the original client before disabling TLS
+    test_compare(MEMCACHED_SUCCESS, memcached_delete(memc, key, strlen(key), 0));
+    // Disable TLS on the original client
+    test_compare(MEMCACHED_SUCCESS, memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 0));
+    test_null(memcached_get_ssl_context_copy(memc));
+
+    // Make sure the SSL_CTX wasn't freed
+    test_true(ssl_ctx_cloned->ctx != NULL);
+
+    // Test that executing set with the cloned client still succeed
+    test_compare(MEMCACHED_SUCCESS, memcached_set(memc_clone, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
+
+    // Cleanup
+    test_compare(MEMCACHED_SUCCESS, memcached_delete(memc_clone, key, strlen(key), 0));
+    free(memc_clone);
+    memcached_quit(memc);
     return TEST_SUCCESS;
 }
 
@@ -152,6 +216,8 @@ test_st ssl_tests[]= {
         {"ssl_connection_failure_test", true, (test_callback_fn*)ssl_connection_failure_test },
         {"ssl_non_blocking_no_replay_test", true, (test_callback_fn*)ssl_no_blocking_io_no_replay_test },
         {"ssl_fail_with_udp_connection_test", true, (test_callback_fn*)ssl_fail_with_udp_connection_test },
+        {"ssl_dynamic_tls_behavior_test", true, (test_callback_fn*)ssl_dynamic_tls_behavior_test },
+        {"shared_ssl_ctx_test", true, (test_callback_fn*)shared_ssl_ctx_test },
         {0, 0, (test_callback_fn*)0}
 };
 

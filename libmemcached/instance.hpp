@@ -64,7 +64,6 @@ typedef struct context_funcs {
     ssize_t (*write)(memcached_instance_st*, char*, size_t, int);
 } context_funcs;
 
-
 // @todo Complete class transformation
 struct memcached_instance_st {
   in_port_t port() const

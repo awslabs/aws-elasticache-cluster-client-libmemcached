@@ -60,8 +60,6 @@ namespace libtest {
         fprintf(stderr,"Set SSL context finished successfully\n");
     }
 
-    memc_SSL_CTX *memcached_create_ssl_context(const memcached_st *ptr, memcached_ssl_context_config *ctx_config, memc_ssl_context_error *error);
-
     memcached_st *server = memcached_create(NULL);
     memcached_return_t rc = memcached_behavior_set(server, MEMCACHED_BEHAVIOR_DYNAMIC_POLLING_THRESHOLD_SECS, 20);
     test_true(memcached_success(rc));
