@@ -562,7 +562,7 @@ static memcached_return_t network_connect(memcached_instance_st* server)
   while (server->address_info_next and server->fd == INVALID_SOCKET)
   {
     /* Memcache server does not support IPV6 in udp mode, so skip if not ipv4 */
-    if ((memcached_is_udp(server->root)) and server->address_info_next->ai_family != AF_INET)
+    if (memcached_is_udp(server->root) and server->address_info_next->ai_family != AF_INET)
     {
       server->address_info_next= server->address_info_next->ai_next;
       continue;
@@ -599,12 +599,6 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     /* connect to server */
     if ((connect(server->fd, server->address_info_next->ai_addr, server->address_info_next->ai_addrlen) != SOCKET_ERROR))
     {
-#if defined(USE_TLS) && USE_TLS
-        if (server->root->flags.use_tls) {
-            return memcached_ssl_connect(server);
-        }
-#endif //USE_TLS
-
       server->state= MEMCACHED_SERVER_STATE_CONNECTED;
       return MEMCACHED_SUCCESS;
     }
@@ -630,11 +624,6 @@ static memcached_return_t network_connect(memcached_instance_st* server)
 
         if (memcached_success(rc))
         {
-#if defined(USE_TLS) && USE_TLS
-            if (server->root->flags.use_tls) {
-                return memcached_ssl_connect(server);
-            }
-#endif //USE_TLS
             server->state= MEMCACHED_SERVER_STATE_CONNECTED;
             return MEMCACHED_SUCCESS;
         }
@@ -820,6 +809,17 @@ static memcached_return_t _memcached_connect(memcached_instance_st* server, cons
       }
     }
 #endif
+
+#if defined(USE_TLS) && USE_TLS
+    if (server->state == MEMCACHED_SERVER_STATE_CONNECTED and server->root->flags.use_tls) {
+        rc = memcached_ssl_connect(server);
+        if (memcached_failed(rc) and server->fd != INVALID_SOCKET)
+        {
+            WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
+            server->reset_socket();
+        }
+    }
+#endif //USE_TLS
     break;
 
   case MEMCACHED_CONNECTION_UNIX_SOCKET:

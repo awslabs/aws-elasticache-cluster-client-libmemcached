@@ -3,7 +3,7 @@
 Libmemcached library support for Amazon ElastiCache Memcached Cluster client for PHP. The client is available at https://github.com/awslabs/aws-elasticache-cluster-client-memcached-for-php
 
 ### Prerequests libraries
-- OpenSSL (unless TLS support is disabled by ./configure --disable-tls).
+- OpenSSL >= 1.0.2 (unless TLS support is disabled by ./configure --disable-tls).
 - SASL (libsasl2, unless SASL support is disabled by ./configure --disable-sasl).
 
 ### compile the libmemcached library

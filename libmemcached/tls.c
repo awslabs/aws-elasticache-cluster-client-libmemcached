@@ -1,11 +1,38 @@
-//
-// Created by Shaul, Bar on 17/03/2022.
-//
+/**
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 #if defined(USE_TLS) && USE_TLS
 
-#include "libmemcached/tls.h"
+#include <openssl/err.h>
+#include <openssl/bio.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/opensslv.h>
+
+#include <libmemcached-1.0/tls.h>
 #include <libmemcached/common.h>
 #include <libmemcached/virtual_bucket.h>
+
+/* A wrapper for the openssl's SSL_CTX object. */
+struct memc_SSL_CTX {
+    /* Associated OpenSSL SSL_CTX as created by memcached_create_ssl_context() */
+    SSL_CTX *ctx;
+
+    /* Requested hostname for verefication.
+     * The hostname set needs to match with the CN (Common Name) of Subject of server certificate */
+    char *hostname;
+};
+
+/* A wrapper for the openssl's SSL object. */
+typedef struct memcached_SSL {
+    /* OpenSSL SSL object. */
+    SSL *ssl;
+
+    /* Store the default IO functions to switch back to in case TLS is disabled */
+    void *default_io_funcs;
+} memcached_SSL;
 
 int memcached_init_OpenSSL(void)
 {
@@ -66,6 +93,31 @@ static int ssl_set_password_callback(char *buf, int size, int rwflag, void *u) {
     return (int) pass_len;
 }
 
+/**
+ * Initiate a new SSL context
+ */
+static SSL_CTX* init_ctx(void)
+{
+	const SSL_METHOD *method;
+	SSL_CTX *ctx;
+
+	OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
+	SSL_load_error_strings();   /* Bring in and register error messages */
+
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+    method = TLS_client_method();
+#else
+    method = TLSv1_2_client_method();
+#endif
+
+	ctx = SSL_CTX_new(method);   /* Create new context */
+	if ( ctx == NULL )
+	{
+		ERR_print_errors_fp(stderr);
+	}
+	return ctx;
+}
+
 memc_SSL_CTX *memcached_create_ssl_context(const memcached_st *ptr, memcached_ssl_context_config *ctx_config, memc_ssl_context_error *error)
 {
     memc_SSL_CTX *ssl_ctx;
@@ -98,6 +150,15 @@ memc_SSL_CTX *memcached_create_ssl_context(const memcached_st *ptr, memcached_ss
 #endif
 
     SSL_CTX_set_mode(ssl_ctx->ctx, SSL_MODE_ENABLE_PARTIAL_WRITE|SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
+
+    if(ctx_config->hostname == NULL && !(ctx_config->skip_hostname_verify || ctx_config->skip_cert_verify)) {
+        if (error) *error = MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED;
+        goto error;
+    }
+
+    if(ctx_config->hostname && !ctx_config->skip_hostname_verify) {
+        ssl_ctx->hostname = ctx_config->hostname;
+    }
 
     if (!ctx_config->skip_cert_verify) {
         SSL_CTX_set_verify(ssl_ctx->ctx, SSL_VERIFY_PEER, NULL);
@@ -163,6 +224,8 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error)
             return "Failed to create OpenSSL SSL_CTX\n";
         case MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED:
             return "Client cert and key must both be specified\n";
+        case MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED:
+            return "Hostname must be specified for verification unless skip_hostname_verify or skip_cert_verify are set to true\n";
         case MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED:
             return "Failed to load CA Certificate or CA Path\n";
         case MEMCACHED_SSL_CTX_CLIENT_CERT_LOAD_FAILED:
@@ -178,11 +241,12 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error)
     }
 }
 
-
 /**
  * SSL Connection initialization.
  */
 static memcached_return_t init_ssl_connection(memcached_instance_st *server, SSL *ssl) {
+    int rv;
+
     if (server->privctx) {
         return memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("The server was already associated with SSL context"));
     }
@@ -201,11 +265,30 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, SSL
     WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
     SSL_set_fd(ssl, server->fd);
     SSL_set_connect_state(ssl);
+    memc_SSL_CTX *ssl_ctx = (memc_SSL_CTX *)server->root->ssl_ctx;
+
+    if (ssl_ctx && ssl_ctx->hostname) {
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+        if (!SSL_set1_host(ssl, ssl_ctx->hostname)) {
+            rv = ERR_peek_error();
+            goto error;
+        }
+#else
+        X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
+        /* Enable automatic hostname checks */
+        X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+        if (!X509_VERIFY_PARAM_set1_host(param, ssl_ctx->hostname, sizeof(ssl_ctx->hostname) - 1)) {
+            rv = ERR_peek_error();
+            goto error;
+        }
+#endif
+    }
+
     memc_ssl->ssl = ssl;
 
     ERR_clear_error();
 
-    int rv = SSL_connect(ssl);
+    rv = SSL_connect(ssl);
     if (rv == 1) {
         goto connection_success;
     }
@@ -216,20 +299,9 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, SSL
         goto connection_success;
     }
 
-
-    char err[512];
-    if (rv == SSL_ERROR_SYSCALL)
-        snprintf(err,sizeof(err)-1,"SSL_connect failed: %s",strerror(errno));
-    else {
-        unsigned long e = ERR_peek_last_error();
-        const char * e_reason = ERR_reason_error_string(e);
-        snprintf(err,sizeof(err)-1,"SSL_connect failed: %s", e_reason);
-    }
-
     libmemcached_free(NULL, memc_ssl);
-
-    return memcached_set_error(*(server->root), MEMCACHED_TLS_CONNECTION_ERROR, MEMCACHED_AT, memcached_literal_param(err));
-
+    goto error;
+    {
     connection_success:
     // Check if we need to set the server's file descriptor to non-blocking mode
     if (SOCK_NONBLOCK && (fcntl(server->fd, F_SETFL, SOCK_NONBLOCK) == -1)) {
@@ -238,6 +310,19 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, SSL
 
     server->privctx = memc_ssl;
     return MEMCACHED_SUCCESS;
+    }
+    {
+    error:
+    char err[512];
+    if (rv == SSL_ERROR_SYSCALL) {
+        snprintf(err,sizeof(err)-1,"%s",  strerror(errno));
+    } else {
+        unsigned long e = ERR_peek_last_error();
+        const char * e_reason = ERR_reason_error_string(e);
+        snprintf(err,sizeof(err)-1,"%s", e_reason);
+    }
+    return memcached_set_error(*(server->root), MEMCACHED_TLS_CONNECTION_ERROR, MEMCACHED_AT, memcached_literal_param(err));
+    }
 }
 
 memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
@@ -280,7 +365,7 @@ memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
 
     rc = init_ssl_connection(server, ssl);
     if (rc == MEMCACHED_SUCCESS) {
-        server->state= MEMCACHED_SERVER_STATE_CONNECTED;
+        server->state= MEMCACHED_SERVER_STATE_TLS_CONNECTED;
         return rc;
     } else {
         goto error;
@@ -325,8 +410,8 @@ memc_SSL_CTX *memcached_get_ssl_context_copy(const memcached_st *ptr) {
     dst_ssl_ctx->ctx = src_ssl_ctx->ctx;
     SSL_CTX_up_ref(src_ssl_ctx->ctx);
 
-    if (src_ssl_ctx->server_name != NULL) {
-        dst_ssl_ctx->server_name = strdup(src_ssl_ctx->server_name);
+    if (src_ssl_ctx->hostname != NULL) {
+        dst_ssl_ctx->hostname = strdup(src_ssl_ctx->hostname);
     }
 
     return dst_ssl_ctx;
@@ -346,9 +431,9 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx)
     if (!ssl_ctx)
         return;
 
-    if (ssl_ctx->server_name) {
-        libmemcached_free(NULL, ssl_ctx->server_name);
-        ssl_ctx->server_name = NULL;
+    if (ssl_ctx->hostname) {
+        libmemcached_free(NULL, ssl_ctx->hostname);
+        ssl_ctx->hostname = NULL;
     }
 
     if (ssl_ctx->ctx) {
@@ -404,28 +489,6 @@ ssize_t memcached_ssl_write(memcached_instance_st* instance,
     int nread = SSL_write(ssl, local_write_ptr, write_length);
 
     return handle_ssl_return_value(instance, nread);
-}
-
-SSL_CTX* init_ctx(void)
-{
-	const SSL_METHOD *method;
-	SSL_CTX *ctx;
-
-	OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
-	SSL_load_error_strings();   /* Bring in and register error messages */
-
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
-    method = TLS_client_method();
-#else
-    method = TLSv1_2_client_method();
-#endif
-
-	ctx = SSL_CTX_new(method);   /* Create new context */
-	if ( ctx == NULL )
-	{
-		ERR_print_errors_fp(stderr);
-	}
-	return ctx;
 }
 
 memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char ** output)

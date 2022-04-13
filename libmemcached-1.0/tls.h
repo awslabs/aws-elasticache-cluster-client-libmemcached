@@ -1,6 +1,8 @@
-//
-// Created by Shaul, Bar on 22/03/2022.
-//
+/**
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
 
 #pragma once
 
@@ -10,14 +12,6 @@ extern "C" {
 
 #include <libmemcached-1.0/visibility.h>
 #include <libmemcached-1.0/struct/tls.h>
-#include <libmemcached-1.0/types.h>
-
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/opensslv.h>
-
 #include <libmemcached-1.0/types.h>
 #include <libmemcached-1.0/types/return.h>
 /**
@@ -116,11 +110,6 @@ ssize_t memcached_ssl_read(memcached_instance_st* instance,
              char* input_buf,
              size_t buffer_length,
              int flags);
-
-/**
- * Initiate a new SSL context
- */
-SSL_CTX* init_ctx(void);
 
 /**
  * Free a memcached_ssl_st object.

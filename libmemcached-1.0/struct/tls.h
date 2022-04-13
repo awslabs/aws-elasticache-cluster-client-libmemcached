@@ -1,27 +1,20 @@
-//
-// Created by Shaul, Bar on 22/03/2022.
-//
+/**
+ * Copyright (C) 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
 #if defined(USE_TLS) && USE_TLS
-#include <openssl/ssl.h>
 
 #pragma once
 
-struct memc_SSL_CTX {
-    /* Associated OpenSSL SSL_CTX as created by memcached_create_ssl_context() */
-    SSL_CTX *ctx;
+/* A wrapper around OpenSSL SSL_CTX to allow easy SSL use without directly
+ * calling OpenSSL.*/
+typedef struct memc_SSL_CTX memc_SSL_CTX;
 
-    /* Requested SNI, or NULL */
-    char *server_name;
-};
-
-/* A wrapper for the openssl's SSL object. */
-typedef struct memcached_SSL {
-    /* OpenSSL SSL object. */
-    SSL *ssl;
-
-    /* Store the default IO functions to switch back to in case TLS is disabled */
-    void *default_io_funcs;
-} memcached_SSL;
+/* A wrapper around OpenSSL SSL to allow easy SSL use without directly
+ * calling OpenSSL.*/
+typedef struct memcached_SSL memcached_SSL;
 
 /**
  * SSL context configurations
@@ -32,6 +25,7 @@ typedef struct memcached_ssl_context_config {
     char *key_file_pass;            /* Optional password for key_file */
     char *ca_cert_file;
     char *ca_cert_dir;
+    char *hostname;                 /* Required unless skip_hostname_verify/skip_cert_verify is set to true */
     char *protocols;
     char *ciphers;
     char *ciphersuites;
@@ -40,5 +34,6 @@ typedef struct memcached_ssl_context_config {
     int session_cache_size;
     int session_cache_timeout;
     bool skip_cert_verify;
+    bool skip_hostname_verify;
 } memcached_ssl_context_config;
 #endif //USE_TLS
