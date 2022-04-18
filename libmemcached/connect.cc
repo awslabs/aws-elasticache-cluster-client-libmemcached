@@ -811,7 +811,7 @@ static memcached_return_t _memcached_connect(memcached_instance_st* server, cons
 #endif
 
 #if defined(USE_TLS) && USE_TLS
-    if (server->state == MEMCACHED_SERVER_STATE_CONNECTED and server->root->flags.use_tls) {
+    if (server->root->flags.use_tls and !memcached_failed(rc) and server->state == MEMCACHED_SERVER_STATE_CONNECTED) {
         rc = memcached_ssl_connect(server);
         if (memcached_failed(rc) and server->fd != INVALID_SOCKET)
         {

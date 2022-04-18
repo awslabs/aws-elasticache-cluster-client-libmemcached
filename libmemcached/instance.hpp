@@ -59,7 +59,7 @@
 #include "libmemcached/string.hpp"
 
 typedef struct context_funcs {
-    void (*free_privctx)(void *);
+    void (*free_privctx)(memcached_instance_st*);
     ssize_t (*read)(memcached_instance_st*, char*, size_t, int);
     ssize_t (*write)(memcached_instance_st*, char*, size_t, int);
 } context_funcs;

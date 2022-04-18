@@ -214,9 +214,6 @@ void __instance_free(memcached_instance_st* self)
   {
     self->options.is_initialized= false;
   }
-  if (self->io_funcs->free_privctx != NULL) {
-      self->io_funcs->free_privctx(self);
-  }
 }
 
 void memcached_instance_free(memcached_instance_st* self)

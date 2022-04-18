@@ -278,7 +278,6 @@ you will need to install %{name}-devel.
 %{_mandir}/man3/memcached_ssl_context_get_error.3.gz
 %{_mandir}/man3/memcached_free_SSL_ctx.3.gz
 %{_mandir}/man3/memcached_free_memc_ssl_ctx.3.gz
-%{_mandir}/man3/memcached_create_ssl_context.3.gz
 %{_mandir}/man3/memcached_set_ssl_context.3.gz
 %{_mandir}/man3/memcached_create_and_set_ssl_context.3.gz
 %{_mandir}/man3/memcached_get_ssl_context_copy.3.gz

@@ -233,16 +233,6 @@ bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *c
     } else {
         fprintf(stderr,"Created and set SSL context successfully\n");
     }
-    /*
-    ssl_ctx = memcached_create_ssl_context(memc, &config, &error);
-    rc = memcached_set_ssl_context(memc, ssl_ctx);
-    if (rc != MEMCACHED_SUCCESS) {
-        fprintf(stderr, memcached_strerror(NULL, rc));
-        return false;
-    } else {
-        fprintf(stderr,"Set SSL context finished successfully\n");
-    }
-    */
 #endif // USE_TLS
     return true;
 }

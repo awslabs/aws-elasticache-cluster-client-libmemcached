@@ -43,21 +43,6 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx);
 
 /**
  * Create a memc_SSL_CTX with a base SSL_CTX (OpenSSL context) using the SSL configuration provided.
- *
- * If ptr is non-null, the calloc function configured in the memcached instance will be used to allocate memory.
- * Otherwise, std::calloc will be used.
- *
- * If error is non-null, it will be populated in case the context creation fails
- * (returning a NULL).
- *
- * This function DOESN'T set the SSL context to the passed memcached instance. To do so, call the
- * memcached_set_ssl_context() function.
- * */
-LIBMEMCACHED_API
-memc_SSL_CTX *memcached_create_ssl_context(const memcached_st *ptr, memcached_ssl_context_config *ctx_config, memc_ssl_context_error *error);
-
-/**
- * Create a memc_SSL_CTX with a base SSL_CTX (OpenSSL context) using the SSL configuration provided.
  * Sets the created memc_SSL_CTX to the memcached instance.
  *
  * The calloc function configured in the memcached instance will be used to allocate memory.
@@ -114,7 +99,7 @@ ssize_t memcached_ssl_read(memcached_instance_st* instance,
 /**
  * Free a memcached_ssl_st object.
  */
-void memcached_ssl_free(void *instance);
+void memcached_ssl_free(memcached_instance_st *instance);
 
 /**
  * Free the ssl_ctx memory of the passed memcached object

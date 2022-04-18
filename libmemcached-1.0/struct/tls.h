@@ -14,7 +14,7 @@ typedef struct memc_SSL_CTX memc_SSL_CTX;
 
 /* A wrapper around OpenSSL SSL to allow easy SSL use without directly
  * calling OpenSSL.*/
-typedef struct memcached_SSL memcached_SSL;
+typedef struct memc_SSL memc_SSL;
 
 /**
  * SSL context configurations
