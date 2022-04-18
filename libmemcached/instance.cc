@@ -132,6 +132,17 @@ void memcached_instance_st::events(short arg)
   _events|= arg;
 }
 
+void memcached_instance_st::delete_event(short arg)
+{
+  _events &= ~arg;
+}
+
+void memcached_instance_st::set_events(short events)
+{
+  _events = events;
+}
+
+
 void memcached_instance_st::revents(short arg)
 {
   if (arg)

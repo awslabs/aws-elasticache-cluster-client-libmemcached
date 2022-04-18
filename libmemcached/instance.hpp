@@ -160,6 +160,8 @@ struct memcached_instance_st {
 
   void events(short);
   void revents(short);
+  void delete_event(short);
+  void set_events(short);
   const context_funcs *io_funcs; /* IO Functions table */
   void *privctx; /* Internal context pointer to manage SSL connections. */
   uint32_t cursor_active_;
