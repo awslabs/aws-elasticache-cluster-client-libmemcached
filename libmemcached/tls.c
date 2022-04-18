@@ -138,11 +138,11 @@ static SSL_CTX* init_ctx(void)
     OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
     SSL_load_error_strings();   /* Bring in and register error messages */
 
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+//#if OPENSSL_VERSION_NUMBER >= 0x10100000L
     method = TLS_client_method();
-#else
-    method = TLSv1_2_client_method();
-#endif
+//#else
+//    method = TLSv1_2_client_method();
+//#endif
 
     ctx = SSL_CTX_new(method);   /* Create new context */
     if ( ctx == NULL )
@@ -221,20 +221,20 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, mem
     SSL_set_connect_state(ssl);
 
     if (memc_ssl_ctx->hostname) {
-#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+//#if OPENSSL_VERSION_NUMBER >= 0x10100000L
         if (!SSL_set1_host(ssl, memc_ssl_ctx->hostname)) {
             rv = ERR_peek_error();
             goto error;
         }
-#else
-        X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
-        /* Enable automatic hostname checks */
-        X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-        if (!X509_VERIFY_PARAM_set1_host(param, ssl_ctx->hostname, sizeof(ssl_ctx->hostname) - 1)) {
-            rv = ERR_peek_error();
-            goto error;
-        }
-#endif
+//#else
+//        X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
+//        /* Enable automatic hostname checks */
+//        X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
+//        if (!X509_VERIFY_PARAM_set1_host(param, ssl_ctx->hostname, sizeof(ssl_ctx->hostname) - 1)) {
+//            rv = ERR_peek_error();
+//            goto error;
+//        }
+//#endif
     }
 
     memc_ssl->ssl = ssl;
