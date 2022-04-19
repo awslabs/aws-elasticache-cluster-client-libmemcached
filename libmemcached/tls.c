@@ -108,7 +108,7 @@ void memcached_ssl_free(memcached_instance_st *instance){
         memc_ssl->ssl = NULL;
     }
     instance->io_funcs = (context_funcs *)memc_ssl->default_io_funcs;
-    libmemcached_free(NULL, memc_ssl);
+    free(memc_ssl);
     instance->privctx = NULL;
 }
 
@@ -252,7 +252,7 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, mem
         goto connection_success;
     }
 
-    libmemcached_free(NULL, memc_ssl);
+    free(memc_ssl);
     goto error;
     {
     connection_success:
@@ -472,7 +472,7 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx)
         return;
 
     if (ssl_ctx->hostname) {
-        libmemcached_free(NULL, ssl_ctx->hostname);
+        free(ssl_ctx->hostname);
         ssl_ctx->hostname = NULL;
     }
 
@@ -481,7 +481,7 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx)
         ssl_ctx->ctx = NULL;
     }
 
-    libmemcached_free(NULL, ssl_ctx);
+    free(ssl_ctx);
 }
 
 //static int handle_ssl_return_value(memcached_instance_st* instance, int rv, want_t *want){
