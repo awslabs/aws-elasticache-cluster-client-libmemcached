@@ -587,7 +587,7 @@ ssize_t memcached_ssl_write(memcached_instance_st* instance,
 //    return rv;
 }
 
-memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char ** output)
+memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char *output)
 {
     SSL* ssl;
     X509 *cert;
@@ -606,10 +606,11 @@ memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instan
         snprintf(certs_msg,sizeof(certs_msg)-1,"Server certificates:\n Subject: %s\n Issuer: %s\n",
                  X509_NAME_oneline(X509_get_subject_name(cert), 0, 0),
                  X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0));
-        *output = certs_msg;
+        output = certs_msg;
+        return MEMCACHED_SUCCESS;
     }
-    else
-        return memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("No certificates.\n"));
+
+    return memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("No certificates.\n"));
 }
 
 #endif //USE_TLS
