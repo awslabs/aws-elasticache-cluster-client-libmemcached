@@ -7,15 +7,20 @@ int main(int argc, char *argv[]) {
     memcached_st *memc;
     memcached_return rc;
     memc_ssl_context_error ssl_rc;
-    memc_SSL_CTX *ssl_ctx;
-    memc_SSL_CTX *ssl_ctx2;
+    memcached_SSL_CTX *ssl_ctx;
+    memcached_SSL_CTX *ssl_ctx2;
     memcached_ssl_context_config config = {};
     char *host = "127.0.0.1";
     int port = 11212;
-    char *cert_file = "/home/ec2-user/clion/aws-elasticache-cluster-client-libmemcached/mytest/ssl_client/redis.crt";
-    char *key_file = "/home/ec2-user/clion/aws-elasticache-cluster-client-libmemcached/mytest/ssl_client/redis.key";
-    char *key = "keystring";
-    char *value = "keyvalue";
+    //char *cert_file = "/home/ec2-user/clion/aws-elasticache-cluster-client-libmemcached/mytest/ssl_client/redis.crt";
+    //char *key_file = "/home/ec2-user/clion/aws-elasticache-cluster-client-libmemcached/mytest/ssl_client/redis.key";
+
+    char *ca_cert_file = NULL;
+    char *hostname = NULL;
+    char *cert_file = NULL;
+    char *key_file = NULL;
+    const char *key = "keystring";
+    const char *value = "keyvalue";
     char *returned_value;
     size_t vlen;
 
@@ -23,16 +28,26 @@ int main(int argc, char *argv[]) {
 
         host = argv[1];
         port = atoi(argv[2]);
+        fprintf(stderr, "host: %s, port: %d\n", host, port);
         if (argc >= 5) {
             cert_file = argv[3];
             key_file = argv[4];
+            fprintf(stderr, "cert_file: %s, key_file: %s\n", cert_file, key_file);
+
         }
+        if (argc >= 6) {
+            ca_cert_file = argv[5];
+            fprintf(stderr, "ca_cert_file: %s,\n", ca_cert_file);
+        }
+
+        if (argc >= 7) {
+            hostname = argv[6];
+            fprintf(stderr, "hostname: %s,\n", hostname);
+        }
+
     }
-#if defined(USE_TLS) && USE_TLS
-    fprintf(stderr, "USE_TLS");
-#else
-    fprintf(stderr, "not USE_TLS");
-#endif
+
+
 
     // Create a memcached client instance
     memc = memcached_create(NULL);
@@ -40,9 +55,10 @@ int main(int argc, char *argv[]) {
     // Set SSL configurations, see all configurations in libmemcached-1.0/struct/tls.h
     config.cert_file = cert_file;
     config.key_file = key_file;
-    //config.hostname = "localhost";
-    config.skip_cert_verify = true;
-    //config.skip_hostname_verify = true;
+    config.ca_cert_file = ca_cert_file;
+    config.hostname = hostname;
+    config.skip_cert_verify = false;
+    config.skip_hostname_verify = false;
 
 
     // Create and set  SSL context

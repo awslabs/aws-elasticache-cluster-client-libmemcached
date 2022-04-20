@@ -10,29 +10,27 @@
 
 /* A wrapper around OpenSSL SSL_CTX to allow easy SSL use without directly
  * calling OpenSSL.*/
-typedef struct memc_SSL_CTX memc_SSL_CTX;
+typedef struct memcached_SSL_CTX memcached_SSL_CTX;
 
 /* A wrapper around OpenSSL SSL to allow easy SSL use without directly
  * calling OpenSSL.*/
-typedef struct memc_SSL memc_SSL;
+typedef struct memcached_SSL memcached_SSL;
 
 /**
- * SSL context configurations
+ * SSL context configurations.
+ * The client's certificate and key file are only supported in PEM format.
  */
 typedef struct memcached_ssl_context_config {
-    char *cert_file;                /* Cert file name */
-    char *key_file;                 /* Private key filename for cert_file */
+    char *cert_file;                /* Cert file name (PEM formatted)*/
+    char *key_file;                 /* Private key filename for cert_file (PEM formatted)*/
     char *key_file_pass;            /* Optional password for key_file */
     char *ca_cert_file;
     char *ca_cert_dir;
-    char *hostname;                 /* Required unless skip_hostname_verify/skip_cert_verify is set to true */
+    char *hostname;                 /* Required unless skip_hostname_verify is set to true */
     char *protocols;
     char *ciphers;
     char *ciphersuites;
     int prefer_server_ciphers;
-    int session_caching;
-    int session_cache_size;
-    int session_cache_timeout;
     bool skip_cert_verify;
     bool skip_hostname_verify;
 } memcached_ssl_context_config;

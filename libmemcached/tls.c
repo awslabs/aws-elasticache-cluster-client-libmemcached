@@ -22,7 +22,7 @@
 //} want_t;
 
 /* A wrapper for the openssl's SSL_CTX object. */
-struct memc_SSL_CTX {
+typedef struct memcached_SSL_CTX {
     /* Associated OpenSSL SSL_CTX as created by memcached_create_and_set_ssl_context() */
     SSL_CTX *ctx;
 
@@ -32,7 +32,7 @@ struct memc_SSL_CTX {
 };
 
 /* A wrapper for the openssl's SSL object. */
-typedef struct memc_SSL {
+typedef struct memcached_SSL {
     /* OpenSSL SSL object. */
     SSL *ssl;
 
@@ -42,9 +42,9 @@ typedef struct memc_SSL {
 //    /* A flag to indicate whether the SSL layer requires the underlying
 //     * socket to be readable/writable (possible before write/read)*/
 //    want_t want;
-} memc_SSL;
+} memcached_SSL;
 
-int memcached_init_OpenSSL(void)
+int memcached_init_openssl(void)
 {
     SSL_library_init();
 #ifdef HIREDIS_USE_CRYPTO_LOCKS
@@ -55,7 +55,7 @@ int memcached_init_OpenSSL(void)
 }
 
 static context_funcs context_ssl_funcs = {
-    .free_privctx = memcached_ssl_free,
+    .free_privctx = memcached_free_ssl,
     .read = memcached_ssl_read,
     .write = memcached_ssl_write
 };
@@ -85,21 +85,21 @@ static context_funcs context_ssl_funcs = {
 //    }
 //}
 
-void memcached_free_memc_ssl_ctx(memcached_st* memc){
+void memcached_free_ssl_ctx(memcached_st* memc){
     if (!memc) {
         return;
     }
 
-    memcached_free_SSL_ctx((memc_SSL_CTX*)memc->ssl_ctx);
+    _memcached_free_ssl_ctx(memc, (memcached_SSL_CTX*)memc->ssl_ctx);
     memc->ssl_ctx = NULL;
 }
 
-void memcached_ssl_free(memcached_instance_st *instance){
+void memcached_free_ssl(memcached_instance_st *instance){
     if (instance == NULL) {
         return;
     }
 
-    memc_SSL *memc_ssl =(memc_SSL*)instance->privctx;
+    memcached_SSL *memc_ssl =(memcached_SSL*)instance->privctx;
     if (memc_ssl == NULL) {
         return;
     }
@@ -108,7 +108,7 @@ void memcached_ssl_free(memcached_instance_st *instance){
         memc_ssl->ssl = NULL;
     }
     instance->io_funcs = (context_funcs *)memc_ssl->default_io_funcs;
-    free(memc_ssl);
+    libmemcached_free(instance->root, memc_ssl);
     instance->privctx = NULL;
 }
 
@@ -166,7 +166,7 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error)
         case MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED:
             return "Client cert and key must both be specified\n";
         case MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED:
-            return "Hostname must be specified for verification unless skip_hostname_verify or skip_cert_verify are set to true\n";
+            return "Hostname must be specified for verification unless skip_hostname_verify is set to true\n";
         case MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED:
             return "Failed to load CA Certificate or CA Path\n";
         case MEMCACHED_SSL_CTX_CLIENT_CERT_LOAD_FAILED:
@@ -185,21 +185,22 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error)
 /**
  * SSL Connection initialization.
  */
-static memcached_return_t init_ssl_connection(memcached_instance_st *server, memc_SSL_CTX *memc_ssl_ctx) {
-    int rv;
-    SSL *ssl;
-    memc_SSL *memc_ssl;
-    SSL_CTX *ssl_ctx;
+static memcached_return_t init_ssl_connection(memcached_instance_st *server, memcached_SSL_CTX *memc_ssl_ctx) {
+    int rv = 0;
+    SSL *ssl = NULL;
+    memcached_SSL *memc_ssl = NULL;
+    SSL_CTX *ssl_ctx = NULL;
+    const char* err_msg = NULL;
 
     if (!memc_ssl_ctx || !memc_ssl_ctx->ctx) {
-         return memcached_set_error(*server, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("Couldn't initialize SSL, memc_SSL_CTX or SSL_CTX is null"));
+        return memcached_set_error(*server, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("Couldn't initialize SSL, memcached_SSL_CTX or SSL_CTX is null"));
     }
 
     if (server->privctx) {
         return memcached_set_error(*server, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("The server was already associated with SSL context"));
     }
 
-    memc_ssl = (memc_SSL*)calloc(1, sizeof(memc_SSL));
+    memc_ssl = (memcached_SSL*)libmemcached_calloc(server->root, 1, sizeof(memcached_SSL));
     if (memc_ssl == NULL) {
         return memcached_set_error(*server, MEMCACHED_MEMORY_ALLOCATION_FAILURE, MEMCACHED_AT, memcached_literal_param("Out of memory"));
     }
@@ -215,9 +216,13 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, mem
         rv = ERR_peek_error();
         goto error;
     }
+
     SSL_set_mode(ssl, SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
     WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
-    SSL_set_fd(ssl, server->fd);
+    if (!SSL_set_fd(ssl, server->fd)) {
+        err_msg = "Failed to set FD";
+        goto error;
+    }
     SSL_set_connect_state(ssl);
 
     if (memc_ssl_ctx->hostname) {
@@ -237,54 +242,54 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, mem
 //#endif
     }
 
-    memc_ssl->ssl = ssl;
-
     ERR_clear_error();
 
     rv = SSL_connect(ssl);
-    if (rv == 1) {
-        goto connection_success;
+    if (rv != 1) {
+        rv = SSL_get_error(ssl, rv);
+        goto error;
     }
 
-    rv = SSL_get_error(ssl, rv);
-    if ((server->root->flags.no_block) &&
-        (rv == SSL_ERROR_WANT_READ || rv == SSL_ERROR_WANT_WRITE)) {
-        goto connection_success;
+    rv = SSL_get_verify_result(ssl);
+     if (rv != X509_V_OK) {
+         err_msg = X509_verify_cert_error_string(rv);
+         goto error;
     }
 
-    free(memc_ssl);
-    goto error;
-    {
-    connection_success:
-        // Check if we need to set the server's file descriptor to non-blocking mode
-        if (SOCK_NONBLOCK && (fcntl(server->fd, F_SETFL, SOCK_NONBLOCK) == -1)) {
-            return memcached_set_error(*server, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("Could not switch to non-blocking.\n"));
-        }
-
-        server->privctx = memc_ssl;
-        return MEMCACHED_SUCCESS;
+    // Check if we need to set the server's file descriptor to non-blocking mode
+    if (SOCK_NONBLOCK && (fcntl(server->fd, F_SETFL, SOCK_NONBLOCK) == -1)) {
+        err_msg = "Failed to switch to a non-blocking socket";
+        goto error;
     }
-    {
+
+    memc_ssl->ssl = ssl;
+    server->privctx = memc_ssl;
+    return MEMCACHED_SUCCESS;
+
     error:
         if (ssl) {
             SSL_free(ssl);
         }
+        if (memc_ssl) {
+            libmemcached_free(server->root, memc_ssl);
+        }
         char err[512];
-        if (rv == SSL_ERROR_SYSCALL) {
-            snprintf(err,sizeof(err)-1,"%s",  strerror(errno));
+        if (err_msg) {
+            snprintf(err, sizeof(err)-1, "%s", err_msg);
+        } else if (rv == SSL_ERROR_SYSCALL) {
+            snprintf(err,sizeof(err)-1,"%s", strerror(errno));
         } else {
             unsigned long e = ERR_peek_last_error();
             const char * e_reason = ERR_reason_error_string(e);
             snprintf(err,sizeof(err)-1,"%s", e_reason);
         }
         return memcached_set_error(*server, MEMCACHED_TLS_CONNECTION_ERROR, MEMCACHED_AT, memcached_literal_param(err));
-    }
 }
 
 memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
 {
     memcached_return_t rc;
-    memc_SSL_CTX *memc_ssl_ctx;
+    memcached_SSL_CTX *memc_ssl_ctx;
     SSL_CTX *ssl_ctx;
     SSL *ssl;
 
@@ -301,7 +306,7 @@ memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
         goto error;
     }
 
-    memc_ssl_ctx = (memc_SSL_CTX*)server->root->ssl_ctx;
+    memc_ssl_ctx = (memcached_SSL_CTX*)server->root->ssl_ctx;
     if (memc_ssl_ctx == NULL) {
         rc = memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL context needs to be set with memcached_create_and_set_ssl_context()"));
         goto error;
@@ -335,8 +340,8 @@ memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
 
 memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, memcached_ssl_context_config *ctx_config) {
     memc_ssl_context_error rc;
-    memc_SSL_CTX *memc_ssl_ctx;
-    memc_SSL_CTX *ssl_ctx;
+    memcached_SSL_CTX *memc_ssl_ctx;
+    memcached_SSL_CTX *ssl_ctx;
 
     if (ptr == NULL || ctx_config == NULL)
     {
@@ -344,7 +349,7 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
         goto error;
     }
 
-    ssl_ctx = (memc_SSL_CTX *)libmemcached_calloc(ptr, 1, sizeof(memc_SSL_CTX));
+    ssl_ctx = (memcached_SSL_CTX *)libmemcached_calloc(ptr, 1, sizeof(memcached_SSL_CTX));
 
     if (ssl_ctx == NULL) {
         rc = MEMCACHED_SSL_MEMORY_ALLOCATION_FAILURE;
@@ -428,25 +433,25 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
 
     error:
         if (ssl_ctx) {
-            memcached_free_SSL_ctx(ssl_ctx);
+            _memcached_free_ssl_ctx(ptr, ssl_ctx);
         }
         return rc;
 }
 
-memc_SSL_CTX *memcached_get_ssl_context_copy(const memcached_st *ptr) {
-    memc_SSL_CTX *src_ssl_ctx;
-    memc_SSL_CTX *dst_ssl_ctx;
+memcached_SSL_CTX *memcached_get_ssl_context_copy(const memcached_st *ptr) {
+    memcached_SSL_CTX *src_ssl_ctx;
+    memcached_SSL_CTX *dst_ssl_ctx;
     if (ptr == NULL || ptr->ssl_ctx == NULL) {
         return NULL;
     }
 
-    src_ssl_ctx = (memc_SSL_CTX*)ptr->ssl_ctx;
+    src_ssl_ctx = (memcached_SSL_CTX*)ptr->ssl_ctx;
 
     if (src_ssl_ctx == NULL) {
         return NULL;
     }
 
-    dst_ssl_ctx = (memc_SSL_CTX *)libmemcached_calloc(ptr, 1, sizeof(memc_SSL_CTX));
+    dst_ssl_ctx = (memcached_SSL_CTX *)libmemcached_calloc(ptr, 1, sizeof(memcached_SSL_CTX));
     dst_ssl_ctx->ctx = src_ssl_ctx->ctx;
     SSL_CTX_up_ref(src_ssl_ctx->ctx);
 
@@ -457,7 +462,7 @@ memc_SSL_CTX *memcached_get_ssl_context_copy(const memcached_st *ptr) {
     return dst_ssl_ctx;
 }
 
-memcached_return_t memcached_set_ssl_context(memcached_st *ptr, memc_SSL_CTX *ssl_ctx) {
+memcached_return_t memcached_set_ssl_context(memcached_st *ptr, memcached_SSL_CTX *ssl_ctx) {
   if (ptr == NULL || ssl_ctx == NULL || ssl_ctx->ctx == NULL)
   {
     return MEMCACHED_INVALID_ARGUMENTS;
@@ -466,10 +471,11 @@ memcached_return_t memcached_set_ssl_context(memcached_st *ptr, memc_SSL_CTX *ss
   return MEMCACHED_SUCCESS;
 }
 
-void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx)
+void _memcached_free_ssl_ctx(const memcached_st *ptr, memcached_SSL_CTX *ssl_ctx)
 {
-    if (!ssl_ctx)
+    if (!ssl_ctx) {
         return;
+    }
 
     if (ssl_ctx->hostname) {
         free(ssl_ctx->hostname);
@@ -481,12 +487,13 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx)
         ssl_ctx->ctx = NULL;
     }
 
-    free(ssl_ctx);
+    libmemcached_free(ptr, ssl_ctx);
 }
+
 
 //static int handle_ssl_return_value(memcached_instance_st* instance, int rv, want_t *want){
 //    if (rv <= 0) {
-//        memc_SSL *memc_ssl = (memc_SSL*)instance->privctx;
+//        memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
 //        int err = SSL_get_error(memc_ssl->ssl, rv);
 //        switch (err) {
 //            case SSL_ERROR_WANT_READ:
@@ -512,7 +519,7 @@ void memcached_free_SSL_ctx(memc_SSL_CTX *ssl_ctx)
 static int handle_ssl_return_value(memcached_instance_st* instance, int rv){
     if (rv <= 0) {
         char err_buf[512];
-        memc_SSL *memc_ssl = (memc_SSL*)instance->privctx;
+        memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
         int err = SSL_get_error(memc_ssl->ssl, rv);
         switch (err) {
             case SSL_ERROR_WANT_READ:
@@ -541,7 +548,7 @@ ssize_t memcached_ssl_read(memcached_instance_st* instance,
              char* input_buf,
              size_t buffer_length,
              int flags){
-    memc_SSL *memc_ssl = (memc_SSL*)instance->privctx;
+    memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
     SSL *ssl = memc_ssl->ssl;
 
     int nread = SSL_read(ssl, input_buf, buffer_length);
@@ -552,7 +559,7 @@ ssize_t memcached_ssl_write(memcached_instance_st* instance,
              char* local_write_ptr,
              size_t write_length,
              int flags){
-    memc_SSL *memc_ssl = (memc_SSL*)instance->privctx;
+    memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
     SSL *ssl = memc_ssl->ssl;
     int nread = SSL_write(ssl, local_write_ptr, write_length);
     return handle_ssl_return_value(instance, nread);
@@ -595,7 +602,7 @@ memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instan
     if (instance->privctx == NULL) {
         return memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("The instance doesn't have SSL context\n"));
     }
-    ssl = ((memc_SSL *)instance->privctx)->ssl;
+    ssl = ((memcached_SSL *)instance->privctx)->ssl;
     if (ssl == NULL) {
         return memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL connection wasn't yet established for this server\n"));
     }

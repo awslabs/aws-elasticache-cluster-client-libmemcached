@@ -366,7 +366,7 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
       }
       ptr->flags.use_tls= bool(data);
       if (!(bool)data) {
-          memcached_free_memc_ssl_ctx(ptr);
+          memcached_free_ssl_ctx(ptr);
       }
       send_quit(ptr);
       break;

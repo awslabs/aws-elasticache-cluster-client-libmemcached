@@ -119,7 +119,7 @@ static test_return_t ssl_dynamic_tls_behavior_test(memcached_st *memc)
 {
     // Enable TLS
     test_compare(true, init_ssl(memc));
-    memc_SSL_CTX *ssl_ctx = memcached_get_ssl_context_copy(memc);
+    memcached_SSL_CTX *ssl_ctx = memcached_get_ssl_context_copy(memc);
     test_true(ssl_ctx != NULL);
     test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
 
@@ -142,7 +142,7 @@ static test_return_t shared_ssl_ctx_test(memcached_st *memc)
     // Enable TLS
     test_compare(true, init_ssl(memc));
     test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
-    memc_SSL_CTX *ssl_ctx_get = memcached_get_ssl_context_copy(memc);
+    memcached_SSL_CTX *ssl_ctx_get = memcached_get_ssl_context_copy(memc);
     test_true(ssl_ctx_get != NULL);
 
     // Clone client
@@ -151,8 +151,8 @@ static test_return_t shared_ssl_ctx_test(memcached_st *memc)
     test_compare(MEMCACHED_SUCCESS, memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0));
 
     // Test that both memcached instances are sharing the same SSL_CTX
-    memc_SSL_CTX *ssl_ctx = memcached_get_ssl_context_copy(memc);
-    memc_SSL_CTX *ssl_ctx_cloned = memcached_get_ssl_context_copy(memc_clone);
+    memcached_SSL_CTX *ssl_ctx = memcached_get_ssl_context_copy(memc);
+    memcached_SSL_CTX *ssl_ctx_cloned = memcached_get_ssl_context_copy(memc_clone);
     test_true(ssl_ctx != NULL);
     test_true(ssl_ctx_cloned != NULL);
 

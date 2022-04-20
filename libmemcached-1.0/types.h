@@ -56,7 +56,7 @@ typedef struct memcached_server_st *memcached_server_list_st;
 struct memcached_callback_st;
 
 // TLS types
-struct memc_SSL_CTX;
+struct memcached_SSL_CTX;
 
 // The following two structures are internal, and never exposed to users.
 struct memcached_string_st;
@@ -80,7 +80,7 @@ typedef struct memcached_server_st *memcached_server_list_st;
 typedef struct memcached_callback_st memcached_callback_st;
 
 // TLS types
-typedef struct memc_SSL_CTX memc_SSL_CTX;
+typedef struct memcached_SSL_CTX memcached_SSL_CTX;
 
 // The following two structures are internal, and never exposed to users.
 typedef struct memcached_string_st memcached_string_st;

@@ -200,7 +200,7 @@ static void __memcached_free(Memcached *ptr, bool release_st)
   }
 
 #if defined(USE_TLS) && USE_TLS
-  memcached_free_memc_ssl_ctx(ptr);
+    memcached_free_ssl_ctx(ptr);
 #endif
 }
 
