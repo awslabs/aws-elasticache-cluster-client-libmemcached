@@ -7,6 +7,8 @@
  *  ./tls_client
  *  ./tls_client [host] [port]
  *  ./tls_client [host] [port] [cert_fullpath] [key_fullpath]
+ *  ./tls_client [host] [port] [cert_fullpath] [key_fullpath] [ca_cert_fullpath]
+ *  ./tls_client [host] [port] [cert_fullpath] [key_fullpath] [ca_cert_fullpath] [hostname]
  */
 
 #include <libmemcached/memcached.h>
@@ -19,21 +21,33 @@ int main(int argc, char *argv[]) {
     memcached_ssl_context_config config = {};
     char *host = "127.0.0.1";
     int port = 11211;
-    char *cert_file = "/path/to/cert";
-    char *key_file = "/path/to/key";
+    char *cert_file = NULL;
+    char *key_file = NULL;
+    char *ca_cert_file = NULL;
+    char *hostname = NULL;
     char *key = "keystring";
     char *value = "keyvalue";
     char *returned_value;
     size_t vlen;
 
     if (argc >= 3) {
-
         host = argv[1];
         port = atoi(argv[2]);
+        fprintf(stderr, "host: %s, port: %d\n", host, port);
         if (argc >= 5) {
             cert_file = argv[3];
             key_file = argv[4];
+            fprintf(stderr, "cert_file: %s, key_file: %s\n", cert_file, key_file);
         }
+        if (argc >= 6) {
+            ca_cert_file = argv[5];
+            fprintf(stderr, "ca_cert_file: %s,\n", ca_cert_file);
+        }
+        if (argc >= 7) {
+            hostname = argv[6];
+            fprintf(stderr, "hostname: %s,\n", hostname);
+        }
+
     }
 
     // Create a memcached client instance
@@ -46,7 +60,10 @@ int main(int argc, char *argv[]) {
     // Set SSL configurations, see all configurations in libmemcached-1.0/struct/tls.h
     config.cert_file = cert_file;
     config.key_file = key_file;
-    config.skip_cert_verify = true;
+    config.ca_cert_file = ca_cert_file;
+    config.hostname = hostname;
+    config.skip_cert_verify = false;
+    config.skip_hostname_verify = false;
 
     // Set TLS behavior to true
     memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 1);

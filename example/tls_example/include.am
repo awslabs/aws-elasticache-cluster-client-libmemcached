@@ -1,0 +1,24 @@
+# vim:ft=automake
+# included from Top Level Makefile.am
+# All paths should be given relative to the root
+
+if HAVE_LIBEVENT
+if USE_TLS
+
+# bin_PROGRAMS+=  example/tls_client
+noinst_PROGRAMS+=  example/tls_client
+
+example_tls_client_SOURCES=
+example_tls_client_LDADD=
+example_tls_client_LDFLAGS=
+example_tls_client_LIBS=
+example_tls_client_CXXFLAGS=
+
+example_tls_client_SOURCES+= example/tls_example/tls_client.cc
+example_tls_client_LIBS+= @OPENSSL_LIBS@
+example_tls_client_LDADD+= libmemcached/libmemcached.la
+example_tls_client_LDFLAGS+= @OPENSSL_LDFLAGS@
+example_tls_client_CXXFLAGS+= @OPENSSL_INCLUDES@
+
+endif
+endif
