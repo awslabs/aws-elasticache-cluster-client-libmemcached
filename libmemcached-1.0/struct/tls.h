@@ -27,11 +27,11 @@ typedef struct memcached_ssl_context_config {
     char *ca_cert_file;
     char *ca_cert_dir;
     char *hostname;                 /* Required unless skip_hostname_verify is set to true */
-    char *protocols;
+    char *protocol;                 /* Enable only one of the TLS protocols: TLSv1.2 or TLSv1.3. If not set, both v1.2 and v1.3 are enabled. */
     char *ciphers;
     char *ciphersuites;
-    int prefer_server_ciphers;
-    bool skip_cert_verify;
-    bool skip_hostname_verify;
+    bool prefer_server_ciphers;     /* When choosing a cipher, use the server's preferences instead of the client preferences. Default value: false. */
+    bool skip_cert_verify;          /* Default value: false. */
+    bool skip_hostname_verify;      /* Default value: false. */
 } memcached_ssl_context_config;
 #endif //USE_TLS

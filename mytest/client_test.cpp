@@ -2,6 +2,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <openssl/err.h>
+#include <openssl/bio.h>
+#include <openssl/pem.h>
+#include <openssl/ssl.h>
+#include <openssl/opensslv.h>
+#include<ctime>
+#include <unistd.h>
 int main(int argc, char *argv[]) {
     memcached_server_st *servers = NULL;
     memcached_st *memc;
@@ -22,6 +29,7 @@ int main(int argc, char *argv[]) {
     const char *key = "keystring";
     const char *value = "keyvalue";
     char *returned_value;
+    char *protocols = "TLSv1.2";
     size_t vlen;
 
     if (argc >= 3) {
@@ -59,6 +67,7 @@ int main(int argc, char *argv[]) {
     config.hostname = hostname;
     config.skip_cert_verify = false;
     config.skip_hostname_verify = false;
+    config.protocol = protocols;
 
 
     // Create and set  SSL context
@@ -88,7 +97,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Failed to get SSL context from clone");
     }
 
-
     /*
     // Set the SSL context to the memcached client
 
@@ -98,29 +106,51 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 */
-    rc = memcached_set(memc, key, strlen(key), value, strlen(value), (time_t) 0, (uint32_t) 0);
-    if (rc == MEMCACHED_SUCCESS)
-        fprintf(stderr, "Key '%s' stored successfully\n", key);
-    else {
-        fprintf(stderr, "Couldn't store key: %s\n", memcached_last_error_message(memc));
-        exit(EXIT_FAILURE);
+
+    SSL *ssl;
+    int time_counter = 1;
+    char buf[160];
+    while (true) {
+        sleep(1);
+
+        if(time_counter % 3 == 0) {
+            fprintf(stderr, "RENEGOTATING\n");
+            ssl = memcached_get_ssl((memcached_instance_st*)memcached_server_instance_by_position(memc, 0));
+            if (SSL_renegotiate(ssl) <= 0) {
+            //if (SSL_key_update(ssl, SSL_KEY_UPDATE_REQUESTED) <= 0) {
+                memcached_error_print(memc);
+                fprintf(stderr, "SSL_renegotiate failed: %s\n", ERR_error_string(ERR_get_error(), buf));
+                exit(EXIT_FAILURE);
+            } else {
+                fprintf(stderr, "SSL_renegotiate succeeded!\n");
+                memcached_error_print(memc);
+            }
+        }
+
+        rc = memcached_set(memc, key, strlen(key), value, strlen(value), (time_t) 0, (uint32_t) 0);
+        if (rc == MEMCACHED_SUCCESS)
+            fprintf(stderr, "Key '%s' stored successfully\n", key);
+        else {
+            fprintf(stderr, "Couldn't store key: %s\n", memcached_last_error_message(memc));
+            exit(EXIT_FAILURE);
+        }
+
+
+        returned_value = memcached_get(memc, key, strlen(key), &vlen, (uint32_t) 0, &rc);
+        if (rc == MEMCACHED_SUCCESS)
+            fprintf(stderr, "Successfully retrieved key '%s', the value is: '%s'\n", key, returned_value);
+        else {
+            fprintf(stderr, "Couldn't retrieve key: %s\n", memcached_strerror(memc, rc));
+            exit(EXIT_FAILURE);
+        }
+        time_counter++;
     }
-
-
-    returned_value = memcached_get(memc, key, strlen(key), &vlen, (uint32_t) 0, &rc);
-    if (rc == MEMCACHED_SUCCESS)
-        fprintf(stderr, "Successfully retrieved key '%s', the value is: '%s'\n", key, returned_value);
-    else {
-        fprintf(stderr, "Couldn't retrieve key: %s\n", memcached_strerror(memc, rc));
-        exit(EXIT_FAILURE);
-    }
-
     rc = memcached_set(memc_clone, key, strlen(key), value, strlen(value), (time_t) 0, (uint32_t) 0);
     if (rc == MEMCACHED_SUCCESS)
         fprintf(stderr, "Key '%s' stored successfully in memc_clone\n", key);
     else {
         fprintf(stderr, "Couldn't store key in memc_clone: %s\n", memcached_last_error_message(memc_clone));
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }
 
 
@@ -129,8 +159,9 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Successfully retrieved key from memc_clone'%s', the value is: '%s'\n", key, returned_value);
     else {
         fprintf(stderr, "Couldn't retrieve key from memc_clone: %s\n", memcached_strerror(memc_clone, rc));
-        exit(EXIT_FAILURE);
+        //exit(EXIT_FAILURE);
     }
+
 
     rc = memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 0);
 
@@ -175,7 +206,8 @@ int main(int argc, char *argv[]) {
     }
     */
 
-    free(returned_value);
+
+
     memcached_free(memc);
     memcached_free(memc_clone);
 

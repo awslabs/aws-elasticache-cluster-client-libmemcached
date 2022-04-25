@@ -813,10 +813,16 @@ static memcached_return_t _memcached_connect(memcached_instance_st* server, cons
 #if defined(USE_TLS) && USE_TLS
     if (server->root->flags.use_tls and !memcached_failed(rc) and server->state == MEMCACHED_SERVER_STATE_CONNECTED) {
         rc = memcached_ssl_connect(server);
-        if (memcached_failed(rc) and server->fd != INVALID_SOCKET)
-        {
-            WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
-            server->reset_socket();
+        if (!memcached_failed(rc)) {
+            // TLS connection established
+            server->state= MEMCACHED_SERVER_STATE_TLS_CONNECTED;
+        } else {
+            // TLS connection failed
+            server->state = MEMCACHED_SERVER_STATE_NEW;
+            if (server->fd != INVALID_SOCKET) {
+                WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
+                server->reset_socket();
+            }
         }
     }
 #endif //USE_TLS

@@ -69,6 +69,7 @@ static test_return_t pre_ssl(memcached_st *)
  * to test supports SASL authentication, and that they use the default
  * creds.
  */
+#if defined(USE_TLS) && USE_TLS
 
 static bool init_ssl(memcached_st *memc) {
     return initialize_tls(memc, (char *)cert_file, (char *)key_file, NULL, true);
@@ -226,7 +227,12 @@ collection_st collection[] ={
         {"ssl_tests", (test_callback_fn*)pre_ssl, 0, ssl_tests},
         {0, 0, 0, 0}
 };
-
+#else
+collection_st collection[] = {
+        {"ssl_tests", (test_callback_fn *) pre_ssl, 0, NULL},
+        {0, 0, 0, 0}
+};
+#endif
 static char *get_realpath(char *path) {
     char *resolved_path = (char *)malloc(PATH_MAX);
     if (realpath(path, resolved_path) == NULL) {
@@ -280,7 +286,6 @@ static const char* get_ssl_file(const char* env_var, const char* filename) {
     }
 }
 
-
 #include "tests/libmemcached_world.h"
 
 static bool world_destroy_ssl(void *object)
@@ -323,3 +328,5 @@ void get_world(libtest::Framework* world)
 
     world->set_ssl_certs(cert_file, key_file);
 }
+
+//#endif

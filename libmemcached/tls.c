@@ -15,11 +15,11 @@
 #include <libmemcached/common.h>
 #include <libmemcached/virtual_bucket.h>
 
-//typedef enum {
-//    WANT_READ = 1,
-//    WANT_WRITE,
-//    WANT_NONE
-//} want_t;
+typedef enum {
+    WANT_READ = 1,
+    WANT_WRITE,
+    WANT_NONE
+} want_t;
 
 /* A wrapper for the openssl's SSL_CTX object. */
 typedef struct memcached_SSL_CTX {
@@ -38,10 +38,6 @@ typedef struct memcached_SSL {
 
     /* Store the default IO functions to switch back to in case TLS is disabled */
     void *default_io_funcs;
-//
-//    /* A flag to indicate whether the SSL layer requires the underlying
-//     * socket to be readable/writable (possible before write/read)*/
-//    want_t want;
 } memcached_SSL;
 
 int memcached_init_openssl(void)
@@ -59,31 +55,6 @@ static context_funcs context_ssl_funcs = {
     .read = memcached_ssl_read,
     .write = memcached_ssl_write
 };
-
-///* Update file events based on connection's need and the current status (mask)
-// * The logic goes as:
-// * 1.Conn needs read but mask not readable => create a readable event;
-// * 2.Conn doesn't need read but musk readable => delete the event;
-// * 3.Conn needs write but mask not writable => create a writable event;
-// * 4.Conn doesn't need write but musk writable => delete the event. */
-//static void update_ssl_event(memcached_instance_st *instance, int tls_flag) {
-//    int mask = instance->events();
-//    int need_read = tls_flag == TLS_CONN_FLAG_WRITE_WANT_READ;
-//    int need_write = tls_flag == TLS_CONN_FLAG_READ_WANT_WRITE;
-//
-//    if (need_read && !(mask & POLLIN)) {
-//        instance->events(POLLIN);
-//    }
-//    if (!need_read && (mask & POLLIN)) {
-//        instance->delete_event(POLLIN);
-//    }
-//    if (need_write && !(mask & POLLOUT)) {
-//        instance->events(POLLOUT);
-//    }
-//    if (!need_write && (mask & POLLOUT)) {
-//        instance->delete_event(POLLOUT);
-//    }
-//}
 
 void memcached_free_ssl_ctx(memcached_st* memc){
     if (!memc) {
@@ -173,10 +144,14 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error)
             return "Failed to load client certificate\n";
         case MEMCACHED_SSL_CTX_PRIVATE_KEY_LOAD_FAILED:
             return "Failed to load private key\n";
+        case MEMCACHED_SSL_CTX_INVALID_PROTOCOL:
+            return "Invalid TLS protocol passed, please use one of the followings: TLSv1.2, TLSv1.3\n";
         case MEMCACHED_SSL_CTX_CIPHERS_LOAD_FAILED:
             return "Failed to configure ciphers\n";
         case MEMCACHED_SSL_CTX_PRIVATE_KEY_MISMATCH:
             return "Private key does not match the public certificate\n";
+        case MEMCACHED_SSL_CTX_PREFER_SERVER_CIPHER_LOAD_FAILED:
+            return "Failed to configure the server's cipher preferences\n";
         default:
             return "Unknown error code\n";
     }
@@ -288,7 +263,6 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, mem
 
 memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
 {
-    memcached_return_t rc;
     memcached_SSL_CTX *memc_ssl_ctx;
     SSL_CTX *ssl_ctx;
     SSL *ssl;
@@ -302,41 +276,27 @@ memcached_return_t memcached_ssl_connect(memcached_instance_st *server)
      * not own the SSL object in that case and we'll end up leaking.
      */
     if (server->privctx != NULL) {
-        rc = memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL was already initated for this server"));
-        goto error;
+        return memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL was already initated for this server"));
     }
 
     memc_ssl_ctx = (memcached_SSL_CTX*)server->root->ssl_ctx;
     if (memc_ssl_ctx == NULL) {
-        rc = memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL context needs to be set with memcached_create_and_set_ssl_context()"));
-        goto error;
+        return memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL context needs to be set with memcached_create_and_set_ssl_context()"));
     }
 
     ssl_ctx = memc_ssl_ctx->ctx;
     if (ssl_ctx == NULL) {
-        rc = memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL context needs to be set with memcached_create_and_set_ssl_context()"));
-        goto error;
+        return memcached_set_error(*(server->root), MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("SSL context needs to be set with memcached_create_and_set_ssl_context()"));
     }
 
-    if (!memcached_is_no_block(server->root)) {
+    if (!SOCK_NONBLOCK && !memcached_is_no_block(server->root)) {
         // In blocking IO mode we want to enable auto retries after re-negotiations.
         // For more info see SSL_MODE_AUTO_RETRY in https://www.openssl.org/docs/man1.0.2/man3/SSL_CTX_set_mode.html
         SSL_CTX_set_mode(ssl_ctx, SSL_MODE_AUTO_RETRY);
     }
 
-    rc = init_ssl_connection(server, memc_ssl_ctx);
-    if (rc == MEMCACHED_SUCCESS) {
-        server->state= MEMCACHED_SERVER_STATE_TLS_CONNECTED;
-        return rc;
-    } else {
-        goto error;
-    }
-
-    error:
-    server->reset_socket();
-    return rc;
+    return init_ssl_connection(server, memc_ssl_ctx);
 }
-
 
 memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, memcached_ssl_context_config *ctx_config) {
     memc_ssl_context_error rc;
@@ -375,7 +335,7 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
 
     SSL_CTX_set_mode(ssl_ctx->ctx, SSL_MODE_ENABLE_PARTIAL_WRITE|SSL_MODE_ACCEPT_MOVING_WRITE_BUFFER);
 
-    if(ctx_config->hostname == NULL && !(ctx_config->skip_hostname_verify || ctx_config->skip_cert_verify)) {
+    if(ctx_config->hostname == NULL && !ctx_config->skip_hostname_verify) {
         rc = MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED;
         goto error;
     }
@@ -415,6 +375,19 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
         }
     }
 
+    if (ctx_config->protocol) {
+        if (strcmp(ctx_config->protocol, "TLSv1.2") == 0) {
+            SSL_CTX_set_options(ssl_ctx->ctx, SSL_OP_NO_TLSv1_3);
+        }
+        else if (strcmp(ctx_config->protocol, "TLSv1.3") == 0) {
+            SSL_CTX_set_options(ssl_ctx->ctx, SSL_OP_NO_TLSv1_2);
+        }
+        else {
+            rc = MEMCACHED_SSL_CTX_INVALID_PROTOCOL;
+            goto error;
+        }
+    }
+
     if (ctx_config->ciphers && !SSL_CTX_set_cipher_list(ssl_ctx->ctx, ctx_config->ciphers)) {
         rc = MEMCACHED_SSL_CTX_CIPHERS_LOAD_FAILED;
         goto error;
@@ -426,6 +399,11 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
         goto error;
     }
 #endif
+
+    if (ctx_config->prefer_server_ciphers && !SSL_CTX_set_options(ssl_ctx->ctx, SSL_OP_CIPHER_SERVER_PREFERENCE)) {
+        rc = MEMCACHED_SSL_CTX_PREFER_SERVER_CIPHER_LOAD_FAILED;
+        goto error;
+    }
 
     ptr->ssl_ctx = ssl_ctx;
 
@@ -491,49 +469,21 @@ void _memcached_free_ssl_ctx(const memcached_st *ptr, memcached_SSL_CTX *ssl_ctx
 }
 
 
-//static int handle_ssl_return_value(memcached_instance_st* instance, int rv, want_t *want){
-//    if (rv <= 0) {
-//        memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
-//        int err = SSL_get_error(memc_ssl->ssl, rv);
-//        switch (err) {
-//            case SSL_ERROR_WANT_READ:
-//                *want = WANT_READ;
-//                return -1;
-//            case SSL_ERROR_WANT_WRITE:
-//                *want = WANT_WRITE;
-//                return -1;
-//            case SSL_ERROR_ZERO_RETURN:
-//                // The TLS peer has closed the connection
-//                memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT,
-//                memcached_literal_param(ERR_reason_error_string(ERR_get_error())));
-//                return 0;
-//            default:
-//                memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT,
-//                                memcached_literal_param(ERR_reason_error_string(ERR_get_error())));
-//                return -1;
-//        }
-//    }
-//    return rv;
-//}
-
-static int handle_ssl_return_value(memcached_instance_st* instance, int rv){
+static ssize_t handle_ssl_return_value(memcached_instance_st* instance, int rv, want_t *want){
     if (rv <= 0) {
-        char err_buf[512];
         memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
         int err = SSL_get_error(memc_ssl->ssl, rv);
         switch (err) {
             case SSL_ERROR_WANT_READ:
-                snprintf(err_buf,sizeof(err_buf)-1,"Got SSL_ERROR_WANT_READ: %s", ERR_reason_error_string(ERR_get_error()));
-                memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param(err_buf));
+                *want = WANT_READ;
                 return -1;
             case SSL_ERROR_WANT_WRITE:
-                snprintf(err_buf,sizeof(err_buf)-1,"Got SSL_ERROR_WANT_WRITE: %s", ERR_reason_error_string(ERR_get_error()));
-                memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param(err_buf));
+                *want = WANT_WRITE;
                 return -1;
             case SSL_ERROR_ZERO_RETURN:
                 // The TLS peer has closed the connection
                 memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT,
-                    memcached_literal_param(ERR_reason_error_string(ERR_get_error())));
+                memcached_literal_param(ERR_reason_error_string(ERR_get_error())));
                 return 0;
             default:
                 memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT,
@@ -544,54 +494,76 @@ static int handle_ssl_return_value(memcached_instance_st* instance, int rv){
     return rv;
 }
 
+static bool handle_renegotation_error(memcached_instance_st* instance, want_t *want) {
+    // Re-negotation is taking place and WANT_READ/WANT_WRITE error was thrown,
+    // we should wait for the socket to be readable/writable before we can continue
+    memcached_return_t rc;
+    if (*want == WANT_READ) {
+        rc = memcached_io_wait_for_read(instance);
+    } else if (*want == WANT_WRITE){
+        rc = memcached_io_wait_for_write(instance);
+    } else {
+        // no error
+        return false;
+    }
+
+    if (memcached_success(rc)) {
+        return true;
+    }
+
+    return false;
+}
+
 ssize_t memcached_ssl_read(memcached_instance_st* instance,
              char* input_buf,
              size_t buffer_length,
              int flags){
+    ssize_t rv = 0;
     memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
+    if (!memc_ssl) {
+        memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("Couldn't execute SSL read command, SSL isn't initialized"));
+        return -1;
+    }
     SSL *ssl = memc_ssl->ssl;
 
-    int nread = SSL_read(ssl, input_buf, buffer_length);
-    return handle_ssl_return_value(instance, nread);
+    do {
+        want_t want = WANT_NONE;
+        int nread = SSL_read(ssl, input_buf, buffer_length);
+        rv = handle_ssl_return_value(instance, nread, &want);
+        if (want != WANT_NONE && handle_renegotation_error(instance, &want)) {
+            // WANT error handled, try again
+            continue;
+        } else {
+            break;
+        }
+    } while(false);
+    return rv;
 }
 
 ssize_t memcached_ssl_write(memcached_instance_st* instance,
              char* local_write_ptr,
              size_t write_length,
              int flags){
+    ssize_t rv = 0;
     memcached_SSL *memc_ssl = (memcached_SSL*)instance->privctx;
+    if (!memc_ssl) {
+        memcached_set_error(*instance, MEMCACHED_TLS_ERROR, MEMCACHED_AT, memcached_literal_param("Couldn't execute SSL write command, SSL isn't initialized"));
+        return -1;
+    }
     SSL *ssl = memc_ssl->ssl;
-    int nread = SSL_write(ssl, local_write_ptr, write_length);
-    return handle_ssl_return_value(instance, nread);
-//    do {
-//        want_t want = WANT_NONE;
-//        int nread = SSL_write(ssl, local_write_ptr, write_length);
-//        rv = handle_ssl_return_value(instance, nread, &want);
-//        if (rv > 0) {
-//            // Write succeeded
-//            break;
-//        }
-//        else if (rv <= 0 && want != WANT_NONE) {
-//            // Re-negotation is taking place and WANT_READ/WANT_WRITE error was thrown,
-//            // we should wait for the socket to be readable/writable before we can continue
-//            memcached_return_t rc;
-//            if (want == WANT_READ) {
-//                rc = memcached_io_wait_for_read(instance);
-//            } else {
-//                rc = memcached_io_wait_for_write(instance);
-//            }
-//            if (memcached_success(rc)) {
-//                continue;
-//            } else {
-//
-//                break;
-//            }
-//        } else {
-//            // Other error was thrown, bubble it down to be handled by the calling function
-//            break;
-//        }
-//    } while(false);
-//    return rv;
+
+    do {
+        want_t want = WANT_NONE;
+        int nread = SSL_write(ssl, local_write_ptr, write_length);
+        rv = handle_ssl_return_value(instance, nread, &want);
+        if (want != WANT_NONE && handle_renegotation_error(instance, &want)) {
+            // WANT error handled, try again
+            continue;
+        } else {
+            break;
+        }
+    } while(false);
+    return rv;
 }
 
 memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char *output)

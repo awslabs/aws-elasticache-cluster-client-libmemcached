@@ -4,6 +4,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+#if defined(USE_TLS) && USE_TLS
+
 #pragma once
 
 #ifdef __cplusplus
@@ -112,3 +114,4 @@ void memcached_free_ssl(memcached_instance_st *instance);
 } // extern "C"
 #endif
 
+#endif // USE_TLS
