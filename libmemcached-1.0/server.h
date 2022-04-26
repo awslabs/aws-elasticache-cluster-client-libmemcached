@@ -112,13 +112,13 @@ LIBMEMCACHED_API
 const char *memcached_server_name(const memcached_instance_st * self);
 
 LIBMEMCACHED_API
-char *memcached_server_ipaddress(const memcached_instance_st *self);
+const char *memcached_server_ipaddress(const memcached_instance_st *self);
 
 LIBMEMCACHED_API
-const bool has_memcached_server_ipaddress(const memcached_server_st *self);
+bool has_memcached_server_ipaddress(const memcached_server_st *self);
 
 LIBMEMCACHED_API
-const bool has_memcached_instance_ipaddress(const memcached_instance_st *self);
+bool has_memcached_instance_ipaddress(const memcached_instance_st *self);
 
 LIBMEMCACHED_API
 void memcached_update_ipaddress(memcached_instance_st *self, const memcached_string_t ipaddress);
