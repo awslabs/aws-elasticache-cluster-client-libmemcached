@@ -219,6 +219,7 @@ bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *c
     config.key_file = key_file;
     config.ca_cert_file = ca_file;
     config.skip_cert_verify = skip_verify;
+    config.skip_hostname_verify = skip_verify;
 
     rc = memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 1);
     if (rc != MEMCACHED_SUCCESS) {
