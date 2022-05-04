@@ -75,7 +75,7 @@ static inline bool _memcached_init(Memcached *self)
   self->flags.tcp_keepalive= false;
   self->flags.is_aes= false;
   self->flags.is_fetching_version= false;
-
+  self->flags.use_tls = false;
   self->virtual_bucket= NULL;
 
   self->distribution= MEMCACHED_DISTRIBUTION_MODULA;
@@ -147,6 +147,9 @@ static inline bool _memcached_init(Memcached *self)
   self->polling.threshold_secs = MEMCACHED_POLLING_TIMEOUT_SECS;
   self->polling.current_config_version = 0;
   self->polling.current_config = NULL;
+#if defined(USE_TLS) && USE_TLS
+  self->ssl_ctx = NULL;
+#endif
 
   return true;
 }
@@ -195,6 +198,10 @@ static void __memcached_free(Memcached *ptr, bool release_st)
   {
     libmemcached_free(ptr, ptr);
   }
+
+#if defined(USE_TLS) && USE_TLS
+    memcached_free_ssl_ctx(ptr);
+#endif
 }
 
 memcached_st *memcached_create(memcached_st *shell)
@@ -395,7 +402,9 @@ memcached_st *memcached_clone(memcached_st *clone, const memcached_st *source)
   new_clone->io_key_prefetch= source->io_key_prefetch;
   new_clone->number_of_replicas= source->number_of_replicas;
   new_clone->tcp_keepidle= source->tcp_keepidle;
-
+#if defined(USE_TLS) && USE_TLS
+  new_clone->ssl_ctx= memcached_get_ssl_context_copy(source);
+#endif
   if (memcached_server_count(source))
   {
     if (memcached_failed(memcached_push(new_clone, source)))

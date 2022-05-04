@@ -81,6 +81,10 @@ include win32/include.am
 include m4/include.am
 endif
 
+if BUILD_LIBMEMCACHED_PROTOCOL
+include example/tls_example/include.am
+endif
+
 TESTS += ${bin_PROGRAMS}
 TESTS += ${check_PROGRAMS}
 XFAIL_TESTS += ${bin_PROGRAMS}

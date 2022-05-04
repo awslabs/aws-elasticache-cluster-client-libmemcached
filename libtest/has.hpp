@@ -42,6 +42,9 @@ LIBTEST_API
 bool has_libmemcached_sasl(void);
 
 LIBTEST_API
+bool has_libmemcached_ssl(void);
+
+LIBTEST_API
 bool has_libmemcached();
 
 LIBTEST_API

@@ -57,6 +57,18 @@ static void *world_create(libtest::server_startup_st& servers, test_return_t& er
     }
   }
 
+    if (servers.ssl())
+    {
+        SKIP_UNLESS(libtest::has_libmemcached_ssl());
+
+        // Assume we are running under valgrind, and bail
+        if (getenv("LOG_COMPILER"))
+        {
+            error= TEST_SKIPPED;
+            return NULL;
+        }
+    }
+
   for (uint32_t x= 0; x < servers.servers_to_run(); x++)
   {
     in_port_t port= libtest::get_free_port();
@@ -64,6 +76,14 @@ static void *world_create(libtest::server_startup_st& servers, test_return_t& er
     if (servers.sasl())
     {
       if (server_startup(servers, "memcached-sasl", port, NULL) == false)
+      {
+        error= TEST_SKIPPED;
+        return NULL;
+      }
+    }
+    else if (servers.ssl())
+    {
+      if (server_startup(servers, "memcached-ssl", port, NULL) == false)
       {
         error= TEST_SKIPPED;
         return NULL;

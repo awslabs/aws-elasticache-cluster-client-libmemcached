@@ -89,6 +89,7 @@ struct memcached_st {
     bool is_fetching_version:1;
     bool not_used:1;
     bool use_config_protocol:1;
+    bool use_tls:1;
     enum memcached_client_mode client_mode;
   } flags;
 
@@ -164,5 +165,7 @@ struct memcached_st {
     char *current_config;
     uint32_t threshold_secs;
   } polling;
-
+#if defined(USE_TLS) && USE_TLS
+    void *ssl_ctx;
+#endif
 };

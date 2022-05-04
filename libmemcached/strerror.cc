@@ -202,6 +202,12 @@ const char *memcached_strerror(const memcached_st *, memcached_return_t rc)
   case MEMCACHED_SERVER_MEMORY_ALLOCATION_FAILURE:
     return "SERVER FAILED TO ALLOCATE OBJECT";
 
+  case MEMCACHED_TLS_ERROR:
+      return "TLS ERROR";
+
+  case MEMCACHED_TLS_CONNECTION_ERROR:
+      return "TLS CONNECTION ERROR";
+
   default:
   case MEMCACHED_MAXIMUM_RETURN:
     return "INVALID memcached_return_t";

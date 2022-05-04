@@ -98,10 +98,32 @@ enum memcached_return_t {
   MEMCACHED_SERVER_TEMPORARILY_DISABLED,
   MEMCACHED_SERVER_MEMORY_ALLOCATION_FAILURE,
   MEMCACHED_NO_CONFIG_SERVER,
+  MEMCACHED_TLS_ERROR,
+  MEMCACHED_TLS_CONNECTION_ERROR,
   MEMCACHED_MAXIMUM_RETURN, /* Always add new error code before */
   MEMCACHED_CONNECTION_SOCKET_CREATE_FAILURE= MEMCACHED_ERROR
 };
 
 #ifndef __cplusplus
 typedef enum memcached_return_t memcached_return_t;
+#endif
+
+enum memc_ssl_context_error {
+    MEMCACHED_SSL_CTX_SUCCESS = 0,                      /* No Error */
+    MEMCACHED_SSL_INVALID_ARGUMENTS,                    /* Invalid function arguments */
+    MEMCACHED_SSL_MEMORY_ALLOCATION_FAILURE,            /* Failed to allocate memory */
+    MEMCACHED_SSL_CTX_CREATE_FAILED,                    /* Failed to create OpenSSL SSL_CTX */
+    MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED,                /* Client cert and key must both be specified */
+    MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED,                /* Hostname (CN) is required unless skip_hostname_verify is set to true */
+    MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED,              /* Failed to load CA Certificate or CA Path */
+    MEMCACHED_SSL_CTX_CLIENT_CERT_LOAD_FAILED,          /* Failed to load client certificate */
+    MEMCACHED_SSL_CTX_PRIVATE_KEY_LOAD_FAILED,          /* Failed to load private key */
+    MEMCACHED_SSL_CTX_INVALID_PROTOCOL,                 /* Invalid TLS protocol was passed */
+    MEMCACHED_SSL_CTX_CIPHERS_LOAD_FAILED,              /* Failed to configure ciphers */
+    MEMCACHED_SSL_CTX_CIPHERSUITES_LOAD_FAILED,         /* Failed to configure ciphersuites */
+    MEMCACHED_SSL_CTX_PREFER_SERVER_CIPHER_LOAD_FAILED, /* Failed to configure the server's cipher preferences*/
+    MEMCACHED_SSL_CTX_PRIVATE_KEY_MISMATCH              /* Private key does not match the public certificate */
+};
+#ifndef __cplusplus
+typedef enum memc_ssl_context_error memc_ssl_context_error;
 #endif

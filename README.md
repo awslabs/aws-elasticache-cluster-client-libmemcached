@@ -2,7 +2,11 @@
 
 Libmemcached library support for Amazon ElastiCache Memcached Cluster client for PHP. The client is available at https://github.com/awslabs/aws-elasticache-cluster-client-memcached-for-php
 
-To compile the libmemcached library
+### Prerequests libraries
+- OpenSSL >= 1.1.0 (unless TLS support is disabled by ./configure --disable-tls).
+- SASL (libsasl2, unless SASL support is disabled by ./configure --disable-sasl).
+
+### compile the libmemcached library
 
 1) Launch the instance
 
@@ -30,7 +34,13 @@ b) On Ubuntu 14.04 AMI
 
 > cd BUILD
 
-> ../configure --prefix=\<libmemcached-install-directory\> --with-pic --disable-sasl
+> ../configure --prefix=\<libmemcached-install-directory\> --with-pic --disable-sasl 
+
+If running ../configure fails to find *libssl* (OpenSSL library) it may be necessary to tweak the PKG_CONFIG_PATH environment variable:
+> PKG_CONFIG_PATH=/path/to/openssl/lib/pkgconfig ../configure --prefix=\<libmemcached-install-directory\> --with-pic --disable-sasl
+
+Alternately, if you are not using TLS, you can disable it by running:
+> ../configure --prefix=\<libmemcached-install-directory\> --with-pic --disable-sasl --disable-tls
 
 > make
 

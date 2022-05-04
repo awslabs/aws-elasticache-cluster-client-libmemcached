@@ -75,6 +75,10 @@
 # define TCP_KEEPIDLE 0
 #endif
 
+#if defined(USE_TLS) && USE_TLS
+#include "tls.c"
+#endif
+
 static memcached_return_t connect_poll(memcached_instance_st* server, const int connection_error)
 {
   struct pollfd fds[1];
@@ -569,7 +573,8 @@ static memcached_return_t network_connect(memcached_instance_st* server)
       type|= SOCK_CLOEXEC;
     }
 
-    if (SOCK_NONBLOCK)
+    if (SOCK_NONBLOCK && !memcached_is_tls(server->root))
+    // For TLS connection we will set the socket to a non-blocking mode only after the TLS connection is established
     {
       type|= SOCK_NONBLOCK;
     }
@@ -577,6 +582,7 @@ static memcached_return_t network_connect(memcached_instance_st* server)
     server->fd= socket(server->address_info_next->ai_family,
                        type,
                        server->address_info_next->ai_protocol);
+
 
     if (int(server->fd) == SOCKET_ERROR)
     {
@@ -771,6 +777,11 @@ static memcached_return_t _memcached_connect(memcached_instance_st* server, cons
     return memcached_set_error(*server, MEMCACHED_INVALID_HOST_PROTOCOL, MEMCACHED_AT, memcached_literal_param("SASL is not supported for UDP connections"));
   }
 
+  if (memcached_is_tls(server->root) and memcached_is_udp(server->root))
+  {
+    return memcached_set_error(*server, MEMCACHED_INVALID_HOST_PROTOCOL, MEMCACHED_AT, memcached_literal_param("TLS is not supported for UDP connections"));
+  }
+
   if (server->hostname()[0] == '/')
   {
     server->type= MEMCACHED_CONNECTION_UNIX_SOCKET;
@@ -797,6 +808,23 @@ static memcached_return_t _memcached_connect(memcached_instance_st* server, cons
       }
     }
 #endif
+
+#if defined(USE_TLS) && USE_TLS
+    if (server->root->flags.use_tls and !memcached_failed(rc) and server->state == MEMCACHED_SERVER_STATE_CONNECTED) {
+        rc = memcached_ssl_connect(server);
+        if (!memcached_failed(rc)) {
+            // TLS connection established
+            server->state= MEMCACHED_SERVER_STATE_TLS_CONNECTED;
+        } else {
+            // TLS connection failed
+            server->state = MEMCACHED_SERVER_STATE_NEW;
+            if (server->fd != INVALID_SOCKET) {
+                WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
+                server->reset_socket();
+            }
+        }
+    }
+#endif //USE_TLS
     break;
 
   case MEMCACHED_CONNECTION_UNIX_SOCKET:

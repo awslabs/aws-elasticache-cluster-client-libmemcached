@@ -205,6 +205,14 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
                                  memcached_literal_param("MEMCACHED_BEHAVIOR_USE_UDP cannot be enabled while MEMCACHED_BEHAVIOR_CLIENT_MODE is set to DYNAMIC_MODE."));
     }
 
+    // if trying to set the flag to enable UDP
+    // while TLS is enabled, then return NOT SUPPORTED
+    if(memcached_is_tls(ptr) && bool(data))
+    {
+      return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                 memcached_literal_param("MEMCACHED_BEHAVIOR_USE_UDP cannot be enabled while MEMCACHED_BEHAVIOR_USE_TLS is set to true"));
+    }
+
     ptr->flags.use_udp= bool(data);
     if (bool(data))
     {
@@ -347,6 +355,23 @@ memcached_return_t memcached_behavior_set(memcached_st *shell,
       return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
                                  memcached_literal_param("MEMCACHED_BEHAVIOR_LOAD_FROM_FILE can not be set with memcached_behavior_set()"));
 
+#if defined(USE_TLS) && USE_TLS
+  case MEMCACHED_BEHAVIOR_USE_TLS:
+      // if trying to set the flag to enable UDP
+      // while TLS is enabled, then return NOT SUPPORTED
+      if(memcached_is_udp(ptr) && bool(data))
+      {
+          return memcached_set_error(*ptr, MEMCACHED_INVALID_ARGUMENTS, MEMCACHED_AT,
+                                     memcached_literal_param("MEMCACHED_BEHAVIOR_USE_TLS isn't supported with UDP connections"));
+      }
+      ptr->flags.use_tls= bool(data);
+      if (!(bool)data) {
+          memcached_free_ssl_ctx(ptr);
+      }
+      send_quit(ptr);
+      break;
+#endif
+
   case MEMCACHED_BEHAVIOR_MAX:
   default:
       /* Shouldn't get here */
@@ -403,6 +428,9 @@ uint64_t memcached_behavior_get(memcached_st *shell,
 
   case MEMCACHED_BEHAVIOR_NO_BLOCK:
     return ptr->flags.no_block;
+
+  case MEMCACHED_BEHAVIOR_USE_TLS:
+      return ptr->flags.use_tls;
 
   case MEMCACHED_BEHAVIOR_BUFFER_REQUESTS:
     return ptr->flags.buffer_requests;
@@ -693,6 +721,7 @@ const char *libmemcached_string_behavior(const memcached_behavior_t flag)
   {
   case MEMCACHED_BEHAVIOR_SERVER_TIMEOUT_LIMIT: return "MEMCACHED_BEHAVIOR_SERVER_TIMEOUT_LIMIT";
   case MEMCACHED_BEHAVIOR_NO_BLOCK: return "MEMCACHED_BEHAVIOR_NO_BLOCK";
+  case MEMCACHED_BEHAVIOR_USE_TLS: return "MEMCACHED_BEHAVIOR_USE_TLS";
   case MEMCACHED_BEHAVIOR_TCP_NODELAY: return "MEMCACHED_BEHAVIOR_TCP_NODELAY";
   case MEMCACHED_BEHAVIOR_HASH: return "MEMCACHED_BEHAVIOR_HASH";
   case MEMCACHED_BEHAVIOR_KETAMA: return "MEMCACHED_BEHAVIOR_KETAMA";

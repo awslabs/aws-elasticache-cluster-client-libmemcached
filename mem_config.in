@@ -155,6 +155,9 @@
 /* Define to 1 if the system has the type `in_port_t'. */
 #undef HAVE_IN_PORT_T
 
+/* Define to 1 if you have the `crypto' library (-lcrypto). */
+#undef HAVE_LIBCRYPTO
+
 /* Support for libcurl */
 #undef HAVE_LIBCURL
 
@@ -511,6 +514,9 @@
 # undef __EXTENSIONS__
 #endif
 
+
+/* Define if TLS is enabled */
+#undef USE_TLS
 
 /* Define if the code was built from VCS. */
 #undef VCS_CHECKOUT

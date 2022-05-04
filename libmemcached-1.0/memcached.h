@@ -75,11 +75,13 @@
 #include <libmemcached-1.0/callbacks.h>
 #include <libmemcached-1.0/alloc.h>
 #include <libmemcached-1.0/triggers.h>
+#include <libmemcached-1.0/tls.h>
 
 #include <libhashkit-1.0/hashkit.h>
 
 #include <libmemcached-1.0/struct/callback.h>
 #include <libmemcached-1.0/struct/string.h>
+#include <libmemcached-1.0/struct/tls.h>
 #include <libmemcached-1.0/struct/result.h>
 #include <libmemcached-1.0/struct/allocator.h>
 #include <libmemcached-1.0/struct/sasl.h>

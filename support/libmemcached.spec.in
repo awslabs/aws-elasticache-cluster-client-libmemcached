@@ -206,6 +206,8 @@ you will need to install %{name}-devel.
 %{_includedir}/libmemcached-1.0/struct/server.h
 %{_includedir}/libmemcached-1.0/struct/stat.h
 %{_includedir}/libmemcached-1.0/struct/string.h
+%{_includedir}/libmemcached-1.0/struct/tls.h
+%{_includedir}/libmemcached-1.0/tls.h
 %{_includedir}/libmemcached-1.0/touch.h
 %{_includedir}/libmemcached-1.0/triggers.h
 %{_includedir}/libmemcached-1.0/types.h
@@ -272,6 +274,12 @@ you will need to install %{name}-devel.
 %{_mandir}/man3/memcached_flush_buffers.3.gz
 %{_mandir}/man3/memcached_free.3.gz
 %{_mandir}/man3/memcached_generate_hash.3.gz
+%{_mandir}/man3/memcached_ssl_context_get_error.3.gz
+%{_mandir}/man3/_memcached_free_ssl_ctx.3.gz
+%{_mandir}/man3/memcached_free_ssl_ctx.3.gz
+%{_mandir}/man3/memcached_create_and_set_ssl_context.3.gz
+%{_mandir}/man3/memcached_get_ssl_context_copy.3.gz
+%{_mandir}/man3/memcached_set_ssl_context.3.gz
 %{_mandir}/man3/memcached_generate_hash_value.3.gz
 %{_mandir}/man3/memcached_get.3.gz
 %{_mandir}/man3/memcached_get_by_key.3.gz

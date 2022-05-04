@@ -90,10 +90,10 @@ static bool repack_input_buffer(memcached_instance_st* instance)
     do {
       /* Just try a single read to grab what's available */
       ssize_t nr;
-      if ((nr= ::recv(instance->fd,
-                      instance->read_ptr + instance->read_data_length,
-                      MEMCACHED_MAX_BUFFER - instance->read_data_length,
-                      MSG_NOSIGNAL)) <= 0)
+      if ((nr= instance->io_funcs->read(instance,
+           instance->read_ptr + instance->read_data_length,
+           MEMCACHED_MAX_BUFFER - instance->read_data_length, MSG_NOSIGNAL)) <= 0
+        )
       {
         if (nr == 0)
         {
@@ -352,7 +352,7 @@ static bool io_flush(memcached_instance_st* instance,
       flags= MSG_NOSIGNAL|MSG_MORE;
     }
 
-    ssize_t sent_length= ::send(instance->fd, local_write_ptr, write_length, flags);
+    ssize_t sent_length= instance->io_funcs->write(instance, local_write_ptr, write_length, flags);
     int local_errno= get_socket_errno(); // We cache in case memcached_quit_server() modifies errno
 
     if (sent_length == SOCKET_ERROR)
@@ -418,6 +418,21 @@ static bool io_flush(memcached_instance_st* instance,
   return true;
 }
 
+ssize_t memcached_io_recv(memcached_instance_st* instance,
+                          char* input_buf,
+                          size_t buffer_length,
+                          int flags){
+    return ::recv(instance->fd, input_buf, buffer_length, flags);
+}
+
+
+ssize_t memcached_io_send(memcached_instance_st* instance,
+                          char* input_buf,
+                          size_t buffer_length,
+                          int flags){
+    return ::send(instance->fd, input_buf, buffer_length, flags);
+}
+
 memcached_return_t memcached_io_wait_for_write(memcached_instance_st* instance)
 {
   return io_wait(instance, POLLOUT);
@@ -433,7 +448,7 @@ static memcached_return_t _io_fill(memcached_instance_st* instance)
   ssize_t data_read;
   do
   {
-    data_read= ::recv(instance->fd, instance->read_buffer, MEMCACHED_MAX_BUFFER, MSG_NOSIGNAL);
+    data_read= instance->io_funcs->read(instance, instance->read_buffer, MEMCACHED_MAX_BUFFER, MSG_NOSIGNAL);
     int local_errno= get_socket_errno(); // We cache in case memcached_quit_server() modifies errno
 
     if (data_read == SOCKET_ERROR)
@@ -493,7 +508,7 @@ static memcached_return_t _io_fill(memcached_instance_st* instance)
       */
       memcached_quit_server(instance, true);
       return memcached_set_error(*instance, MEMCACHED_CONNECTION_FAILURE, MEMCACHED_AT, 
-                                 memcached_literal_param("::rec() returned zero, server has disconnected"));
+                                 memcached_literal_param("read() returned zero, server has disconnected"));
     }
     instance->io_wait_count._bytes_read+= data_read;
   } while (data_read <= 0);
@@ -573,7 +588,7 @@ memcached_return_t memcached_io_slurp(memcached_instance_st* instance)
   char buffer[MEMCACHED_MAX_BUFFER];
   do
   {
-    data_read= ::recv(instance->fd, instance->read_buffer, sizeof(buffer), MSG_NOSIGNAL);
+    data_read= instance->io_funcs->read(instance, instance->read_buffer, sizeof(buffer), MSG_NOSIGNAL);
     if (data_read == SOCKET_ERROR)
     {
       switch (get_socket_errno())
@@ -735,6 +750,7 @@ void memcached_instance_st::reset_socket()
     (void)closesocket(fd);
     fd= INVALID_SOCKET;
   }
+
 }
 
 void memcached_instance_st::close_socket()

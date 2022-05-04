@@ -210,6 +210,53 @@ test-sasl: tests/libmemcached-1.0/sasl
 gdb-sasl: tests/libmemcached-1.0/sasl
 	@$(GDB_COMMAND)  tests/libmemcached-1.0/sasl
 
+tests_libmemcached_1_0_ssl_SOURCES=
+tests_libmemcached_1_0_ssl_LDADD=
+tests_libmemcached_1_0_ssl_CXXFLAGS=
+tests_libmemcached_1_0_ssl_CFLAGS=
+
+tests_libmemcached_1_0_ssl_CXXFLAGS+= $(AM_CXXFLAGS)
+tests_libmemcached_1_0_ssl_CXXFLAGS+= @PTHREAD_CFLAGS@
+tests_libmemcached_1_0_ssl_CFLAGS+= $(AM_CFLAGS)
+tests_libmemcached_1_0_ssl_CFLAGS+= $(NO_CONVERSION)
+tests_libmemcached_1_0_ssl_CFLAGS+= $(NO_STRICT_ALIASING)
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/basic.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/debug.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/deprecated.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/error_conditions.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/ketama.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/namespace.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/parser.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/pool.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/print.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/replication.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/ssl.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/virtual_buckets.cc
+tests_libmemcached_1_0_ssl_SOURCES+= clients/execute.cc
+tests_libmemcached_1_0_ssl_SOURCES+= clients/generator.cc
+tests_libmemcached_1_0_ssl_SOURCES+= clients/utilities.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/callback_counter.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/fetch_all_results.cc
+tests_libmemcached_1_0_ssl_SOURCES+= tests/libmemcached-1.0/generate.cc
+
+tests_libmemcached_1_0_ssl_LDADD+= @PTHREAD_LIBS@
+tests_libmemcached_1_0_ssl_LDADD+= $(TESTS_LDADDS)
+tests_libmemcached_1_0_ssl_LDADD+= libmemcachedinternal/libmemcachedinternal.la
+tests_libmemcached_1_0_ssl_LDADD+= libmemcachedinternal/libmemcachedutilinternal.la
+tests_libmemcached_1_0_ssl_LDADD+= libmemcached/libmemcached.la
+tests_libmemcached_1_0_ssl_LDADD+= libmemcached/libmemcachedutil.la
+tests_libmemcached_1_0_ssl_LDADD+= libtest/libtest.la
+tests_libmemcached_1_0_ssl_LDADD+= libhashkit/libhashkit.la
+
+check_PROGRAMS+= tests/libmemcached-1.0/ssl
+noinst_PROGRAMS+= tests/libmemcached-1.0/ssl
+
+test-ssl: tests/libmemcached-1.0/ssl
+	@tests/libmemcached-1.0/ssl
+
+gdb-ssl: tests/libmemcached-1.0/ssl
+	@$(GDB_COMMAND)  tests/libmemcached-1.0/ssl
+
 tests_atomsmasher_SOURCES=
 tests_atomsmasher_LDADD=
 

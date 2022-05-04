@@ -132,6 +132,11 @@ void memcached_quit_server(memcached_instance_st* instance, bool io_death)
        */
     memcached_mark_server_for_timeout(instance);
   }
+
+  if(instance->io_funcs->free_privctx != NULL) {
+      instance->io_funcs->free_privctx(instance);
+  }
+
 }
 
 void send_quit(Memcached *memc)

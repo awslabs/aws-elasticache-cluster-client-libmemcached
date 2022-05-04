@@ -16,6 +16,10 @@ can do this by running the script:
 It will set up all of the files you need to build libmemcached. At that
 point it is just the typical "./configure; make; make test; make install"
 
+By providing a MEMCACHED_BINARY environment variable when with ./configure, "make test" will start its own Memcached servers.
+For example, run: MEMCACHED_BINARY=/usr/local/bin/memcached ./configure.
+Another option is to directly edit the created Makefile and add the binary path to MEMCACHED_BINARY.
+
 For a tarball release do a "make dist" and for an RPM type "make rpm".
 
 For patches, we prefer you push a branch to launchpad and then submit that 

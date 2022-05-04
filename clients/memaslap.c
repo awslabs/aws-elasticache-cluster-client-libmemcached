@@ -80,6 +80,18 @@ static struct option long_options[]=
     OPT_RECONNECT          },
   { (OPTIONSTRING)"udp",            no_argument,                  NULL,
     OPT_UDP                },
+  { (OPTIONSTRING)"tls",            no_argument,                  NULL,
+    OPT_TLS                },
+  { (OPTIONSTRING)"cert_file",      required_argument,            NULL,
+    OPT_TLS_CERT                },
+  { (OPTIONSTRING)"key_file",       required_argument,            NULL,
+    OPT_TLS_KEY                },
+  { (OPTIONSTRING)"ca_file",        required_argument,            NULL,
+    OPT_TLS_CA                },
+  { (OPTIONSTRING)"tls_skip_cert_verify",no_argument,                  NULL,
+    OPT_TLS_SKIP_CERT_VERIFY                },
+  { (OPTIONSTRING)"tls_skip_hostname_verify",no_argument,                  NULL,
+    OPT_TLS_SKIP_HOSTNAME_VERIFY                },
   { (OPTIONSTRING)"facebook",       no_argument,                  NULL,
     OPT_FACEBOOK_TEST      },
   { (OPTIONSTRING)"binary",         no_argument,                  NULL,
@@ -288,6 +300,30 @@ static const char *ms_lookup_help(ms_options_t option)
     return
       "UDP support, default memslap uses TCP, TCP port and UDP port of\n"
       "        server must be same.";
+
+  case OPT_TLS:
+    return
+      "Use TLS, certificate and private key are must";
+
+  case OPT_TLS_CERT:
+    return
+      "Path to TLS certificate file. must be with '--tls' option";
+
+  case OPT_TLS_KEY:
+    return
+      "Path to TLS private key file. must be with '--tls' option";
+
+  case OPT_TLS_CA:
+    return
+      "Path to CA file. optional. must be together with '--tls' option";
+
+  case OPT_TLS_SKIP_CERT_VERIFY:
+    return
+      "Skip TLS peer certificate verification. must be together with '--tls' option";
+
+  case OPT_TLS_SKIP_HOSTNAME_VERIFY:
+    return
+      "Skip TLS peer hostname verification. must be together with '--tls' option";
 
   case OPT_EXPIRE:
     return
@@ -536,6 +572,30 @@ static void ms_options_parse(int argc, char *argv[])
 
     case OPT_UDP:       /* --udp or -U*/
       ms_setting.udp= true;
+      break;
+
+    case OPT_TLS:       /* --tls or -l*/
+      ms_setting.tls= true;
+      break;
+
+    case OPT_TLS_CERT:       /* --cert or -C*/
+      ms_setting.tls_cert= strdup(optarg);
+      break;
+
+    case OPT_TLS_CERT:       /* --key or -K*/
+      ms_setting.tls_key= strdup(optarg);
+      break;
+
+    case OPT_TLS_CA:       /* --ca or -A*/
+      ms_setting.tls_ca= strdup(optarg);
+      break;
+
+    case OPT_TLS_SKIP_CERT_VERIFY:  /* --skip-cert-verify or -E*/
+      ms_setting.tls_skip_cert_verify= true;
+      break;
+
+    case OPT_TLS_SKIP_HOSTNAME_VERIFY:  /* --skip-hostname-verify or -H*/
+      ms_setting.tls_skip_hostname_verify= true;
       break;
 
     case OPT_EXPIRE:        /* --exp_verify or -e */

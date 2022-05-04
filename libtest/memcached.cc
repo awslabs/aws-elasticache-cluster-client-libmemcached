@@ -64,6 +64,9 @@ class Memcached : public libtest::Server
 {
   std::string _username;
   std::string _password;
+  std::string _ssl_cert;
+  std::string _ssl_key;
+  bool _ssl = false;
 
 public:
   Memcached(const std::string& host_arg,
@@ -76,6 +79,25 @@ public:
     _username(username_arg),
     _password(password_arg)
   { }
+
+    Memcached(const std::string& host_arg,
+              const in_port_t port_arg,
+              const bool is_socket_arg,
+              const std::string& username_arg,
+              const std::string& password_arg,
+              const std::string& ssl_cert,
+              const std::string& ssl_key) :
+    libtest::Server(host_arg, port_arg,
+            memcached_binary(), false, is_socket_arg),
+    _username(username_arg),
+    _password(password_arg),
+    _ssl_cert(ssl_cert),
+    _ssl_key(ssl_key)
+    {
+      if (!_ssl_key.empty() && !_ssl_cert.empty()) {
+          _ssl = true;
+      }
+    }
 
   Memcached(const std::string& host_arg, const in_port_t port_arg, const bool is_socket_arg) :
     libtest::Server(host_arg, port_arg,
@@ -99,6 +121,21 @@ public:
     return _username;
   }
 
+  const std::string& ssl_cert() const
+  {
+    return _ssl_cert;
+  }
+
+  const std::string& ssl_key() const
+  {
+    return _ssl_key;
+  }
+
+  bool ssl() const
+  {
+    return _ssl;
+  }
+
   bool wait_for_pidfile() const
   {
     Wait wait(pid(), 4);
@@ -111,6 +148,10 @@ public:
     if (out_of_ban_killed())
     {
       return false;
+    }
+
+    if (ssl()) {
+        return true;
     }
 
     if (is_socket())
@@ -214,6 +255,16 @@ bool Memcached::build()
     add_option(sasl());
   }
 
+  if (ssl())
+  {
+      std::stringstream certs_buf;
+      std::stringstream key_buf;
+      certs_buf << "ssl_chain_cert=" << ssl_cert();
+      key_buf << "ssl_key=" << ssl_key();
+      add_option("-Z");
+      add_option("-o", certs_buf.str());
+      add_option("-o", key_buf.str());
+  }
   return true;
 }
 
@@ -225,6 +276,17 @@ libtest::Server *build_memcached(const std::string& hostname, const in_port_t tr
   }
 
   return NULL;
+}
+
+libtest::Server *build_memcached_with_ssl(const std::string& hostname, const in_port_t try_port,
+                                          const std::string& ssl_cert, const std::string& ssl_key)
+{
+    if (has_memcached())
+    {
+        return new Memcached(hostname, try_port, false, "", "", ssl_cert, ssl_key);
+    }
+
+    return NULL;
 }
 
 libtest::Server *build_memcached_socket(const std::string& socket_file, const in_port_t try_port)

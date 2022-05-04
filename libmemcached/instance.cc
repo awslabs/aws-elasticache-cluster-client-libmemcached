@@ -37,6 +37,12 @@
 
 #include <libmemcached/common.h>
 
+context_funcs context_default_io_funcs = {
+        .free_privctx = NULL,
+        .read = memcached_io_recv,
+        .write = memcached_io_send
+};
+
 static inline void _server_init(memcached_instance_st* self, Memcached *root,
                                 const memcached_string_t& hostname, const memcached_string_t& ipaddress, 
                                 in_port_t port,
@@ -88,6 +94,9 @@ static inline void _server_init(memcached_instance_st* self, Memcached *root,
   self->limit_maxbytes= 0;
   self->hostname(hostname);
   self->ipaddress(ipaddress);
+  self->io_funcs = &context_default_io_funcs;
+  self->privctx= NULL;
+
 }
 
 static memcached_instance_st* _server_create(memcached_instance_st* self, const memcached_st *memc)
@@ -122,6 +131,17 @@ void memcached_instance_st::events(short arg)
 
   _events|= arg;
 }
+
+void memcached_instance_st::delete_event(short arg)
+{
+  _events &= ~arg;
+}
+
+void memcached_instance_st::set_events(short events)
+{
+  _events = events;
+}
+
 
 void memcached_instance_st::revents(short arg)
 {

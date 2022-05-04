@@ -1,0 +1,7 @@
+Hi!
+
+TLS tests require TLS certificates in order to run.
+To enable the tests, do one of the following:
+1. Create new TLS certificates by running the provided script "cert.sh", or
+2. Pass the full path of certificate and private key files by setting the env variables TLS_CERT_FILE and TLS_KEY_FILE, or
+3.  Under this path, create a new directory called "certs" (tests/libmemcached-1.0/tests/tls/certs) and copy your TLS certificates there under the filenames "memc-cert.pem" and "memc-key.pem"

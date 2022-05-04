@@ -58,6 +58,12 @@
 
 #include "libmemcached/string.hpp"
 
+typedef struct context_funcs {
+    void (*free_privctx)(memcached_instance_st*);
+    ssize_t (*read)(memcached_instance_st*, char*, size_t, int);
+    ssize_t (*write)(memcached_instance_st*, char*, size_t, int);
+} context_funcs;
+
 // @todo Complete class transformation
 struct memcached_instance_st {
   in_port_t port() const
@@ -154,7 +160,10 @@ struct memcached_instance_st {
 
   void events(short);
   void revents(short);
-
+  void delete_event(short);
+  void set_events(short);
+  const context_funcs *io_funcs; /* IO Functions table */
+  void *privctx; /* Internal context pointer to manage SSL connections. */
   uint32_t cursor_active_;
   in_port_t port_;
   memcached_socket_t fd;

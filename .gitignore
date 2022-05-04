@@ -30,3 +30,6 @@
 
 # Debug files
 *.dSYM/
+
+# TLS certificates
+tests/libmemcached-1.0/tls/certs

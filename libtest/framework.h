@@ -91,6 +91,11 @@ public:
     _servers.set_sasl(username_arg, password_arg);
   }
 
+  void set_ssl_certs(const std::string& cert_file, const std::string& private_key_file)
+  {
+    _servers.set_ssl_certs(cert_file, private_key_file);
+  }
+
   libtest::server_startup_st& servers()
   {
     return _servers;
