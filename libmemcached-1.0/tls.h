@@ -71,7 +71,8 @@ LIBMEMCACHED_API
         memcached_SSL_CTX *memcached_get_ssl_context_copy(const memcached_st *ptr);
 
 /**
- * Get the server's SSL certificates
+ * Get the server's SSL certificates.
+ * The function allocates memory Using memcached_st's malloc function and "output" should be freed by the user.
  */
 LIBMEMCACHED_API
 memcached_return_t memcached_ssl_get_server_certs(memcached_instance_st * instance, char * output);
