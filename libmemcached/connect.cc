@@ -521,11 +521,10 @@ static memcached_return_t unix_socket_connect(memcached_instance_st* server)
       }
     }
   } while (0);
+  server->state= MEMCACHED_SERVER_STATE_CONNECTED;
 
   WATCHPOINT_ASSERT(server->fd != INVALID_SOCKET);
 
-
-  server->state= MEMCACHED_SERVER_STATE_CONNECTED;
   return MEMCACHED_SUCCESS;
 #else
   (void)server;
@@ -624,8 +623,8 @@ static memcached_return_t network_connect(memcached_instance_st* server)
 
         if (memcached_success(rc))
         {
-            server->state= MEMCACHED_SERVER_STATE_CONNECTED;
-            return MEMCACHED_SUCCESS;
+          server->state= MEMCACHED_SERVER_STATE_CONNECTED;
+          return MEMCACHED_SUCCESS;
         }
 
         // A timeout here is treated as an error, we will not retry

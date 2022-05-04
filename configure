@@ -721,15 +721,7 @@ OPENSSL_LDFLAGS
 OPENSSL_LIBS
 OPENSSL_INCLUDES
 USE_TLS
-LIBCRYPTO_LIBS
-LIBCRYPTO_CFLAGS
-LIBSSL_LIBS
-LIBSSL_CFLAGS
-PKG_CONFIG_LIBDIR
-PKG_CONFIG_PATH
 PKG_CONFIG
-LIBEVENT_OPENSSL_LIBS
-LIBEVENT_OPENSSL_CFLAGS
 BUILD_LIBMEMCACHED_PROTOCOL_FALSE
 BUILD_LIBMEMCACHED_PROTOCOL_TRUE
 HOST_FREEBSD_FALSE
@@ -928,15 +920,6 @@ CPP
 CXXCPP
 MCHECK_CPPFLAGS
 MCHECK_LDFLAGS
-PKG_CONFIG
-PKG_CONFIG_PATH
-PKG_CONFIG_LIBDIR
-LIBEVENT_OPENSSL_CFLAGS
-LIBEVENT_OPENSSL_LIBS
-LIBSSL_CFLAGS
-LIBSSL_LIBS
-LIBCRYPTO_CFLAGS
-LIBCRYPTO_LIBS
 MYSQL_CONFIG
 GEARMAND_BINARY
 LIBGEARMAN_CPPFLAGS
@@ -1633,22 +1616,6 @@ Some influential environment variables:
               C preprocessor flags for MCHECK headers
   MCHECK_LDFLAGS
               linker flags for MCHECK libraries
-  PKG_CONFIG  path to pkg-config utility
-  PKG_CONFIG_PATH
-              directories to add to pkg-config's search path
-  PKG_CONFIG_LIBDIR
-              path overriding pkg-config's built-in search path
-  LIBEVENT_OPENSSL_CFLAGS
-              C compiler flags for LIBEVENT_OPENSSL, overriding pkg-config
-  LIBEVENT_OPENSSL_LIBS
-              linker flags for LIBEVENT_OPENSSL, overriding pkg-config
-  LIBSSL_CFLAGS
-              C compiler flags for LIBSSL, overriding pkg-config
-  LIBSSL_LIBS linker flags for LIBSSL, overriding pkg-config
-  LIBCRYPTO_CFLAGS
-              C compiler flags for LIBCRYPTO, overriding pkg-config
-  LIBCRYPTO_LIBS
-              linker flags for LIBCRYPTO, overriding pkg-config
   MYSQL_CONFIG
               Full path to mysql_config program
   GEARMAND_BINARY
@@ -16648,13 +16615,6 @@ else
 fi
 
 
-
-
-
-
-
-
-
 if test "x$ac_cv_env_PKG_CONFIG_set" != "xset"; then
 	if test -n "$ac_tool_prefix"; then
   # Extract the first word of "${ac_tool_prefix}pkg-config", so it can be a program name with args.
@@ -16772,284 +16732,6 @@ if test "x$enable_tls" != "xno"; then :
 
 
 $as_echo "#define USE_TLS 1" >>confdefs.h
-
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBEVENT_OPENSSL" >&5
-$as_echo_n "checking for LIBEVENT_OPENSSL... " >&6; }
-
-if test -n "$LIBEVENT_OPENSSL_CFLAGS"; then
-    pkg_cv_LIBEVENT_OPENSSL_CFLAGS="$LIBEVENT_OPENSSL_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libevent_openssl >= 2.0.10\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libevent_openssl >= 2.0.10") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBEVENT_OPENSSL_CFLAGS=`$PKG_CONFIG --cflags "libevent_openssl >= 2.0.10" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$LIBEVENT_OPENSSL_LIBS"; then
-    pkg_cv_LIBEVENT_OPENSSL_LIBS="$LIBEVENT_OPENSSL_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libevent_openssl >= 2.0.10\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libevent_openssl >= 2.0.10") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBEVENT_OPENSSL_LIBS=`$PKG_CONFIG --libs "libevent_openssl >= 2.0.10" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        LIBEVENT_OPENSSL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libevent_openssl >= 2.0.10" 2>&1`
-        else
-	        LIBEVENT_OPENSSL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libevent_openssl >= 2.0.10" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$LIBEVENT_OPENSSL_PKG_ERRORS" >&5
-
-	as_fn_error $? "Package requirements (libevent_openssl >= 2.0.10) were not met:
-
-$LIBEVENT_OPENSSL_PKG_ERRORS
-
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-Alternatively, you may set the environment variables LIBEVENT_OPENSSL_CFLAGS
-and LIBEVENT_OPENSSL_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
-is in your PATH or set the PKG_CONFIG environment variable to the full
-path to pkg-config.
-
-Alternatively, you may set the environment variables LIBEVENT_OPENSSL_CFLAGS
-and LIBEVENT_OPENSSL_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details.
-
-To get pkg-config, see <http://pkg-config.freedesktop.org/>.
-See \`config.log' for more details" "$LINENO" 5; }
-else
-	LIBEVENT_OPENSSL_CFLAGS=$pkg_cv_LIBEVENT_OPENSSL_CFLAGS
-	LIBEVENT_OPENSSL_LIBS=$pkg_cv_LIBEVENT_OPENSSL_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-fi
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBSSL" >&5
-$as_echo_n "checking for LIBSSL... " >&6; }
-
-if test -n "$LIBSSL_CFLAGS"; then
-    pkg_cv_LIBSSL_CFLAGS="$LIBSSL_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libssl\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libssl") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBSSL_CFLAGS=`$PKG_CONFIG --cflags "libssl" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$LIBSSL_LIBS"; then
-    pkg_cv_LIBSSL_LIBS="$LIBSSL_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libssl\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libssl") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBSSL_LIBS=`$PKG_CONFIG --libs "libssl" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        LIBSSL_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libssl" 2>&1`
-        else
-	        LIBSSL_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libssl" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$LIBSSL_PKG_ERRORS" >&5
-
-	as_fn_error $? "Package requirements (libssl) were not met:
-
-$LIBSSL_PKG_ERRORS
-
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-Alternatively, you may set the environment variables LIBSSL_CFLAGS
-and LIBSSL_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
-is in your PATH or set the PKG_CONFIG environment variable to the full
-path to pkg-config.
-
-Alternatively, you may set the environment variables LIBSSL_CFLAGS
-and LIBSSL_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details.
-
-To get pkg-config, see <http://pkg-config.freedesktop.org/>.
-See \`config.log' for more details" "$LINENO" 5; }
-else
-	LIBSSL_CFLAGS=$pkg_cv_LIBSSL_CFLAGS
-	LIBSSL_LIBS=$pkg_cv_LIBSSL_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-fi
-
-pkg_failed=no
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for LIBCRYPTO" >&5
-$as_echo_n "checking for LIBCRYPTO... " >&6; }
-
-if test -n "$LIBCRYPTO_CFLAGS"; then
-    pkg_cv_LIBCRYPTO_CFLAGS="$LIBCRYPTO_CFLAGS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBCRYPTO_CFLAGS=`$PKG_CONFIG --cflags "libcrypto" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-if test -n "$LIBCRYPTO_LIBS"; then
-    pkg_cv_LIBCRYPTO_LIBS="$LIBCRYPTO_LIBS"
- elif test -n "$PKG_CONFIG"; then
-    if test -n "$PKG_CONFIG" && \
-    { { $as_echo "$as_me:${as_lineno-$LINENO}: \$PKG_CONFIG --exists --print-errors \"libcrypto\""; } >&5
-  ($PKG_CONFIG --exists --print-errors "libcrypto") 2>&5
-  ac_status=$?
-  $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
-  test $ac_status = 0; }; then
-  pkg_cv_LIBCRYPTO_LIBS=`$PKG_CONFIG --libs "libcrypto" 2>/dev/null`
-		      test "x$?" != "x0" && pkg_failed=yes
-else
-  pkg_failed=yes
-fi
- else
-    pkg_failed=untried
-fi
-
-
-
-if test $pkg_failed = yes; then
-   	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-
-if $PKG_CONFIG --atleast-pkgconfig-version 0.20; then
-        _pkg_short_errors_supported=yes
-else
-        _pkg_short_errors_supported=no
-fi
-        if test $_pkg_short_errors_supported = yes; then
-	        LIBCRYPTO_PKG_ERRORS=`$PKG_CONFIG --short-errors --print-errors --cflags --libs "libcrypto" 2>&1`
-        else
-	        LIBCRYPTO_PKG_ERRORS=`$PKG_CONFIG --print-errors --cflags --libs "libcrypto" 2>&1`
-        fi
-	# Put the nasty error message in config.log where it belongs
-	echo "$LIBCRYPTO_PKG_ERRORS" >&5
-
-	as_fn_error $? "Package requirements (libcrypto) were not met:
-
-$LIBCRYPTO_PKG_ERRORS
-
-Consider adjusting the PKG_CONFIG_PATH environment variable if you
-installed software in a non-standard prefix.
-
-Alternatively, you may set the environment variables LIBCRYPTO_CFLAGS
-and LIBCRYPTO_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details." "$LINENO" 5
-elif test $pkg_failed = untried; then
-     	{ $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
-$as_echo "no" >&6; }
-	{ { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
-$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
-as_fn_error $? "The pkg-config script could not be found or is too old.  Make sure it
-is in your PATH or set the PKG_CONFIG environment variable to the full
-path to pkg-config.
-
-Alternatively, you may set the environment variables LIBCRYPTO_CFLAGS
-and LIBCRYPTO_LIBS to avoid the need to call pkg-config.
-See the pkg-config man page for more details.
-
-To get pkg-config, see <http://pkg-config.freedesktop.org/>.
-See \`config.log' for more details" "$LINENO" 5; }
-else
-	LIBCRYPTO_CFLAGS=$pkg_cv_LIBCRYPTO_CFLAGS
-	LIBCRYPTO_LIBS=$pkg_cv_LIBCRYPTO_LIBS
-        { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
-$as_echo "yes" >&6; }
-
-fi
-
-fi
-
-       #### Find OpenSSL
 
 
     found=false

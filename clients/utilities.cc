@@ -197,7 +197,7 @@ void initialize_sockets(void)
 #endif // #if defined(_WIN32)
 }
 
-bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *ca_file, bool skip_verify) {
+bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *ca_file, bool skip_cert_verify, bool skip_hostname_verify) {
 #if defined(USE_TLS) && USE_TLS
     memcached_return rc;
     memc_ssl_context_error error;
@@ -213,13 +213,14 @@ bool initialize_tls(memcached_st *memc, char *cert_file, char *key_file, char *c
     if (ca_file == NULL) {
         ca_file = getenv("TLS_CA_CERT_FILE");
     }
-    skip_verify = skip_verify || getenv("TLS_SKIP_VERIFY");
+    skip_cert_verify = skip_cert_verify || getenv("TLS_SKIP_CERT_VERIFY");
+    skip_hostname_verify = skip_hostname_verify || getenv("TLS_SKIP_HOSTNAME_VERIFY");
 
     config.cert_file = cert_file;
     config.key_file = key_file;
     config.ca_cert_file = ca_file;
-    config.skip_cert_verify = skip_verify;
-    config.skip_hostname_verify = skip_verify;
+    config.skip_cert_verify = skip_cert_verify;
+    config.skip_hostname_verify = skip_hostname_verify;
 
     rc = memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_USE_TLS, 1);
     if (rc != MEMCACHED_SUCCESS) {

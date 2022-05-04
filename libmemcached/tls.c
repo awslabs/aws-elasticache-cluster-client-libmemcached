@@ -26,7 +26,7 @@ typedef struct memcached_SSL_CTX {
     /* Associated OpenSSL SSL_CTX as created by memcached_create_and_set_ssl_context() */
     SSL_CTX *ctx;
 
-    /* Requested hostname for verefication.
+    /* Requested hostname for verification.
      * The hostname set needs to match with the CN (Common Name) of Subject of server certificate */
     char *hostname;
 };
@@ -109,11 +109,7 @@ static SSL_CTX* init_ctx(void)
     OpenSSL_add_all_algorithms();  /* Load cryptos, et.al. */
     SSL_load_error_strings();   /* Bring in and register error messages */
 
-//#if OPENSSL_VERSION_NUMBER >= 0x10100000L
     method = TLS_client_method();
-//#else
-//    method = TLSv1_2_client_method();
-//#endif
 
     ctx = SSL_CTX_new(method);   /* Create new context */
     if ( ctx == NULL )
@@ -201,20 +197,10 @@ static memcached_return_t init_ssl_connection(memcached_instance_st *server, mem
     SSL_set_connect_state(ssl);
 
     if (memc_ssl_ctx->hostname) {
-//#if OPENSSL_VERSION_NUMBER >= 0x10100000L
         if (!SSL_set1_host(ssl, memc_ssl_ctx->hostname)) {
             rv = ERR_peek_error();
             goto error;
         }
-//#else
-//        X509_VERIFY_PARAM *param = SSL_get0_param(ssl);
-//        /* Enable automatic hostname checks */
-//        X509_VERIFY_PARAM_set_hostflags(param, X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS);
-//        if (!X509_VERIFY_PARAM_set1_host(param, ssl_ctx->hostname, sizeof(ssl_ctx->hostname) - 1)) {
-//            rv = ERR_peek_error();
-//            goto error;
-//        }
-//#endif
     }
 
     ERR_clear_error();
@@ -494,9 +480,9 @@ static ssize_t handle_ssl_return_value(memcached_instance_st* instance, int rv, 
     return rv;
 }
 
-static bool handle_renegotation_error(memcached_instance_st* instance, want_t *want) {
-    // Re-negotation is taking place and WANT_READ/WANT_WRITE error was thrown,
-    // we should wait for the socket to be readable/writable before we can continue
+static bool handle_want_error(memcached_instance_st* instance, want_t *want) {
+    // WANT_READ/WANT_WRITE error was thrown, we should wait for the socket to be
+    // readable/writable before we can continue
     memcached_return_t rc;
     if (*want == WANT_READ) {
         rc = memcached_io_wait_for_read(instance);
@@ -530,7 +516,7 @@ ssize_t memcached_ssl_read(memcached_instance_st* instance,
         want_t want = WANT_NONE;
         int nread = SSL_read(ssl, input_buf, buffer_length);
         rv = handle_ssl_return_value(instance, nread, &want);
-        if (want != WANT_NONE && handle_renegotation_error(instance, &want)) {
+        if (want != WANT_NONE && handle_want_error(instance, &want)) {
             // WANT error handled, try again
             continue;
         } else {
@@ -556,7 +542,7 @@ ssize_t memcached_ssl_write(memcached_instance_st* instance,
         want_t want = WANT_NONE;
         int nread = SSL_write(ssl, local_write_ptr, write_length);
         rv = handle_ssl_return_value(instance, nread, &want);
-        if (want != WANT_NONE && handle_renegotation_error(instance, &want)) {
+        if (want != WANT_NONE && handle_want_error(instance, &want)) {
             // WANT error handled, try again
             continue;
         } else {

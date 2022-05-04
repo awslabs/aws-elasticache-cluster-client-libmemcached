@@ -72,7 +72,7 @@ static test_return_t pre_ssl(memcached_st *)
 #if defined(USE_TLS) && USE_TLS
 
 static bool init_ssl(memcached_st *memc) {
-    return initialize_tls(memc, (char *)cert_file, (char *)key_file, NULL, true);
+    return initialize_tls(memc, (char *)cert_file, (char *)key_file, NULL, true, true);
 }
 
 static test_return_t ssl_set_get_test(memcached_st *memc)

@@ -100,22 +100,9 @@ AC_ARG_ENABLE([tls],
 
 AS_IF([test "x$enable_tls" != "xno"], [
        AC_DEFINE([USE_TLS],[1],[Define if TLS is enabled])
-       PKG_CHECK_MODULES([LIBEVENT_OPENSSL],
-                         [libevent_openssl >= 2.0.10],
-                         AC_SUBST(LIBEVENT_OPENSSL_CFLAGS) AC_SUBST(LIBEVENT_OPENSSL_LIBS))
-       PKG_CHECK_MODULES([LIBSSL],
-                         [libssl],
-                         AC_SUBST(LIBSSL_CFLAGS) AC_SUBST(LIBSSL_LIBS))
-       PKG_CHECK_MODULES([LIBCRYPTO],
-                         [libcrypto],
-                         AC_SUBST(LIBCRYPTO_CFLAGS) AC_SUBST(LIBCRYPTO_LIBS))
-       ], [])
-
-       #### Find OpenSSL
-
-       AX_CHECK_OPENSSL
-
-       AC_CHECK_LIB([crypto],[CRYPTO_new_ex_data], [], [AC_MSG_ERROR([OpenSSL libraries required])])
+       AX_CHECK_OPENSSL], [])
+       AC_CHECK_LIB([crypto],[CRYPTO_new_ex_data], [], [AC_MSG_ERROR([OpenSSL libraries required, libcrypto is missing])])
+       AC_CHECK_LIB([ssl],[OPENSSL_init_ssl], [], [AC_MSG_ERROR([OpenSSL libraries required, libssl is missing])])
 
        AC_CHECK_HEADERS([openssl/crypto.h openssl/x509.h openssl/pem.h openssl/ssl.h openssl/err.h],[],[AC_MSG_ERROR([OpenSSL headers required])])
 

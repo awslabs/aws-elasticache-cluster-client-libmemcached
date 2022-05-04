@@ -3,7 +3,6 @@
 # All paths should be given relative to the root
 
 if HAVE_LIBEVENT
-# bin_PROGRAMS+=  example/tls_client
 noinst_PROGRAMS+=  example/tls_client
 
 example_tls_client_SOURCES=
@@ -15,5 +14,4 @@ example_tls_client_CXXFLAGS=
 example_tls_client_SOURCES+= example/tls_example/tls_client.cc
 example_tls_client_LDADD+= libmemcached/libmemcached.la
 
-endif
 endif

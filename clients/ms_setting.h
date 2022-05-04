@@ -152,7 +152,8 @@ typedef struct setting
   bool tls_cert;                        /* TLS certificate file */
   bool tls_key;                         /* TLS private key file */
   bool tls_ca;                          /* TLS CA file */
-  bool tls_skip_verify;                 /* whether or not to skip TLS peer verification*/
+  bool tls_skip_cert_verify;            /* whether or not to skip TLS peer certificate verification*/
+  bool tls_skip_hostname_verify;        /* whether or not to skip TLS peer hostname verification*/
   int stat_freq;                        /* statistic frequency second */
   bool reconnect;                       /* whether it reconnect when connection close */
   bool verbose;                         /* whether it outputs detailed information when verification */

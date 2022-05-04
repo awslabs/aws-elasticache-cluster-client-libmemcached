@@ -284,7 +284,8 @@ XFAIL_TESTS = $(bin_PROGRAMS)
 bin_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2)
 noinst_PROGRAMS = $(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_10) \
 	$(am__EXEEXT_6) $(am__EXEEXT_11) $(am__EXEEXT_12) \
-	$(am__EXEEXT_13) $(am__EXEEXT_8) $(am__EXEEXT_14)
+	$(am__EXEEXT_13) $(am__EXEEXT_8) $(am__EXEEXT_14) \
+	$(am__EXEEXT_15)
 check_PROGRAMS = $(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
 	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8) \
 	$(am__EXEEXT_9)
@@ -310,7 +311,8 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 	$(srcdir)/tests/libmemcached-1.0/include.am \
 	$(srcdir)/tests/parser.am $(srcdir)/tests/cli.am \
 	$(srcdir)/util/include.am $(srcdir)/win32/include.am \
-	$(srcdir)/m4/include.am $(srcdir)/Makefile.in \
+	$(srcdir)/m4/include.am \
+	$(srcdir)/example/tls_example/include.am $(srcdir)/Makefile.in \
 	$(srcdir)/Makefile.am $(top_srcdir)/configure \
 	$(am__configure_deps) $(srcdir)/mem_config.in \
 	$(top_srcdir)/libhashkit/hashkitcon.h.in \
@@ -919,6 +921,7 @@ DIST_COMMON = $(srcdir)/libhashkit-1.0/include.am \
 @BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@BUILD_WIN32_FALSE@@BUILD_WIN32_WRAPPERS_TRUE@am__append_72 = -no-undefined
 @BUILD_WIN32_FALSE@@BUILD_WIN32_WRAPPERS_TRUE@am__append_73 = -no-undefined
 @BUILD_WIN32_FALSE@am__append_74 = m4/ax_libmemcached.m4
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@am__append_75 = example/tls_client
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_add_am_macro.m4 \
@@ -1803,6 +1806,7 @@ libtest_libtest_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 @BUILD_WIN32_FALSE@	tests/memerror$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/memslap$(EXEEXT) \
 @BUILD_WIN32_FALSE@	tests/memdump$(EXEEXT)
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@am__EXEEXT_15 = example/tls_client$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__clients_memaslap_SOURCES_DIST = clients/memaslap.c \
 	clients/ms_conn.c clients/ms_setting.c clients/ms_sigsegv.c \
@@ -1915,6 +1919,15 @@ example_memcached_light_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
 	$(AM_CXXFLAGS) $(CXXFLAGS) $(example_memcached_light_LDFLAGS) \
 	$(LDFLAGS) -o $@
+am__example_tls_client_SOURCES_DIST =  \
+	example/tls_example/tls_client.cc
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@am_example_tls_client_OBJECTS = example/tls_example/example_tls_client-tls_client.$(OBJEXT)
+example_tls_client_OBJECTS = $(am_example_tls_client_OBJECTS)
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@example_tls_client_DEPENDENCIES = libmemcached/libmemcached.la
+example_tls_client_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(example_tls_client_CXXFLAGS) $(CXXFLAGS) \
+	$(example_tls_client_LDFLAGS) $(LDFLAGS) -o $@
 am__libmemcached_1_0_t_c_sasl_test_SOURCES_DIST =  \
 	libmemcached-1.0/t/c_sasl_test.c
 @BUILD_WIN32_FALSE@@SHARED_ENABLED_TRUE@am_libmemcached_1_0_t_c_sasl_test_OBJECTS = libmemcached-1.0/t/c_sasl_test.$(OBJEXT)
@@ -2521,6 +2534,7 @@ SOURCES = $(clients_libutilities_la_SOURCES) \
 	$(clients_memping_SOURCES) $(clients_memrm_SOURCES) \
 	$(clients_memslap_SOURCES) $(clients_memstat_SOURCES) \
 	$(clients_memtouch_SOURCES) $(example_memcached_light_SOURCES) \
+	$(example_tls_client_SOURCES) \
 	$(libmemcached_1_0_t_c_sasl_test_SOURCES) \
 	$(libmemcached_1_0_t_c_test_SOURCES) \
 	$(libmemcached_1_0_t_cc_test_SOURCES) $(libtest_abort_SOURCES) \
@@ -2567,6 +2581,7 @@ DIST_SOURCES = $(am__clients_libutilities_la_SOURCES_DIST) \
 	$(am__clients_memstat_SOURCES_DIST) \
 	$(am__clients_memtouch_SOURCES_DIST) \
 	$(am__example_memcached_light_SOURCES_DIST) \
+	$(am__example_tls_client_SOURCES_DIST) \
 	$(am__libmemcached_1_0_t_c_sasl_test_SOURCES_DIST) \
 	$(am__libmemcached_1_0_t_c_test_SOURCES_DIST) \
 	$(am__libmemcached_1_0_t_cc_test_SOURCES_DIST) \
@@ -2654,11 +2669,10 @@ am__nobase_include_HEADERS_DIST = libhashkit-1.0/algorithm.h \
 	libmemcached-1.0/return.h libmemcached-1.0/sasl.h \
 	libmemcached-1.0/server.h libmemcached-1.0/server_list.h \
 	libmemcached-1.0/stats.h libmemcached-1.0/storage.h \
-    libmemcached-1.0/tls.h \
-	libmemcached-1.0/strerror.h libmemcached-1.0/touch.h \
-	libmemcached-1.0/triggers.h libmemcached-1.0/types.h \
-	libmemcached-1.0/verbosity.h libmemcached-1.0/version.h \
-	libmemcached-1.0/visibility.h \
+	libmemcached-1.0/strerror.h libmemcached-1.0/tls.h \
+	libmemcached-1.0/touch.h libmemcached-1.0/triggers.h \
+	libmemcached-1.0/types.h libmemcached-1.0/verbosity.h \
+	libmemcached-1.0/version.h libmemcached-1.0/visibility.h \
 	libmemcachedprotocol-0.0/binary.h \
 	libmemcachedprotocol-0.0/callback.h \
 	libmemcachedprotocol-0.0/handler.h \
@@ -3019,11 +3033,7 @@ LCOV_GENHTML = @LCOV_GENHTML@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LEX = @LEX@
-LIBCRYPTO_CFLAGS = @LIBCRYPTO_CFLAGS@
-LIBCRYPTO_LIBS = @LIBCRYPTO_LIBS@
 LIBEVENT_LIB = @LIBEVENT_LIB@
-LIBEVENT_OPENSSL_CFLAGS = @LIBEVENT_OPENSSL_CFLAGS@
-LIBEVENT_OPENSSL_LIBS = @LIBEVENT_OPENSSL_LIBS@
 LIBGEARMAN_CPPFLAGS = @LIBGEARMAN_CPPFLAGS@
 LIBGEARMAN_LDFLAGS = @LIBGEARMAN_LDFLAGS@
 LIBHASHKIT_VERSION_HEX = @LIBHASHKIT_VERSION_HEX@
@@ -3036,8 +3046,6 @@ LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBSASL_CPPFLAGS = @LIBSASL_CPPFLAGS@
 LIBSASL_LDFLAGS = @LIBSASL_LDFLAGS@
-LIBSSL_CFLAGS = @LIBSSL_CFLAGS@
-LIBSSL_LIBS = @LIBSSL_LIBS@
 LIBTEST_VERSION = @LIBTEST_VERSION@
 LIBTOOL = @LIBTOOL@
 LIBUUID_LIB = @LIBUUID_LIB@
@@ -3079,8 +3087,6 @@ PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PERL = @PERL@
 PKG_CONFIG = @PKG_CONFIG@
-PKG_CONFIG_LIBDIR = @PKG_CONFIG_LIBDIR@
-PKG_CONFIG_PATH = @PKG_CONFIG_PATH@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
@@ -3836,6 +3842,11 @@ dist_aclocal_DATA = $(am__append_74)
 @BUILD_WIN32_FALSE@tests_memdump_CXXFLAGS = $(AM_CXXFLAGS) $(NO_EFF_CXX)
 @BUILD_WIN32_FALSE@EXTRA_tests_memdump_DEPENDENCIES = clients/memdump
 @BUILD_WIN32_FALSE@tests_memdump_LDADD = libtest/libtest.la $(TESTS_LDADDS)
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@example_tls_client_SOURCES = example/tls_example/tls_client.cc
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@example_tls_client_LDADD = libmemcached/libmemcached.la
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@example_tls_client_LDFLAGS =
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@example_tls_client_LIBS =
+@BUILD_LIBMEMCACHED_PROTOCOL_TRUE@@HAVE_LIBEVENT_TRUE@example_tls_client_CXXFLAGS =
 all: $(BUILT_SOURCES) mem_config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -3843,7 +3854,7 @@ all: $(BUILT_SOURCES) mem_config.h
 .SUFFIXES: .d .d .c .cc .cpp .lo .log .o .obj .test .test$(EXEEXT) .trs
 am--refresh: Makefile
 	@:
-$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/libhashkit-1.0/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libtest/include.am $(srcdir)/libhashkit-1.0/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libmemcachedprotocol-0.0/include.am $(srcdir)/libmemcachedutil-1.0/include.am $(srcdir)/clients/include.am $(srcdir)/docs/include.am $(srcdir)/man/include.am $(srcdir)/example/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcachedutil/include.am $(srcdir)/libmemcachedprotocol/include.am $(srcdir)/libmemcachedinternal/include.am $(srcdir)/libmemcachedinternal/util/include.am $(srcdir)/rpm/include.mk $(srcdir)/support/include.am $(srcdir)/tests/include.am $(srcdir)/tests/libmemcached-1.0/include.am $(srcdir)/tests/parser.am $(srcdir)/tests/cli.am $(srcdir)/util/include.am $(srcdir)/win32/include.am $(srcdir)/m4/include.am $(am__configure_deps)
+$(srcdir)/Makefile.in:  $(srcdir)/Makefile.am $(srcdir)/libhashkit-1.0/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libtest/include.am $(srcdir)/libhashkit-1.0/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libmemcachedprotocol-0.0/include.am $(srcdir)/libmemcachedutil-1.0/include.am $(srcdir)/clients/include.am $(srcdir)/docs/include.am $(srcdir)/man/include.am $(srcdir)/example/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcachedutil/include.am $(srcdir)/libmemcachedprotocol/include.am $(srcdir)/libmemcachedinternal/include.am $(srcdir)/libmemcachedinternal/util/include.am $(srcdir)/rpm/include.mk $(srcdir)/support/include.am $(srcdir)/tests/include.am $(srcdir)/tests/libmemcached-1.0/include.am $(srcdir)/tests/parser.am $(srcdir)/tests/cli.am $(srcdir)/util/include.am $(srcdir)/win32/include.am $(srcdir)/m4/include.am $(srcdir)/example/tls_example/include.am $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
 	    *$$dep*) \
@@ -3866,7 +3877,7 @@ Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	    echo ' cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe)'; \
 	    cd $(top_builddir) && $(SHELL) ./config.status $@ $(am__depfiles_maybe);; \
 	esac;
-$(srcdir)/libhashkit-1.0/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libtest/include.am $(srcdir)/libhashkit-1.0/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libmemcachedprotocol-0.0/include.am $(srcdir)/libmemcachedutil-1.0/include.am $(srcdir)/clients/include.am $(srcdir)/docs/include.am $(srcdir)/man/include.am $(srcdir)/example/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcachedutil/include.am $(srcdir)/libmemcachedprotocol/include.am $(srcdir)/libmemcachedinternal/include.am $(srcdir)/libmemcachedinternal/util/include.am $(srcdir)/rpm/include.mk $(srcdir)/support/include.am $(srcdir)/tests/include.am $(srcdir)/tests/libmemcached-1.0/include.am $(srcdir)/tests/parser.am $(srcdir)/tests/cli.am $(srcdir)/util/include.am $(srcdir)/win32/include.am $(srcdir)/m4/include.am:
+$(srcdir)/libhashkit-1.0/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libtest/include.am $(srcdir)/libhashkit-1.0/include.am $(srcdir)/libmemcached-1.0/include.am $(srcdir)/libmemcached-1.0/struct/include.am $(srcdir)/libmemcached-1.0/types/include.am $(srcdir)/libmemcached-1.0/t/include.am $(srcdir)/libmemcachedprotocol-0.0/include.am $(srcdir)/libmemcachedutil-1.0/include.am $(srcdir)/clients/include.am $(srcdir)/docs/include.am $(srcdir)/man/include.am $(srcdir)/example/include.am $(srcdir)/libhashkit/include.am $(srcdir)/libmemcached/include.am $(srcdir)/libmemcached/csl/include.am $(srcdir)/libmemcachedutil/include.am $(srcdir)/libmemcachedprotocol/include.am $(srcdir)/libmemcachedinternal/include.am $(srcdir)/libmemcachedinternal/util/include.am $(srcdir)/rpm/include.mk $(srcdir)/support/include.am $(srcdir)/tests/include.am $(srcdir)/tests/libmemcached-1.0/include.am $(srcdir)/tests/parser.am $(srcdir)/tests/cli.am $(srcdir)/util/include.am $(srcdir)/win32/include.am $(srcdir)/m4/include.am $(srcdir)/example/tls_example/include.am:
 
 $(top_builddir)/config.status: $(top_srcdir)/configure $(CONFIG_STATUS_DEPENDENCIES)
 	$(SHELL) ./config.status --recheck
@@ -4963,6 +4974,19 @@ util/pidfile.$(OBJEXT): util/$(am__dirstamp) \
 example/memcached_light$(EXEEXT): $(example_memcached_light_OBJECTS) $(example_memcached_light_DEPENDENCIES) $(EXTRA_example_memcached_light_DEPENDENCIES) example/$(am__dirstamp)
 	@rm -f example/memcached_light$(EXEEXT)
 	$(AM_V_CXXLD)$(example_memcached_light_LINK) $(example_memcached_light_OBJECTS) $(example_memcached_light_LDADD) $(LIBS)
+example/tls_example/$(am__dirstamp):
+	@$(MKDIR_P) example/tls_example
+	@: > example/tls_example/$(am__dirstamp)
+example/tls_example/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) example/tls_example/$(DEPDIR)
+	@: > example/tls_example/$(DEPDIR)/$(am__dirstamp)
+example/tls_example/example_tls_client-tls_client.$(OBJEXT):  \
+	example/tls_example/$(am__dirstamp) \
+	example/tls_example/$(DEPDIR)/$(am__dirstamp)
+
+example/tls_client$(EXEEXT): $(example_tls_client_OBJECTS) $(example_tls_client_DEPENDENCIES) $(EXTRA_example_tls_client_DEPENDENCIES) example/$(am__dirstamp)
+	@rm -f example/tls_client$(EXEEXT)
+	$(AM_V_CXXLD)$(example_tls_client_LINK) $(example_tls_client_OBJECTS) $(example_tls_client_LDADD) $(LIBS)
 libmemcached-1.0/t/$(am__dirstamp):
 	@$(MKDIR_P) libmemcached-1.0/t
 	@: > libmemcached-1.0/t/$(am__dirstamp)
@@ -5515,6 +5539,7 @@ mostlyclean-compile:
 	-rm -f clients/*.$(OBJEXT)
 	-rm -f clients/*.lo
 	-rm -f example/*.$(OBJEXT)
+	-rm -f example/tls_example/*.$(OBJEXT)
 	-rm -f libhashkit/*.$(OBJEXT)
 	-rm -f libhashkit/*.lo
 	-rm -f libmemcached-1.0/t/*.$(OBJEXT)
@@ -5580,6 +5605,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@example/$(DEPDIR)/interface_v1.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@example/$(DEPDIR)/memcached_light.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@example/$(DEPDIR)/storage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libhashkit/$(DEPDIR)/libhashkit_libhashkit_la-aes.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libhashkit/$(DEPDIR)/libhashkit_libhashkit_la-algorithm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@libhashkit/$(DEPDIR)/libhashkit_libhashkit_la-behavior.Plo@am__quote@
@@ -7831,6 +7857,20 @@ clients/clients_memslap-execute.obj: clients/execute.cc
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='clients/execute.cc' object='clients/clients_memslap-execute.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(clients_memslap_CXXFLAGS) $(CXXFLAGS) -c -o clients/clients_memslap-execute.obj `if test -f 'clients/execute.cc'; then $(CYGPATH_W) 'clients/execute.cc'; else $(CYGPATH_W) '$(srcdir)/clients/execute.cc'; fi`
+
+example/tls_example/example_tls_client-tls_client.o: example/tls_example/tls_client.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(example_tls_client_CXXFLAGS) $(CXXFLAGS) -MT example/tls_example/example_tls_client-tls_client.o -MD -MP -MF example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Tpo -c -o example/tls_example/example_tls_client-tls_client.o `test -f 'example/tls_example/tls_client.cc' || echo '$(srcdir)/'`example/tls_example/tls_client.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Tpo example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='example/tls_example/tls_client.cc' object='example/tls_example/example_tls_client-tls_client.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(example_tls_client_CXXFLAGS) $(CXXFLAGS) -c -o example/tls_example/example_tls_client-tls_client.o `test -f 'example/tls_example/tls_client.cc' || echo '$(srcdir)/'`example/tls_example/tls_client.cc
+
+example/tls_example/example_tls_client-tls_client.obj: example/tls_example/tls_client.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(example_tls_client_CXXFLAGS) $(CXXFLAGS) -MT example/tls_example/example_tls_client-tls_client.obj -MD -MP -MF example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Tpo -c -o example/tls_example/example_tls_client-tls_client.obj `if test -f 'example/tls_example/tls_client.cc'; then $(CYGPATH_W) 'example/tls_example/tls_client.cc'; else $(CYGPATH_W) '$(srcdir)/example/tls_example/tls_client.cc'; fi`
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Tpo example/tls_example/$(DEPDIR)/example_tls_client-tls_client.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='example/tls_example/tls_client.cc' object='example/tls_example/example_tls_client-tls_client.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(example_tls_client_CXXFLAGS) $(CXXFLAGS) -c -o example/tls_example/example_tls_client-tls_client.obj `if test -f 'example/tls_example/tls_client.cc'; then $(CYGPATH_W) 'example/tls_example/tls_client.cc'; else $(CYGPATH_W) '$(srcdir)/example/tls_example/tls_client.cc'; fi`
 
 libtest/libtest_unittest-unittest.o: libtest/unittest.cc
 @am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libtest_unittest_CXXFLAGS) $(CXXFLAGS) -MT libtest/libtest_unittest-unittest.o -MD -MP -MF libtest/$(DEPDIR)/libtest_unittest-unittest.Tpo -c -o libtest/libtest_unittest-unittest.o `test -f 'libtest/unittest.cc' || echo '$(srcdir)/'`libtest/unittest.cc
@@ -10493,6 +10533,8 @@ distclean-generic:
 	-rm -f clients/$(am__dirstamp)
 	-rm -f example/$(DEPDIR)/$(am__dirstamp)
 	-rm -f example/$(am__dirstamp)
+	-rm -f example/tls_example/$(DEPDIR)/$(am__dirstamp)
+	-rm -f example/tls_example/$(am__dirstamp)
 	-rm -f libhashkit/$(DEPDIR)/$(am__dirstamp)
 	-rm -f libhashkit/$(am__dirstamp)
 	-rm -f libmemcached-1.0/t/$(DEPDIR)/$(am__dirstamp)
@@ -10534,7 +10576,7 @@ clean-am: clean-binPROGRAMS clean-checkLTLIBRARIES clean-checkPROGRAMS \
 
 distclean: distclean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf clients/$(DEPDIR) example/$(DEPDIR) libhashkit/$(DEPDIR) libmemcached-1.0/t/$(DEPDIR) libmemcached/$(DEPDIR) libmemcached/csl/$(DEPDIR) libmemcachedprotocol/$(DEPDIR) libmemcachedutil/$(DEPDIR) libtest/$(DEPDIR) libtest/exception/$(DEPDIR) tests/$(DEPDIR) tests/libmemcached-1.0/$(DEPDIR) util/$(DEPDIR)
+	-rm -rf clients/$(DEPDIR) example/$(DEPDIR) example/tls_example/$(DEPDIR) libhashkit/$(DEPDIR) libmemcached-1.0/t/$(DEPDIR) libmemcached/$(DEPDIR) libmemcached/csl/$(DEPDIR) libmemcachedprotocol/$(DEPDIR) libmemcachedutil/$(DEPDIR) libtest/$(DEPDIR) libtest/exception/$(DEPDIR) tests/$(DEPDIR) tests/libmemcached-1.0/$(DEPDIR) util/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -10584,7 +10626,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf clients/$(DEPDIR) example/$(DEPDIR) libhashkit/$(DEPDIR) libmemcached-1.0/t/$(DEPDIR) libmemcached/$(DEPDIR) libmemcached/csl/$(DEPDIR) libmemcachedprotocol/$(DEPDIR) libmemcachedutil/$(DEPDIR) libtest/$(DEPDIR) libtest/exception/$(DEPDIR) tests/$(DEPDIR) tests/libmemcached-1.0/$(DEPDIR) util/$(DEPDIR)
+	-rm -rf clients/$(DEPDIR) example/$(DEPDIR) example/tls_example/$(DEPDIR) libhashkit/$(DEPDIR) libmemcached-1.0/t/$(DEPDIR) libmemcached/$(DEPDIR) libmemcached/csl/$(DEPDIR) libmemcachedprotocol/$(DEPDIR) libmemcachedutil/$(DEPDIR) libtest/$(DEPDIR) libtest/exception/$(DEPDIR) tests/$(DEPDIR) tests/libmemcached-1.0/$(DEPDIR) util/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic \
 	maintainer-clean-local

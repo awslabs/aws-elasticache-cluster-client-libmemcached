@@ -588,7 +588,7 @@ memcached_return_t memcached_io_slurp(memcached_instance_st* instance)
   char buffer[MEMCACHED_MAX_BUFFER];
   do
   {
-      data_read= instance->io_funcs->read(instance, instance->read_buffer, sizeof(buffer), MSG_NOSIGNAL);
+    data_read= instance->io_funcs->read(instance, instance->read_buffer, sizeof(buffer), MSG_NOSIGNAL);
     if (data_read == SOCKET_ERROR)
     {
       switch (get_socket_errno())
