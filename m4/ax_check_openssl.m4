@@ -61,11 +61,6 @@ AC_DEFUN([AX_CHECK_OPENSSL], [
             fi
         ]
         )
-        AS_IF([test "x$enable_tls" != "xno"],
-           [USE_TLS="#define USE_TLS 1"],
-           [USE_TLS="#define USE_TLS 0"])
-        AC_SUBST([USE_TLS])
-
 
     # note that we #include <openssl/foo.h>, so the OpenSSL headers have to be in
     # an 'openssl' subdirectory
