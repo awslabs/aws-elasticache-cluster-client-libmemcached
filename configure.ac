@@ -106,6 +106,10 @@ AS_IF([test "x$enable_tls" != "xno"], [
 
        AC_CHECK_HEADERS([openssl/crypto.h openssl/x509.h openssl/pem.h openssl/ssl.h openssl/err.h],[],[AC_MSG_ERROR([OpenSSL headers required])])
 
+AS_IF([test "x$enable_tls" != "xno"],
+           [USE_TLS="#define USE_TLS 1"],
+           [USE_TLS="#define USE_TLS 0"])
+AC_SUBST([USE_TLS])
 
 # Adding support for libtest
 m4_include([libtest/yatl.m4])
