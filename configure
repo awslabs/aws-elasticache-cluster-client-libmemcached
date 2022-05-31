@@ -16747,13 +16747,6 @@ fi
 
 fi
 
-        if test "x$enable_tls" != "xno"; then :
-  USE_TLS="#define USE_TLS 1"
-else
-  USE_TLS="#define USE_TLS 0"
-fi
-
-
 
     # note that we #include <openssl/foo.h>, so the OpenSSL headers have to be in
     # an 'openssl' subdirectory
@@ -16877,7 +16870,54 @@ _ACEOF
   LIBS="-lcrypto $LIBS"
 
 else
-  as_fn_error $? "OpenSSL libraries required" "$LINENO" 5
+  as_fn_error $? "OpenSSL libraries required, libcrypto is missing" "$LINENO" 5
+fi
+
+       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for OPENSSL_init_ssl in -lssl" >&5
+$as_echo_n "checking for OPENSSL_init_ssl in -lssl... " >&6; }
+if ${ac_cv_lib_ssl_OPENSSL_init_ssl+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lssl  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char OPENSSL_init_ssl ();
+int
+main ()
+{
+return OPENSSL_init_ssl ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ssl_OPENSSL_init_ssl=yes
+else
+  ac_cv_lib_ssl_OPENSSL_init_ssl=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ssl_OPENSSL_init_ssl" >&5
+$as_echo "$ac_cv_lib_ssl_OPENSSL_init_ssl" >&6; }
+if test "x$ac_cv_lib_ssl_OPENSSL_init_ssl" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBSSL 1
+_ACEOF
+
+  LIBS="-lssl $LIBS"
+
+else
+  as_fn_error $? "OpenSSL libraries required, libssl is missing" "$LINENO" 5
 fi
 
 
@@ -16896,6 +16936,12 @@ fi
 
 done
 
+
+if test "x$enable_tls" != "xno"; then :
+  USE_TLS="#define USE_TLS 1"
+else
+  USE_TLS="#define USE_TLS 0"
+fi
 
 
 # Adding support for libtest
