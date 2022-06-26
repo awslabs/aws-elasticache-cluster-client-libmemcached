@@ -809,7 +809,6 @@ memcached_return_t notify_server_list_update(memcached_st *ptr, memcached_server
   }
   else if(reresolve_count > 0)
   {
-    servers_to_reresolve = libmemcached_xrealloc(ptr, servers_to_reresolve, reresolve_count, memcached_instance_st*);
     reresolve_servers_in_client(servers_to_reresolve, reresolve_count);
   }
 

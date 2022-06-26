@@ -262,13 +262,15 @@ in_port_t memcached_server_port(const memcached_instance_st * self)
   return self->port();
 }
 
-const char *memcached_server_ipaddress(const memcached_server_instance_st self)
+const char *memcached_server_ipaddress(const memcached_instance_st self)
 {
   WATCHPOINT_ASSERT(self);
-  if (not self)
-    return NULL;
-
-  return self->_ipaddress;
+  if (self)
+  {
+    return self->_ipaddress;
+  }
+  
+  return NULL;
 }
 
 const bool _string_is_not_blank(const char* str) {
@@ -284,7 +286,7 @@ const bool _string_is_not_blank(const char* str) {
   return false;
 }
 
-const bool has_memcached_server_ipaddress(const memcached_server_st *self)
+bool has_memcached_server_ipaddress(const memcached_server_st *self)
 {
   WATCHPOINT_ASSERT(self);
   if (not self)
@@ -293,7 +295,7 @@ const bool has_memcached_server_ipaddress(const memcached_server_st *self)
   return _string_is_not_blank(self->ipaddress);
 }
 
-const bool has_memcached_instance_ipaddress(const memcached_instance_st *self)
+bool has_memcached_instance_ipaddress(const memcached_instance_st *self)
 {
   WATCHPOINT_ASSERT(self);
   if (not self)

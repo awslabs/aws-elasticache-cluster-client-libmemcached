@@ -87,9 +87,9 @@ static inline void *libmemcached_realloc(const memcached_st *self, void *mem, si
   }
 
 #ifdef __cplusplus
-    return std::realloc(mem, size);
+    return std::realloc(mem, nmemb * size);
 #else
-    return realloc(mem, size);
+    return realloc(mem, nmemb * size);
 #endif
 }
 #define libmemcached_xrealloc(__memcachd_st, __mem, __nelem, __type) ((__type *)libmemcached_realloc((__memcachd_st), (__mem), (__nelem), sizeof(__type)))

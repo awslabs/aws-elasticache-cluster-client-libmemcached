@@ -32,7 +32,7 @@ using namespace libtest;
  *
  *   ./configure
  *   make
- *   ./tests/dynamic_mode_test
+ *   YATL_COLLECTION_TO_RUN=dynamic_mode_test make test-mem (or make gdb-mem)
  */
 
 static char* _get_addr_by_ifa_name_for_ipv(const char* ifa_name_str, bool ipv6)
@@ -271,6 +271,12 @@ test_return_t replace_node_test(memcached_st *ptr)
 
   rc= memcached_instance_push(memc, ptr->configserver, 1);
 
+  servers= memcached_server_list_append(servers, ptr->servers[0]._hostname, ptr->servers[0].port(), &rc);
+  servers= memcached_server_list_append(servers, ptr->servers[1]._hostname, ptr->servers[1].port(), &rc);
+  servers= memcached_server_list_append(servers, ptr->servers[2]._hostname, ptr->servers[2].port(), &rc);
+  servers= memcached_server_list_append(servers, ptr->servers[3]._hostname, ptr->servers[3].port(), &rc);
+  notify_server_list_update(memc, servers);
+
   if (rc != MEMCACHED_SUCCESS)
   {
     return TEST_FAILURE;
@@ -293,6 +299,9 @@ test_return_t replace_node_test(memcached_st *ptr)
     return TEST_SKIPPED;
   }
   servers= memcached_server_list_append_with_ipaddress(servers, "localhost", local_ip, ptr->servers[0].port(), &rc);
+  servers= memcached_server_list_append_with_ipaddress(servers, "localhost", local_ip, ptr->servers[1].port(), &rc);
+  servers= memcached_server_list_append_with_ipaddress(servers, "localhost", local_ip, ptr->servers[2].port(), &rc);
+  servers= memcached_server_list_append_with_ipaddress(servers, "localhost", local_ip, ptr->servers[3].port(), &rc);
   notify_server_list_update(memc, servers);
 
   rc= memcached_set(memc, key, strlen(key), value, strlen(value), (time_t)0, (uint32_t)0);
@@ -438,7 +447,7 @@ test_return_t polling_test(memcached_st *ptr)
 
 void get_world(libtest::Framework *world)
 {
-  world->servers().set_servers_to_run(2);
+  world->servers().set_servers_to_run(4);
   world->collections(collection);
 
   world->create((test_callback_create_fn*)world_create);
