@@ -262,7 +262,7 @@ in_port_t memcached_server_port(const memcached_instance_st * self)
   return self->port();
 }
 
-const char *memcached_server_ipaddress(const memcached_instance_st self)
+const char *memcached_server_ipaddress(const memcached_instance_st *self)
 {
   WATCHPOINT_ASSERT(self);
   if (self)
