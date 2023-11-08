@@ -130,8 +130,6 @@ const char *memcached_ssl_context_get_error(memc_ssl_context_error error)
             return "Out of memory\n";
         case MEMCACHED_SSL_CTX_CREATE_FAILED:
             return "Failed to create OpenSSL SSL_CTX\n";
-        case MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED:
-            return "Client cert and key must both be specified\n";
         case MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED:
             return "Hostname must be specified for verification unless skip_hostname_verify is set to true\n";
         case MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED:
@@ -337,14 +335,15 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
     SSL_CTX_set_default_passwd_cb(ssl_ctx->ctx, ssl_set_password_callback);
     SSL_CTX_set_default_passwd_cb_userdata(ssl_ctx->ctx, (void *) ctx_config->key_file_pass);
 
-    /* load certificates */
-    if (ctx_config->cert_file == NULL || ctx_config->key_file == NULL) {
-        rc = MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED;
-        goto error;
-    }
-
+    /* Load certificates */
     if (ctx_config->ca_cert_dir || ctx_config->ca_cert_file) {
         if (SSL_CTX_load_verify_locations(ssl_ctx->ctx, ctx_config->ca_cert_file, ctx_config->ca_cert_dir) <= 0) {
+            rc = MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED;
+            goto error;
+        }
+    } else {
+        // Load default trusted certificate
+        if (SSL_CTX_set_default_verify_paths(ssl_ctx->ctx) == 0) {
             rc = MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED;
             goto error;
         }

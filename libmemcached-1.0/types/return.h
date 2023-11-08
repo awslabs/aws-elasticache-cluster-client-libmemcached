@@ -113,7 +113,6 @@ enum memc_ssl_context_error {
     MEMCACHED_SSL_INVALID_ARGUMENTS,                    /* Invalid function arguments */
     MEMCACHED_SSL_MEMORY_ALLOCATION_FAILURE,            /* Failed to allocate memory */
     MEMCACHED_SSL_CTX_CREATE_FAILED,                    /* Failed to create OpenSSL SSL_CTX */
-    MEMCACHED_SSL_CTX_CERT_KEY_REQUIRED,                /* Client cert and key must both be specified */
     MEMCACHED_SSL_CTX_HOSTNAME_REQUIRED,                /* Hostname (CN) is required unless skip_hostname_verify is set to true */
     MEMCACHED_SSL_CTX_CA_CERT_LOAD_FAILED,              /* Failed to load CA Certificate or CA Path */
     MEMCACHED_SSL_CTX_CLIENT_CERT_LOAD_FAILED,          /* Failed to load client certificate */
