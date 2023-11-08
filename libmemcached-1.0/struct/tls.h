@@ -21,8 +21,8 @@ typedef struct memcached_SSL memcached_SSL;
  * The client's certificate and key file are only supported in PEM format.
  */
 typedef struct memcached_ssl_context_config {
-    char *cert_file;                /* Cert file name (PEM formatted)*/
-    char *key_file;                 /* Private key filename for cert_file (PEM formatted)*/
+    char *cert_file;                /* Optional cert file name (PEM formatted)*/
+    char *key_file;                 /* Optional private key filename for cert_file (PEM formatted)*/
     char *key_file_pass;            /* Optional password for key_file */
     char *ca_cert_file;
     char *ca_cert_dir;
