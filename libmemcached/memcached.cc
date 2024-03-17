@@ -194,14 +194,15 @@ static void __memcached_free(Memcached *ptr, bool release_st)
 
   libmemcached_free(NULL, ptr->polling.current_config);
 
+#if defined(USE_TLS) && USE_TLS
+    memcached_free_ssl_ctx(ptr);
+#endif
+
   if (memcached_is_allocated(ptr) && release_st)
   {
     libmemcached_free(ptr, ptr);
   }
 
-#if defined(USE_TLS) && USE_TLS
-    memcached_free_ssl_ctx(ptr);
-#endif
 }
 
 memcached_st *memcached_create(memcached_st *shell)
