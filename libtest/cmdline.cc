@@ -62,7 +62,7 @@ using namespace libtest;
 #include <stdexcept>
 
 #ifndef __USE_GNU
-static char **environ= NULL;
+char **environ= NULL;
 #endif
 
 #ifndef FD_CLOEXEC
