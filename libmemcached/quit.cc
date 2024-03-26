@@ -164,4 +164,9 @@ void memcached_quit(memcached_st *shell)
   }
 
   send_quit(memc);
+
+#if defined(USE_TLS) && USE_TLS
+  memcached_free_ssl_ctx(memc);
+#endif
+
 }
