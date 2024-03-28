@@ -390,6 +390,10 @@ memc_ssl_context_error memcached_create_and_set_ssl_context(memcached_st *ptr, m
         goto error;
     }
 
+    if (ptr->ssl_ctx) {
+        // TLS context already set, free it before we set the new context
+        _memcached_free_ssl_ctx(ptr, ptr->ssl_ctx);
+    }
     ptr->ssl_ctx = ssl_ctx;
 
     return MEMCACHED_SSL_CTX_SUCCESS;
