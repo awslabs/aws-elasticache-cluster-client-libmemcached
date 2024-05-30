@@ -39,6 +39,7 @@
 #include <cerrno>
 #include <cstdarg>
 #include <cstdio>
+#include <cstring>
 #include <fcntl.h>
 #include <iostream>
 #include <string>
