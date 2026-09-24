@@ -227,6 +227,21 @@ static inline void _update_current_version(memcached_st *ptr, uint64_t config_ve
 }
 
 /**
+ * Update the recorded config string only, leaving current_config_version
+ * unchanged. Used when the config text changed but the version integer did not
+ * advance, so we don't rebuild on every subsequent poll while keeping the
+ * recorded version monotonic.
+ */
+static inline void _update_current_config_only(memcached_st *ptr, const char* config)
+{
+    if (ptr->polling.current_config != NULL)
+    {
+      free(ptr->polling.current_config);
+    }
+    ptr->polling.current_config = strdup(config);
+}
+
+/**
  * A poor man's iterator through the array of server structures, returns index
  * of the next server from the current position.
  */
@@ -334,8 +349,8 @@ static inline void _update_server_list(memcached_st *ptr)
   // set this field to false in error cases
   bool isUpdateSuccessful = true;
 
-  // detect change
-  // if strings don't match then check config version values, do nothing otherwise
+  // Rebuild the server list whenever the config string differs; do nothing
+  // when it is identical.
   if (ptr->polling.current_config == NULL)
   {
     uint64_t config_version_number = _get_config_version_number(config);
@@ -349,12 +364,20 @@ static inline void _update_server_list(memcached_st *ptr)
   else if (strcmp(ptr->polling.current_config, config) != 0)
   {
     uint64_t config_version_number = _get_config_version_number(config);
-    if (config_version_number > ptr->polling.current_config_version)
+    // A changed config string means the topology moved (e.g. a node IP changed
+    // after an in-place replacement), so rebuild even when the version integer
+    // did not advance. Keep the recorded version monotonic: advance it only
+    // when the new value is greater, otherwise refresh the config text only.
+    isUpdateSuccessful = _apply_new_server_list(ptr, config);
+    if (isUpdateSuccessful)
     {
-      isUpdateSuccessful = _apply_new_server_list(ptr, config);
-      if (isUpdateSuccessful)
+      if (config_version_number > ptr->polling.current_config_version)
       {
         _update_current_version(ptr, config_version_number, config);
+      }
+      else
+      {
+        _update_current_config_only(ptr, config);
       }
     }
   }

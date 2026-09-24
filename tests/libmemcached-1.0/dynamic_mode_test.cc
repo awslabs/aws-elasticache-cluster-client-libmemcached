@@ -108,6 +108,22 @@ static char * build_server_list(memcached_instance_st *servers, uint32_t count)
   return buffer;
 }
 
+/*
+ * Build a single-server config string for the server at the given index.
+ * Used to advertise a specific node address so a config swap changes the
+ * actual node ADDRESS (not just the server count).
+ */
+static char * build_single_server_config(memcached_instance_st *servers, uint32_t index)
+{
+  char *buffer = (char *)malloc(2000);
+  buffer[0] = '\0';
+  strcat(buffer, "localhost|127.0.0.1|");
+  char port[7];
+  sprintf(port, "%d ", servers[index].port());
+  strcat(buffer, port);
+  return buffer;
+}
+
 
 test_return_t config_get_test(memcached_st *ptr)
 {
@@ -405,6 +421,107 @@ test_return_t polling_test(memcached_st *ptr)
   memcached_server_free(servers);
   memcached_free(memc);
   set_config(original_server_list, ptr->servers[0].port(), "1");
+  free(original_server_list);
+
+  return TEST_SUCCESS;
+}
+
+/**
+ * Regression test: the client must rebuild its server list when the config
+ * STRING changes even if the config VERSION integer does not advance.
+ *
+ * An in-place node replacement changes a node's advertised ADDRESS without
+ * bumping the version integer. Previously the client only rebuilt when the
+ * version increased, so it kept the old (now stale) server in its list and
+ * every request failed with "No active_fd". This test advertises node A, then
+ * swaps the advertised config to a DIFFERENT node address while holding the
+ * version string constant at "1", and asserts that:
+ *   1. the client's server list actually changes to the new address, and
+ *   2. set/get succeed against the new node.
+ * On the unpatched (version-gated) code the server list stays pointed at the
+ * old address, so the address assertion fails.
+ */
+test_return_t replace_node_same_version_test(memcached_st *ptr)
+{
+  // Need at least two distinct server addresses to swap between.
+  if (ptr->number_of_hosts < 2)
+  {
+    return TEST_SKIPPED;
+  }
+
+  char *original_server_list = build_server_list(ptr->servers, ptr->number_of_hosts);
+
+  memcached_st *memc;
+  memcached_return rc;
+  size_t value_length;
+  uint32_t flags;
+
+  memc= memcached_create(NULL);
+  memcached_behavior_set(memc, MEMCACHED_BEHAVIOR_CLIENT_MODE, DYNAMIC_MODE);
+
+  // Poll frequently so config changes are picked up within the test window.
+  memc->polling.threshold_secs = 1;
+
+  // Two configs advertising DIFFERENT node addresses (different ports), both
+  // under the SAME version "1". config_a -> servers[0], config_b -> servers[1].
+  char *config_a = build_single_server_config(ptr->servers, 0);
+  char *config_b = build_single_server_config(ptr->servers, 1);
+  in_port_t port_a = ptr->servers[0].port();
+  in_port_t port_b = ptr->servers[1].port();
+
+  // Start advertising node A.
+  set_config(config_a, ptr->servers[0].port(), "1");
+
+  rc= memcached_instance_push(memc, ptr->configserver, 1);
+  if (rc != MEMCACHED_SUCCESS)
+  {
+    return TEST_FAILURE;
+  }
+
+  // Prime the client and confirm it is talking to node A.
+  rc= memcached_set(memc, "k", 1, "va", 2, (time_t)0, (uint32_t)0);
+  if (rc != MEMCACHED_SUCCESS)
+  {
+    return TEST_FAILURE;
+  }
+  if (memcached_server_count(memc) != 1 || memc->servers[0].port() != port_a)
+  {
+    return TEST_FAILURE;
+  }
+
+  // Swap the advertised config to node B (DIFFERENT address) WITHOUT changing
+  // the version integer. Give the client at least one polling cycle to observe it.
+  set_config(config_b, ptr->servers[0].port(), "1");
+  sleep(2);
+
+  // Drive an operation to trigger the periodic poll + rebuild.
+  rc= memcached_set(memc, "k", 1, "vb", 2, (time_t)0, (uint32_t)0);
+  if (rc != MEMCACHED_SUCCESS)
+  {
+    return TEST_FAILURE;
+  }
+
+  // ASSERTION (the point of this test): the client's server list must now
+  // reflect the NEW node address, proving it rebuilt on the config-text change
+  // even though the version integer stayed at "1".
+  if (memcached_server_count(memc) != 1 || memc->servers[0].port() != port_b)
+  {
+    return TEST_FAILURE;
+  }
+
+  // And normal operations must succeed against the new node.
+  char *result = memcached_get(memc, "k", 1, &value_length, &flags, &rc);
+  if (result == NULL || value_length != 2 || strncmp("vb", result, 2))
+  {
+    return TEST_FAILURE;
+  }
+  free(result);
+
+  // CLEANUP
+  memcached_free(memc);
+  set_config(original_server_list, ptr->servers[0].port(), "1");
+  free(config_a);
+  free(config_b);
   free(original_server_list);
 
   return TEST_SUCCESS;
